@@ -1,26 +1,214 @@
 ---
-import '../styles/global.css';
-// Component Imports
-import Button from '../components/Button.astro';
-
-// Full Astro Component Syntax:
-// https://docs.astro.build/basics/astro-components/
+import ImageWorkspace from "@/components/workspace/ImageWorkspace";
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import MainLayout from "@/layouts/main.astro";
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro + TailwindCSS</title>
-	</head>
+<MainLayout
+  title="Morf – Képek használatra készen, helyben"
+  description="Alakíts át, méretezz és optimalizálj több JPG, PNG vagy WebP képet egyszerre. A feldolgozás teljes egészében a böngésződben történik."
+>
+  <header>
+    <nav
+      class="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-5 sm:px-6 lg:px-8"
+      aria-label="Fő navigáció"
+    >
+      <a href="/" class="flex items-center gap-3" aria-label="Morf kezdőlap">
+        <img src="/favicon.svg" alt="" class="size-8" />
+        <span class="font-heading text-xl font-medium">Morf</span>
+      </a>
+      <a
+        href="#workspace"
+        class={buttonVariants({ variant: "outline", size: "sm" })}
+      >
+        Workspace megnyitása
+      </a>
+    </nav>
+  </header>
 
-	<body>
-		<div class="grid place-items-center h-screen content-center">
-			<Button>Tailwind Button in Astro!</Button>
-			<a href="/markdown-page" class="p-4 underline">Markdown is also supported...</a>
-		</div>
-	</body>
-</html>
+  <main>
+    <section
+      class="mx-auto grid w-full max-w-7xl gap-10 px-4 pt-16 pb-14 sm:px-6 sm:pt-24 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)] lg:items-end lg:px-8 lg:pt-32 lg:pb-20"
+    >
+      <div class="flex flex-col items-start gap-6">
+        <Badge variant="secondary">Ingyenes · fiók nélkül · helyben</Badge>
+        <div class="flex flex-col gap-4">
+          <h1
+            class="font-heading max-w-4xl text-5xl font-medium tracking-tight text-balance sm:text-6xl lg:text-7xl"
+          >
+            Dobd be a fájlokat. Mondd meg, mire kellenek.
+          </h1>
+          <p
+            class="text-muted-foreground max-w-2xl text-lg leading-relaxed sm:text-xl"
+          >
+            Morf több képet alakít át, méretez és optimalizál egyetlen
+            folyamatban — közvetlenül a böngésződben.
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <a href="#workspace" class={buttonVariants({ size: "lg" })}
+            >Képek előkészítése</a
+          >
+          <a
+            href="#hogyan-mukodik"
+            class={buttonVariants({ variant: "ghost", size: "lg" })}
+            >Hogyan működik?</a
+          >
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-5 text-sm">
+        <div>
+          <p class="font-medium">A fájljaid az eszközödön maradnak</p>
+          <p class="text-muted-foreground mt-1">
+            Nincs szerveres feltöltés, várakozási sor vagy fájlszámláló.
+          </p>
+        </div>
+        <div>
+          <p class="font-medium">A valódi korlát az eszközöd</p>
+          <p class="text-muted-foreground mt-1">
+            A maximális méretet és sebességet a memória és a teljesítmény
+            határozza meg.
+          </p>
+        </div>
+        <div>
+          <p class="font-medium">JPG, PNG és WebP</p>
+          <p class="text-muted-foreground mt-1">
+            Formátumváltás, aránytartó átméretezés, minőségállítás és
+            ZIP-export.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <ImageWorkspace client:load />
+
+    <section
+      id="hogyan-mukodik"
+      class="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-20 sm:px-6 lg:px-8"
+    >
+      <div class="max-w-2xl">
+        <p class="text-muted-foreground text-sm font-medium">Három lépés</p>
+        <h2
+          class="font-heading mt-2 text-3xl font-medium tracking-tight sm:text-4xl"
+        >
+          A technikai részleteket Morf intézi
+        </h2>
+      </div>
+      <ol class="grid gap-8 md:grid-cols-3">
+        <li class="flex flex-col gap-3">
+          <Badge variant="outline">01</Badge>
+          <h3 class="font-heading text-xl font-medium">Add hozzá a képeket</h3>
+          <p class="text-muted-foreground">
+            Húzd be vagy válaszd ki a JPG, PNG és WebP állóképeket. A tényleges
+            formátumot a fájl tartalmából ellenőrizzük.
+          </p>
+        </li>
+        <li class="flex flex-col gap-3">
+          <Badge variant="outline">02</Badge>
+          <h3 class="font-heading text-xl font-medium">
+            Válassz felhasználási célt
+          </h3>
+          <p class="text-muted-foreground">
+            Indulj weboldal-, webshop-, közösségi média- vagy e-mail presetből,
+            majd finomítsd a beállításokat.
+          </p>
+        </li>
+        <li class="flex flex-col gap-3">
+          <Badge variant="outline">03</Badge>
+          <h3 class="font-heading text-xl font-medium">
+            Töltsd le az eredményt
+          </h3>
+          <p class="text-muted-foreground">
+            Mentsd el a képeket egyenként vagy egy ütközésmentes nevű
+            ZIP-csomagban.
+          </p>
+        </li>
+      </ol>
+    </section>
+
+    <section class="morf-dark-section">
+      <div
+        class="mx-auto grid w-full max-w-7xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:px-8"
+      >
+        <div>
+          <p class="text-dark-section-accent text-sm font-medium">
+            Privacy by design
+          </p>
+          <h2
+            class="text-dark-section-heading font-heading mt-2 text-3xl font-medium tracking-tight sm:text-4xl"
+          >
+            A kiválasztott fájlok nem kerülnek feltöltésre
+          </h2>
+        </div>
+        <div class="text-dark-section-muted flex flex-col gap-4">
+          <p>
+            A dekódolás, az EXIF-orientáció alkalmazása, az átméretezés és az
+            újrakódolás külön Web Workerben fut a saját böngésződben.
+          </p>
+          <p>
+            A preview-khoz ideiglenes Blob URL-ek készülnek. Ezeket Morf
+            felszabadítja, amikor eltávolítod a fájlt vagy elhagyod az oldalt.
+          </p>
+          <p>
+            Nincs regisztráció, napi limit, fájlhoz kapcsolt analitika vagy
+            külső reklámscript az aktív workspace-ben.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="mx-auto flex w-full max-w-4xl flex-col gap-8 px-4 py-20 sm:px-6 lg:px-8"
+    >
+      <div>
+        <p class="text-muted-foreground text-sm font-medium">
+          Gyakori kérdések
+        </p>
+        <h2
+          class="font-heading mt-2 text-3xl font-medium tracking-tight sm:text-4xl"
+        >
+          Amit érdemes tudni
+        </h2>
+      </div>
+      <div class="flex flex-col gap-5">
+        <details>
+          <summary class="cursor-pointer font-medium"
+            >Valóban nem töltődnek fel a képek?</summary
+          >
+          <p class="text-muted-foreground mt-3">
+            Igen. A kiválasztott fájlok feldolgozása a böngésződben történik,
+            Morf szerverére nem kerülnek fel.
+          </p>
+        </details>
+        <details>
+          <summary class="cursor-pointer font-medium"
+            >Mekkora képet dolgozhatok fel?</summary
+          >
+          <p class="text-muted-foreground mt-3">
+            Nincs napi limit vagy fájlszámláló, de a biztonságos fájlméretet az
+            eszközöd memóriája és teljesítménye korlátozza. Mobilon Morf
+            konzervatívabb határt használ.
+          </p>
+        </details>
+        <details>
+          <summary class="cursor-pointer font-medium"
+            >Az animált képek megőrzik az animációt?</summary
+          >
+          <p class="text-muted-foreground mt-3">
+            Nem. Az első verzió állóképekhez készült, animációmegőrzést nem
+            ígér.
+          </p>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer
+    class="text-muted-foreground mx-auto flex w-full max-w-7xl flex-col justify-between gap-3 px-4 py-8 text-sm sm:flex-row sm:px-6 lg:px-8"
+  >
+    <p>© {new Date().getFullYear()} Morf</p>
+    <p>Készítette: Paládi Webfejlesztés / Paládi Bálint</p>
+  </footer>
+</MainLayout>
