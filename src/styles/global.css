@@ -300,6 +300,25 @@
       0 1.4rem 3.5rem oklch(0.24 0.07 174 / 0.14);
   }
 
+  .morf-dark-icon-chip {
+    color: var(--dark-section-accent);
+    background:
+      radial-gradient(
+        circle at 30% 12%,
+        oklch(0.9 0.08 166 / 0.28),
+        transparent 52%
+      ),
+      linear-gradient(
+        145deg,
+        oklch(0.48 0.1 166 / 0.34),
+        oklch(0.32 0.1 289 / 0.26)
+      );
+    box-shadow:
+      inset 0 1px 0 oklch(0.94 0.06 166 / 0.24),
+      inset 0 -1px 0 oklch(0.08 0.04 174 / 0.38),
+      0 0.3rem 0.8rem oklch(0.08 0.04 174 / 0.2);
+  }
+
   .morf-control-surface {
     background: var(--gradient-control);
     box-shadow: var(--shadow-control);

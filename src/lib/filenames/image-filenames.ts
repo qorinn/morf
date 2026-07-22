@@ -23,7 +23,28 @@ export function createOutputFileName(
   fileName: string,
   format: ImageFormat,
 ): string {
-  return `${sanitizeBaseName(fileName)}-morf.${extensions[format]}`;
+  return createOutputFileNameFromBase(
+    `${sanitizeBaseName(fileName)}-morf`,
+    format,
+  );
+}
+
+export function sanitizeOutputBaseName(value: string): string {
+  const sanitized = value
+    .normalize("NFC")
+    .replace(/[<>:"/\\|?*\u0000-\u001F]/g, "-")
+    .replace(/\s+/g, " ")
+    .replace(/^[. ]+|[. ]+$/g, "")
+    .slice(0, 80);
+
+  return sanitized || "kep-morf";
+}
+
+export function createOutputFileNameFromBase(
+  baseName: string,
+  format: ImageFormat,
+): string {
+  return `${sanitizeOutputBaseName(baseName)}.${extensions[format]}`;
 }
 
 export function createUniqueFileName(

@@ -2,12 +2,13 @@ import {
   Cancel01Icon,
   Delete02Icon,
   Download04Icon,
+  FolderOpenIcon,
   RefreshIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardAction,
@@ -17,20 +18,35 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import {
   Progress,
   ProgressLabel,
   ProgressValue,
 } from "@/components/ui/progress";
-import type { FileJob, FileJobStatus } from "@/features/image-processing/types";
-import { calculateSaving, formatBytes } from "@/lib/filenames/image-filenames";
-import { cn } from "@/lib/utils";
+import type {
+  FileJob,
+  FileJobStatus,
+  ImageFormat,
+} from "@/features/image-processing/types";
+import {
+  calculateSaving,
+  createOutputFileNameFromBase,
+  formatBytes,
+} from "@/lib/filenames/image-filenames";
 
 type FileJobCardProps = {
   job: FileJob;
+  outputFormat: ImageFormat;
+  canSaveAs: boolean;
+  isSaving: boolean;
   onCancel: (id: string) => void;
+  onDownload: (job: FileJob) => void;
+  onRename: (id: string, outputBaseName: string) => void;
   onRetry: (id: string) => void;
   onRemove: (id: string) => void;
+  onSaveAs: (job: FileJob) => void;
 };
 
 const statusLabels: Record<FileJobStatus, string> = {
@@ -60,11 +76,21 @@ function getBadgeVariant(status: FileJobStatus) {
 
 export function FileJobCard({
   job,
+  outputFormat,
+  canSaveAs,
+  isSaving,
   onCancel,
+  onDownload,
+  onRename,
   onRetry,
   onRemove,
+  onSaveAs,
 }: FileJobCardProps) {
   const isActive = activeStatuses.includes(job.status);
+  const outputFileName = createOutputFileNameFromBase(
+    job.outputBaseName,
+    job.result?.format ?? outputFormat,
+  );
   const saving = job.result
     ? calculateSaving(job.file.size, job.result.size)
     : undefined;
@@ -93,6 +119,24 @@ export function FileJobCard({
       </CardHeader>
 
       <CardContent className="flex flex-col gap-3">
+        <Field>
+          <FieldLabel htmlFor={`output-name-${job.id}`}>
+            Fájlnév (kiterjesztés nélkül)
+          </FieldLabel>
+          <Input
+            id={`output-name-${job.id}`}
+            value={job.outputBaseName}
+            maxLength={80}
+            spellCheck={false}
+            disabled={isActive}
+            onChange={(event) => onRename(job.id, event.target.value)}
+          />
+          <FieldDescription>
+            Letöltéskor:{" "}
+            <span className="text-foreground">{outputFileName}</span>
+          </FieldDescription>
+        </Field>
+
         {isActive && (
           <Progress
             value={job.progress}
@@ -142,10 +186,11 @@ export function FileJobCard({
       <CardFooter className="flex flex-wrap justify-between gap-2">
         <div className="flex flex-wrap gap-2">
           {job.result && (
-            <a
-              href={job.result.url}
-              download={job.result.fileName}
-              className={cn(buttonVariants({ size: "sm" }))}
+            <Button
+              type="button"
+              size="sm"
+              disabled={isSaving}
+              onClick={() => onDownload(job)}
             >
               <HugeiconsIcon
                 icon={Download04Icon}
@@ -154,7 +199,24 @@ export function FileJobCard({
                 aria-hidden="true"
               />
               Letöltés
-            </a>
+            </Button>
+          )}
+          {job.result && canSaveAs && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={isSaving}
+              onClick={() => onSaveAs(job)}
+            >
+              <HugeiconsIcon
+                icon={FolderOpenIcon}
+                strokeWidth={2}
+                data-icon="inline-start"
+                aria-hidden="true"
+              />
+              Mentés másként
+            </Button>
           )}
           {isActive && (
             <Button

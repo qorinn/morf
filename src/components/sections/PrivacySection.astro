@@ -1,0 +1,66 @@
+---
+import { Shield02Icon, ShieldKeyIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+
+interface Props {
+  items: string[];
+  title: string;
+  eyebrow?: string;
+  id?: string;
+}
+
+const {
+  items,
+  title,
+  eyebrow = "Privacy by design",
+  id = "adatvedelem",
+} = Astro.props;
+const titleId = `${id}-title`;
+---
+
+<section
+  id={id}
+  aria-labelledby={titleId}
+  class="morf-dark-section relative isolate overflow-hidden"
+>
+  <HugeiconsIcon
+    icon={ShieldKeyIcon}
+    strokeWidth={0.65}
+    className="text-dark-section-accent pointer-events-none absolute top-1/2 left-16 size-72 -translate-y-1/2 opacity-[0.06] sm:right-[4%] sm:size-96 lg:right-[10%] lg:size-112"
+    aria-hidden="true"
+  />
+
+  <div
+    class="relative mx-auto grid w-full max-w-7xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1fr)] lg:gap-16 lg:px-8"
+  >
+    <header class="max-w-xl">
+      <p class="text-dark-section-accent text-sm font-medium">{eyebrow}</p>
+      <h2
+        id={titleId}
+        class="text-dark-section-heading font-heading mt-2 text-3xl font-medium tracking-tight text-balance sm:text-4xl"
+      >
+        {title}
+      </h2>
+    </header>
+
+    <ul class="flex flex-col gap-5" role="list">
+      {
+        items.map((item) => (
+          <li class="text-dark-section-muted flex items-start gap-3 leading-relaxed">
+            <span
+              class="morf-dark-icon-chip mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-2xl"
+              aria-hidden="true"
+            >
+              <HugeiconsIcon
+                icon={Shield02Icon}
+                strokeWidth={1.8}
+                className="size-4"
+              />
+            </span>
+            <span>{item}</span>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>

@@ -7,6 +7,7 @@ import type {
   FileJobStatus,
   ImageFormat,
 } from "@/features/image-processing/types";
+import { sanitizeBaseName } from "@/lib/filenames/image-filenames";
 import {
   getImagePreset,
   type ImageRecipe,
@@ -40,6 +41,7 @@ type WorkspaceState = {
   settings: WorkspaceSettings;
   addJobs: (jobs: NewFileJob[]) => void;
   updateJob: (id: string, patch: JobPatch) => void;
+  renameJob: (id: string, outputBaseName: string) => void;
   completeJob: (
     id: string,
     result: FileJobResult,
@@ -48,6 +50,7 @@ type WorkspaceState = {
   ) => void;
   failJob: (id: string, error: FileJobError) => void;
   setJobStatus: (id: string, status: FileJobStatus, progress?: number) => void;
+  requeueCompletedJobs: () => void;
   retryJob: (id: string) => void;
   removeJob: (id: string) => void;
   clearJobs: () => void;
@@ -82,6 +85,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         ...jobs.map((job) => ({
           ...job,
           id: crypto.randomUUID(),
+          outputBaseName: `${sanitizeBaseName(job.file.name)}-morf`,
           status: "queued" as const,
           progress: 0,
         })),
@@ -91,6 +95,12 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     set((state) => ({
       jobs: state.jobs.map((job) =>
         job.id === id ? { ...job, ...patch } : job,
+      ),
+    })),
+  renameJob: (id, outputBaseName) =>
+    set((state) => ({
+      jobs: state.jobs.map((job) =>
+        job.id === id ? { ...job, outputBaseName } : job,
       ),
     })),
   completeJob: (id, result, originalWidth, originalHeight) =>
@@ -124,6 +134,21 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           ? { ...job, status, progress: progress ?? job.progress }
           : job,
       ),
+    })),
+  requeueCompletedJobs: () =>
+    set((state) => ({
+      jobs: state.jobs.map((job) => {
+        if (job.status !== "completed") return job;
+        if (job.result) URL.revokeObjectURL(job.result.url);
+
+        return {
+          ...job,
+          status: "queued" as const,
+          progress: 0,
+          result: undefined,
+          error: undefined,
+        };
+      }),
     })),
   retryJob: (id) =>
     set((state) => ({

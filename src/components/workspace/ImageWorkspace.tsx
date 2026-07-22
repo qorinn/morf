@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { proxy, transfer } from "comlink";
 import {
   Delete02Icon,
-  FileZipIcon,
+  Download04Icon,
+  FolderDownloadIcon,
+  FolderOpenIcon,
   ImageUpload01Icon,
   PlayIcon,
   SecurityCheckIcon,
@@ -36,10 +38,18 @@ import type {
 } from "@/features/image-processing/types";
 import { validateImageFile } from "@/features/image-processing/validation";
 import { createImageWorker } from "@/features/image-processing/worker-client";
+import { createOutputFileNameFromBase } from "@/lib/filenames/image-filenames";
 import {
-  createOutputFileName,
-  createUniqueFileName,
-} from "@/lib/filenames/image-filenames";
+  downloadFile,
+  downloadFiles,
+  getSaveCapabilities,
+  isFilePickerCancellation,
+  saveFileAs,
+  saveFilesAsZip,
+  saveFilesToChosenDirectory,
+  type SaveCapabilities,
+  type SaveableFile,
+} from "@/lib/downloads";
 import { imageRecipeSchema } from "@/lib/presets/image-presets";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 
@@ -59,11 +69,21 @@ function getConcurrency(): number {
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 1 : 2;
 }
 
-function triggerDownload(url: string, fileName: string) {
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = fileName;
-  anchor.click();
+function getCompletedFiles(jobs: FileJob[]): SaveableFile[] {
+  return jobs.flatMap((job) => {
+    if (!job.result) return [];
+    return [
+      {
+        blob: job.result.blob,
+        fileName: createOutputFileNameFromBase(
+          job.outputBaseName,
+          job.result.format,
+        ),
+        mimeType: job.result.mimeType,
+        description: "Kép",
+      },
+    ];
+  });
 }
 
 export default function ImageWorkspace() {
@@ -71,15 +91,26 @@ export default function ImageWorkspace() {
   const addJobs = useWorkspaceStore((state) => state.addJobs);
   const updateJob = useWorkspaceStore((state) => state.updateJob);
   const completeJob = useWorkspaceStore((state) => state.completeJob);
+  const renameJob = useWorkspaceStore((state) => state.renameJob);
   const failJob = useWorkspaceStore((state) => state.failJob);
   const setJobStatus = useWorkspaceStore((state) => state.setJobStatus);
+  const requeueCompletedJobs = useWorkspaceStore(
+    (state) => state.requeueCompletedJobs,
+  );
   const retryJob = useWorkspaceStore((state) => state.retryJob);
   const removeJob = useWorkspaceStore((state) => state.removeJob);
   const clearJobs = useWorkspaceStore((state) => state.clearJobs);
+  const outputFormat = useWorkspaceStore(
+    (state) => state.settings.outputFormat,
+  );
   const [dropErrors, setDropErrors] = useState<DropError[]>([]);
   const [workspaceError, setWorkspaceError] = useState<string>();
   const [isBatchActive, setIsBatchActive] = useState(false);
-  const [isZipPreparing, setIsZipPreparing] = useState(false);
+  const [activeSaveAction, setActiveSaveAction] = useState<string>();
+  const [saveCapabilities, setSaveCapabilities] = useState<SaveCapabilities>({
+    file: false,
+    directory: false,
+  });
   const batchRunRef = useRef(false);
   const activeWorkers = useRef(new Map<string, Worker>());
   const cancelRejectors = useRef(new Map<string, () => void>());
@@ -191,10 +222,7 @@ export default function ImageWorkspace() {
           {
             blob,
             url: outputUrl,
-            fileName: createOutputFileName(
-              job.file.name,
-              recipeResult.data.outputFormat,
-            ),
+            format: recipeResult.data.outputFormat,
             width: result.width,
             height: result.height,
             size: blob.size,
@@ -226,9 +254,17 @@ export default function ImageWorkspace() {
       return;
     }
 
-    const queuedJobs = useWorkspaceStore
+    let queuedJobs = useWorkspaceStore
       .getState()
       .jobs.filter((job) => job.status === "queued");
+
+    if (queuedJobs.length === 0) {
+      requeueCompletedJobs();
+      queuedJobs = useWorkspaceStore
+        .getState()
+        .jobs.filter((job) => job.status === "queued");
+    }
+
     if (queuedJobs.length === 0) return;
 
     batchRunRef.current = true;
@@ -255,7 +291,7 @@ export default function ImageWorkspace() {
       batchRunRef.current = false;
       setIsBatchActive(false);
     }
-  }, [processOneJob]);
+  }, [processOneJob, requeueCompletedJobs]);
 
   const cancelJob = useCallback(
     (id: string) => {
@@ -267,40 +303,83 @@ export default function ImageWorkspace() {
     [setJobStatus],
   );
 
-  const downloadAll = useCallback(async () => {
-    const completedJobs = useWorkspaceStore
-      .getState()
-      .jobs.filter((job) => job.result);
-    if (completedJobs.length === 0) return;
+  const runSaveAction = useCallback(
+    async (action: string, operation: () => Promise<void>) => {
+      setActiveSaveAction(action);
+      setWorkspaceError(undefined);
 
-    setIsZipPreparing(true);
-    setWorkspaceError(undefined);
-
-    try {
-      const { zipSync } = await import("fflate");
-      const usedNames = new Set<string>();
-      const files: Record<string, Uint8Array> = {};
-
-      for (const job of completedJobs) {
-        if (!job.result) continue;
-        const fileName = createUniqueFileName(job.result.fileName, usedNames);
-        files[fileName] = new Uint8Array(await job.result.blob.arrayBuffer());
+      try {
+        await operation();
+      } catch (error) {
+        if (!isFilePickerCancellation(error)) {
+          setWorkspaceError(
+            `A mentés nem sikerült: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        }
+      } finally {
+        setActiveSaveAction(undefined);
       }
+    },
+    [],
+  );
 
-      const zip = zipSync(files, { level: 0 });
-      const blob = new Blob([zip], { type: "application/zip" });
-      const url = URL.createObjectURL(blob);
-      triggerDownload(url, "morf-kepek.zip");
-      window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
-    } catch (error) {
-      setWorkspaceError(
-        `A ZIP-csomagot nem sikerült elkészíteni: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+  const downloadOne = useCallback((job: FileJob) => {
+    if (!job.result) return;
+    downloadFile({
+      blob: job.result.blob,
+      fileName: createOutputFileNameFromBase(
+        job.outputBaseName,
+        job.result.format,
+      ),
+      mimeType: job.result.mimeType,
+      description: "Kép",
+    });
+  }, []);
+
+  const saveOneAs = useCallback(
+    (job: FileJob) => {
+      if (!job.result) return;
+      const result = job.result;
+      const fileName = createOutputFileNameFromBase(
+        job.outputBaseName,
+        result.format,
       );
-    } finally {
-      setIsZipPreparing(false);
-    }
+
+      void runSaveAction(`file-${job.id}`, async () => {
+        await saveFileAs({
+          blob: result.blob,
+          fileName,
+          mimeType: result.mimeType,
+          description: "Kép",
+        });
+      });
+    },
+    [runSaveAction],
+  );
+
+  const downloadAllFiles = useCallback(() => {
+    const files = getCompletedFiles(useWorkspaceStore.getState().jobs);
+    downloadFiles(files);
+  }, []);
+
+  const saveAllFilesAs = useCallback(() => {
+    void runSaveAction("files-as", async () => {
+      const files = getCompletedFiles(useWorkspaceStore.getState().jobs);
+      await saveFilesToChosenDirectory(files);
+    });
+  }, [runSaveAction]);
+
+  const saveZipAs = useCallback(() => {
+    void runSaveAction("zip-as", async () => {
+      const files = getCompletedFiles(useWorkspaceStore.getState().jobs);
+      await saveFilesAsZip(files, "morf-kepek.zip");
+    });
+  }, [runSaveAction]);
+
+  useEffect(() => {
+    setSaveCapabilities(getSaveCapabilities());
   }, []);
 
   useEffect(() => {
@@ -485,7 +564,9 @@ export default function ImageWorkspace() {
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
-                disabled={isBatchActive || queuedCount === 0}
+                disabled={
+                  isBatchActive || (queuedCount === 0 && completedCount === 0)
+                }
                 onClick={startProcessing}
               >
                 <HugeiconsIcon
@@ -496,22 +577,62 @@ export default function ImageWorkspace() {
                 />
                 {isBatchActive
                   ? "Feldolgozás…"
-                  : `Feldolgozás (${queuedCount})`}
+                  : queuedCount > 0
+                    ? `Feldolgozás (${queuedCount})`
+                    : `Újrafeldolgozás (${completedCount})`}
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={completedCount === 0 || isZipPreparing}
-                onClick={downloadAll}
-              >
-                <HugeiconsIcon
-                  icon={FileZipIcon}
-                  strokeWidth={2}
-                  data-icon="inline-start"
-                  aria-hidden="true"
-                />
-                {isZipPreparing ? "ZIP készítése…" : "Összes letöltése"}
-              </Button>
+              {completedCount > 0 && (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={Boolean(activeSaveAction)}
+                    onClick={downloadAllFiles}
+                  >
+                    <HugeiconsIcon
+                      icon={Download04Icon}
+                      strokeWidth={2}
+                      data-icon="inline-start"
+                      aria-hidden="true"
+                    />
+                    Mentés
+                  </Button>
+                  {saveCapabilities.directory && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={Boolean(activeSaveAction)}
+                      onClick={saveAllFilesAs}
+                    >
+                      <HugeiconsIcon
+                        icon={FolderOpenIcon}
+                        strokeWidth={2}
+                        data-icon="inline-start"
+                        aria-hidden="true"
+                      />
+                      Mentés másként
+                    </Button>
+                  )}
+                  {saveCapabilities.file && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={Boolean(activeSaveAction)}
+                      onClick={saveZipAs}
+                    >
+                      <HugeiconsIcon
+                        icon={FolderDownloadIcon}
+                        strokeWidth={2}
+                        data-icon="inline-start"
+                        aria-hidden="true"
+                      />
+                      {activeSaveAction === "zip-as"
+                        ? "ZIP készítése…"
+                        : "Mentés másként ZIP-be"}
+                    </Button>
+                  )}
+                </>
+              )}
               <Button
                 type="button"
                 variant="ghost"
@@ -534,9 +655,15 @@ export default function ImageWorkspace() {
               <FileJobCard
                 key={job.id}
                 job={job}
+                outputFormat={outputFormat}
+                canSaveAs={saveCapabilities.file}
+                isSaving={Boolean(activeSaveAction)}
                 onCancel={cancelJob}
+                onDownload={downloadOne}
+                onRename={renameJob}
                 onRetry={retryJob}
                 onRemove={removeJob}
+                onSaveAs={saveOneAs}
               />
             ))}
           </div>

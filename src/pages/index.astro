@@ -1,8 +1,34 @@
 ---
 import ImageWorkspace from "@/components/workspace/ImageWorkspace";
+import FaqSection from "@/components/sections/FaqSection.astro";
+import PrivacySection from "@/components/sections/PrivacySection.astro";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import MainLayout from "@/layouts/main.astro";
+
+const privacyItems = [
+  "A dekódolás, az EXIF-orientáció alkalmazása, az átméretezés és az újrakódolás külön Web Workerben fut a saját böngésződben.",
+  "A preview-khoz ideiglenes Blob URL-ek készülnek. Ezeket Morf felszabadítja, amikor eltávolítod a fájlt vagy elhagyod az oldalt.",
+  "Nincs regisztráció, napi limit, fájlhoz kapcsolt analitika vagy külső reklámscript az aktív workspace-ben.",
+];
+
+const faqItems = [
+  {
+    question: "Valóban nem töltődnek fel a képek?",
+    answer:
+      "Igen. A kiválasztott fájlok feldolgozása a böngésződben történik, Morf szerverére nem kerülnek fel.",
+  },
+  {
+    question: "Mekkora képet dolgozhatok fel?",
+    answer:
+      "Nincs napi limit vagy fájlszámláló, de a biztonságos fájlméretet az eszközöd memóriája és teljesítménye korlátozza. Mobilon Morf konzervatívabb határt használ.",
+  },
+  {
+    question: "Az animált képek megőrzik az animációt?",
+    answer:
+      "Nem. Az első verzió állóképekhez készült, animációmegőrzést nem ígér.",
+  },
+];
 ---
 
 <MainLayout
@@ -128,81 +154,16 @@ import MainLayout from "@/layouts/main.astro";
       </ol>
     </section>
 
-    <section class="morf-dark-section">
-      <div
-        class="mx-auto grid w-full max-w-7xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:px-8"
-      >
-        <div>
-          <p class="text-dark-section-accent text-sm font-medium">
-            Privacy by design
-          </p>
-          <h2
-            class="text-dark-section-heading font-heading mt-2 text-3xl font-medium tracking-tight sm:text-4xl"
-          >
-            A kiválasztott fájlok nem kerülnek feltöltésre
-          </h2>
-        </div>
-        <div class="text-dark-section-muted flex flex-col gap-4">
-          <p>
-            A dekódolás, az EXIF-orientáció alkalmazása, az átméretezés és az
-            újrakódolás külön Web Workerben fut a saját böngésződben.
-          </p>
-          <p>
-            A preview-khoz ideiglenes Blob URL-ek készülnek. Ezeket Morf
-            felszabadítja, amikor eltávolítod a fájlt vagy elhagyod az oldalt.
-          </p>
-          <p>
-            Nincs regisztráció, napi limit, fájlhoz kapcsolt analitika vagy
-            külső reklámscript az aktív workspace-ben.
-          </p>
-        </div>
-      </div>
-    </section>
+    <PrivacySection
+      title="A kiválasztott fájlok nem kerülnek feltöltésre"
+      items={privacyItems}
+    />
 
-    <section
-      class="mx-auto flex w-full max-w-4xl flex-col gap-8 px-4 py-20 sm:px-6 lg:px-8"
-    >
-      <div>
-        <p class="text-muted-foreground text-sm font-medium">
-          Gyakori kérdések
-        </p>
-        <h2
-          class="font-heading mt-2 text-3xl font-medium tracking-tight sm:text-4xl"
-        >
-          Amit érdemes tudni
-        </h2>
-      </div>
-      <div class="flex flex-col gap-5">
-        <details>
-          <summary class="cursor-pointer font-medium"
-            >Valóban nem töltődnek fel a képek?</summary
-          >
-          <p class="text-muted-foreground mt-3">
-            Igen. A kiválasztott fájlok feldolgozása a böngésződben történik,
-            Morf szerverére nem kerülnek fel.
-          </p>
-        </details>
-        <details>
-          <summary class="cursor-pointer font-medium"
-            >Mekkora képet dolgozhatok fel?</summary
-          >
-          <p class="text-muted-foreground mt-3">
-            Nincs napi limit vagy fájlszámláló, de a biztonságos fájlméretet az
-            eszközöd memóriája és teljesítménye korlátozza. Mobilon Morf
-            konzervatívabb határt használ.
-          </p>
-        </details>
-        <details>
-          <summary class="cursor-pointer font-medium"
-            >Az animált képek megőrzik az animációt?</summary
-          >
-          <p class="text-muted-foreground mt-3">
-            Nem. Az első verzió állóképekhez készült, animációmegőrzést nem
-            ígér.
-          </p>
-        </details>
-      </div>
-    </section>
+    <FaqSection
+      title="Amit érdemes tudni"
+      description="Rövid válaszok a helyi feldolgozásról, a fájlméretekről és a támogatott képtípusokról."
+      items={faqItems}
+    />
   </main>
 
   <footer

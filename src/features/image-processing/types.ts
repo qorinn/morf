@@ -67,7 +67,7 @@ export type ProcessImageApi = {
 export type FileJobResult = {
   blob: Blob;
   url: string;
-  fileName: string;
+  format: ImageFormat;
   width: number;
   height: number;
   size: number;
@@ -79,6 +79,7 @@ export type FileJob = {
   file: File;
   inputFormat: ImageFormat;
   previewUrl: string;
+  outputBaseName: string;
   status: FileJobStatus;
   progress: number;
   originalWidth?: number;

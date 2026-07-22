@@ -1,0 +1,98 @@
+---
+import {
+  ArrowDown01Icon,
+  ShieldQuestionMarkIcon,
+  UserQuestion02Icon
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+
+interface FaqItem {
+  question: string;
+  answer: string;
+}
+
+interface Props {
+  items: FaqItem[];
+  title: string;
+  description?: string;
+  eyebrow?: string;
+  id?: string;
+}
+
+const {
+  items,
+  title,
+  description,
+  eyebrow = "Gyakori kérdések",
+  id = "gyakori-kerdesek",
+} = Astro.props;
+const titleId = `${id}-title`;
+---
+
+<section
+  id={id}
+  aria-labelledby={titleId}
+  class="mx-auto grid w-full max-w-7xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(16rem,0.62fr)_minmax(0,1fr)] lg:gap-16 lg:px-8"
+>
+  <header
+    class="flex max-w-xl flex-col items-start gap-3 lg:sticky lg:top-10 lg:self-start"
+  >
+    <span
+      class="morf-soft-secondary text-secondary-foreground inline-flex size-11 items-center justify-center rounded-3xl"
+      aria-hidden="true"
+    >
+      <HugeiconsIcon
+        icon={UserQuestion02Icon}
+        strokeWidth={1.8}
+        className="size-5"
+      />
+    </span>
+    <div>
+      <p class="text-muted-foreground text-sm font-medium">{eyebrow}</p>
+      <h2
+        id={titleId}
+        class="font-heading mt-2 text-3xl font-medium tracking-tight text-balance sm:text-4xl"
+      >
+        {title}
+      </h2>
+    </div>
+    {
+      description && (
+        <p class="text-muted-foreground max-w-md leading-relaxed">
+          {description}
+        </p>
+      )
+    }
+  </header>
+
+  <div class="flex flex-col gap-3">
+    {
+      items.map((item) => (
+        <details class="morf-card-surface group overflow-hidden rounded-3xl ring-1 ring-foreground/5 open:ring-primary/20">
+          <summary class="hover:bg-accent/20 flex min-h-14 cursor-pointer list-none items-center gap-4 px-4 py-3 font-medium transition-colors duration-200 select-none focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/30 sm:px-5 [&::-webkit-details-marker]:hidden">
+            <span
+              class="morf-soft-secondary text-secondary-foreground inline-flex size-9 shrink-0 items-center justify-center rounded-2xl"
+              aria-hidden="true"
+            >
+              <HugeiconsIcon
+                icon={ShieldQuestionMarkIcon}
+                strokeWidth={1.8}
+                className="size-4"
+              />
+            </span>
+            <span class="flex-1 text-left">{item.question}</span>
+            <HugeiconsIcon
+              icon={ArrowDown01Icon}
+              strokeWidth={2}
+              className="text-muted-foreground size-5 shrink-0 transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none"
+              aria-hidden="true"
+            />
+          </summary>
+          <div class="text-muted-foreground mr-12 pb-5 pl-17 leading-relaxed sm:mr-14 sm:pl-18">
+            <p class="max-w-2xl text-pretty">{item.answer}</p>
+          </div>
+        </details>
+      ))
+    }
+  </div>
+</section>

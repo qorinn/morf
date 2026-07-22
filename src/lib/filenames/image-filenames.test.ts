@@ -4,8 +4,10 @@ import test from "node:test";
 import {
   calculateSaving,
   createOutputFileName,
+  createOutputFileNameFromBase,
   createUniqueFileName,
   sanitizeBaseName,
+  sanitizeOutputBaseName,
 } from "./image-filenames.ts";
 
 test("biztonságos, determinisztikus fájlnevet készít", () => {
@@ -17,6 +19,15 @@ test("biztonságos, determinisztikus fájlnevet készít", () => {
     createOutputFileName("Nyári fotó.png", "webp"),
     "nyari-foto-morf.webp",
   );
+});
+
+test("a megadott kimeneti nevet és a helyes kiterjesztést használja", () => {
+  assert.equal(
+    createOutputFileNameFromBase("Nyári kampány – hero", "webp"),
+    "Nyári kampány – hero.webp",
+  );
+  assert.equal(sanitizeOutputBaseName("../Tiltott:név*?  "), "-Tiltott-név--");
+  assert.equal(createOutputFileNameFromBase("   ", "jpeg"), "kep-morf.jpg");
 });
 
 test("ütközésnél számozott fájlnevet ad", () => {
