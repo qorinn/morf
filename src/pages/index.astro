@@ -1,186 +1,210 @@
 ---
-import ImageWorkspace from "@/components/workspace/ImageWorkspace";
-import FaqSection from "@/components/sections/FaqSection.astro";
-import PrivacySection from "@/components/sections/PrivacySection.astro";
+import SiteFooter from "@/components/layout/SiteFooter.astro";
+import SiteHeader from "@/components/layout/SiteHeader.astro";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import MainLayout from "@/layouts/main.astro";
+import {
+  ArrowRight02Icon,
+  BrowserIcon,
+  Image02Icon,
+  ShieldKeyIcon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import morfPeeking from "../assets/morf-actions/morf-peeking.webp";
+import morfPeeking3 from "../assets/morf-actions/morf-peeking-3.webp";
 
-const privacyItems = [
-  "A dekódolás, az EXIF-orientáció alkalmazása, az átméretezés és az újrakódolás külön Web Workerben fut a saját böngésződben.",
-  "A preview-khoz ideiglenes Blob URL-ek készülnek. Ezeket Morf felszabadítja, amikor eltávolítod a fájlt vagy elhagyod az oldalt.",
-  "Nincs regisztráció, napi limit, fájlhoz kapcsolt analitika vagy külső reklámscript az aktív workspace-ben.",
-];
-
-const faqItems = [
+const tools = [
   {
-    question: "Valóban nem töltődnek fel a képek?",
-    answer:
-      "Igen. A kiválasztott fájlok feldolgozása a böngésződben történik, Morf szerverére nem kerülnek fel.",
+    title: "Képkonvertáló",
+    description:
+      "Alakíts át több JPG, PNG vagy WebP képet egyszerre, és állítsd be a méretet és a minőséget egy helyen.",
+    href: "/kep-konvertalo",
+    cta: "Képek konvertálása",
+    icon: Image02Icon,
+    badge: "JPG · PNG · WebP",
+    features: [
+      "Formátumváltás és átméretezés",
+      "Több kép feldolgozása egyszerre",
+      "Mentés egyenként vagy ZIP-ben",
+    ],
   },
   {
-    question: "Mekkora képet dolgozhatok fel?",
-    answer:
-      "Nincs napi limit vagy fájlszámláló, de a biztonságos fájlméretet az eszközöd memóriája és teljesítménye korlátozza. Mobilon Morf konzervatívabb határt használ.",
-  },
-  {
-    question: "Az animált képek megőrzik az animációt?",
-    answer:
-      "Nem. Az első verzió állóképekhez készült, animációmegőrzést nem ígér.",
+    title: "Favicon generátor",
+    description:
+      "Készíts egyetlen képből weboldalhoz és telepíthető webapphoz használható ikoncsomagot.",
+    href: "/favicon-generator",
+    cta: "Favicon készítése",
+    icon: BrowserIcon,
+    badge: "ICO · PNG · Apple · PWA",
+    features: [
+      "Vágás és élő méret-előnézet",
+      "Külön maskable ikonbeállítás",
+      "Csak a kiválasztott fájlok exportja",
+    ],
   },
 ];
 ---
 
 <MainLayout
-  title="Morf – Képek használatra készen, helyben"
-  description="Alakíts át, méretezz és optimalizálj több JPG, PNG vagy WebP képet egyszerre. A feldolgozás teljes egészében a böngésződben történik."
+  title="Morf – Online eszközök egy helyen"
+  description="Folyamatosan bővülő böngészős eszköztár konvertáláshoz, generáláshoz és más gyakori digitális feladatokhoz."
 >
-  <header>
-    <nav
-      class="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-5 sm:px-6 lg:px-8"
-      aria-label="Fő navigáció"
-    >
-      <a href="/" class="flex items-center gap-3" aria-label="Morf kezdőlap">
-        <img src="/favicon.svg" alt="" class="size-8" />
-        <span class="font-heading text-xl font-medium">Morf</span>
-      </a>
-      <div class="flex items-center gap-2">
-        <a
-          href="/favicon-generator"
-          class:list={[
-            buttonVariants({ variant: "ghost", size: "sm" }),
-            "hidden sm:inline-flex",
-          ]}
-        >
-          Favicon generátor
-        </a>
-        <a
-          href="#workspace"
-          class={buttonVariants({ variant: "outline", size: "sm" })}
-        >
-          Workspace megnyitása
-        </a>
-      </div>
-    </nav>
-  </header>
+  <SiteHeader
+    active="home"
+    actionHref="#eszkozok"
+    actionLabel="Eszközök megnyitása"
+    actionShortLabel="Eszközök"
+  />
 
   <main>
     <section
-      class="mx-auto grid w-full max-w-7xl gap-10 px-4 pt-16 pb-14 sm:px-6 sm:pt-24 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)] lg:items-end lg:px-8 lg:pt-32 lg:pb-20"
+      class="mx-auto flex w-full max-w-5xl flex-col items-center gap-7 px-4 pt-16 pb-14 text-center sm:px-6 sm:pt-24 lg:px-8 lg:pt-32 lg:pb-20"
     >
-      <div class="flex flex-col items-start gap-6">
-        <Badge variant="secondary">Ingyenes · fiók nélkül · helyben</Badge>
-        <div class="flex flex-col gap-4">
-          <h1
-            class="font-heading max-w-4xl text-5xl font-medium tracking-tight text-balance sm:text-6xl lg:text-7xl"
-          >
-            Dobd be a fájlokat. Mondd meg, mire kellenek.
-          </h1>
-          <p
-            class="text-muted-foreground max-w-2xl text-lg leading-relaxed sm:text-xl"
-          >
-            Morf több képet alakít át, méretez és optimalizál egyetlen
-            folyamatban — közvetlenül a böngésződben.
-          </p>
-        </div>
-        <div class="flex flex-wrap gap-3">
-          <a href="#workspace" class={buttonVariants({ size: "lg" })}
-            >Képek előkészítése</a
-          >
-          <a
-            href="#hogyan-mukodik"
-            class={buttonVariants({ variant: "ghost", size: "lg" })}
-            >Hogyan működik?</a
-          >
-        </div>
+      <Badge variant="secondary">Folyamatosan bővülő eszköztár</Badge>
+      <div class="flex max-w-4xl flex-col items-center gap-5">
+        <h1
+          class="font-heading text-5xl font-medium tracking-tight text-balance sm:text-6xl lg:text-7xl"
+        >
+          Online eszközök egy helyen.
+        </h1>
+        <p
+          class="text-muted-foreground max-w-2xl text-lg leading-relaxed sm:text-xl"
+        >
+          A Morf egyszerű böngészős eszközöket gyűjt össze képekhez, fájlokhoz,
+          színekhez és online tartalmakhoz. Válassz egy feladatot, és nyisd meg
+          a hozzá tartozó eszközt.
+        </p>
       </div>
-
-      <div class="flex flex-col gap-5 text-sm">
-        <div>
-          <p class="font-medium">A fájljaid az eszközödön maradnak</p>
-          <p class="text-muted-foreground mt-1">
-            Nincs szerveres feltöltés, várakozási sor vagy fájlszámláló.
-          </p>
-        </div>
-        <div>
-          <p class="font-medium">A valódi korlát az eszközöd</p>
-          <p class="text-muted-foreground mt-1">
-            A maximális méretet és sebességet a memória és a teljesítmény
-            határozza meg.
-          </p>
-        </div>
-        <div>
-          <p class="font-medium">JPG, PNG és WebP</p>
-          <p class="text-muted-foreground mt-1">
-            Formátumváltás, aránytartó átméretezés, minőségállítás és
-            ZIP-export.
-          </p>
-        </div>
+      <div class="relative mt-30">
+        <img
+          src={morfPeeking.src}
+          class="absolute w-auto h-30 top-0 left-1/2 right-1/2 -translate-y-full -translate-x-1/2"
+          alt=""
+        />
+        <a href="#eszkozok" class={buttonVariants({ size: "lg" })}>
+          Elérhető eszközök megtekintése
+        </a>
       </div>
     </section>
-
-    <ImageWorkspace client:load />
 
     <section
-      id="hogyan-mukodik"
-      class="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-20 sm:px-6 lg:px-8"
+      id="eszkozok"
+      aria-labelledby="eszkozok-title"
+      class="mx-auto flex w-full max-w-5xl scroll-mt-6 flex-col gap-8 px-4 py-16 sm:px-6 lg:px-8 lg:py-20"
     >
-      <div class="max-w-2xl">
-        <p class="text-muted-foreground text-sm font-medium">Három lépés</p>
+      <header
+        class="mx-auto flex max-w-2xl flex-col items-center gap-3 text-center"
+      >
+        <p class="text-muted-foreground text-sm font-medium">
+          Jelenleg elérhető
+        </p>
         <h2
-          class="font-heading mt-2 text-3xl font-medium tracking-tight sm:text-4xl"
+          id="eszkozok-title"
+          class="font-heading text-3xl font-medium tracking-tight sm:text-4xl"
         >
-          A technikai részleteket Morf intézi
+          Válassz egy eszközt
         </h2>
+        <p class="text-muted-foreground leading-relaxed">
+          Ezek az eszközök már használhatók. A Morf később további
+          konvertálókkal, generátorokkal és online segédletekkel bővül.
+        </p>
+      </header>
+
+      <div class="grid gap-5 md:grid-cols-2">
+        {
+          tools.map((tool) => (
+            <Card>
+              <CardHeader>
+                <div class="mb-4 flex items-start justify-between gap-4">
+                  <span
+                    class="morf-soft-secondary text-secondary-foreground inline-flex size-12 items-center justify-center rounded-3xl"
+                    aria-hidden="true"
+                  >
+                    <HugeiconsIcon
+                      icon={tool.icon}
+                      strokeWidth={1.8}
+                      className="size-6"
+                    />
+                  </span>
+                  <Badge variant="outline">{tool.badge}</Badge>
+                </div>
+                <CardTitle>
+                  <h3>{tool.title}</h3>
+                </CardTitle>
+                <CardDescription>{tool.description}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul class="text-muted-foreground flex flex-col gap-2 text-sm">
+                  {tool.features.map((feature) => (
+                    <li class="flex items-center gap-2">
+                      <span class="bg-primary size-1.5 shrink-0 rounded-full" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+              <CardFooter>
+                <a
+                  href={tool.href}
+                  class={buttonVariants({ variant: "outline" })}
+                >
+                  {tool.cta}
+                  <HugeiconsIcon
+                    icon={ArrowRight02Icon}
+                    strokeWidth={1.8}
+                    data-icon="inline-end"
+                  />
+                </a>
+              </CardFooter>
+            </Card>
+          ))
+        }
       </div>
-      <ol class="grid gap-8 md:grid-cols-3">
-        <li class="flex flex-col gap-3">
-          <Badge variant="outline">01</Badge>
-          <h3 class="font-heading text-xl font-medium">Add hozzá a képeket</h3>
-          <p class="text-muted-foreground">
-            Húzd be vagy válaszd ki a JPG, PNG és WebP állóképeket. A tényleges
-            formátumot a fájl tartalmából ellenőrizzük.
-          </p>
-        </li>
-        <li class="flex flex-col gap-3">
-          <Badge variant="outline">02</Badge>
-          <h3 class="font-heading text-xl font-medium">
-            Válassz felhasználási célt
-          </h3>
-          <p class="text-muted-foreground">
-            Indulj weboldal-, webshop-, közösségi média- vagy e-mail presetből,
-            majd finomítsd a beállításokat.
-          </p>
-        </li>
-        <li class="flex flex-col gap-3">
-          <Badge variant="outline">03</Badge>
-          <h3 class="font-heading text-xl font-medium">
-            Töltsd le az eredményt
-          </h3>
-          <p class="text-muted-foreground">
-            Mentsd el a képeket egyenként vagy egy ütközésmentes nevű
-            ZIP-csomagban.
-          </p>
-        </li>
-      </ol>
     </section>
 
-    <PrivacySection
-      title="A kiválasztott fájlok nem kerülnek feltöltésre"
-      items={privacyItems}
-    />
-
-    <FaqSection
-      title="Amit érdemes tudni"
-      description="Rövid válaszok a helyi feldolgozásról, a fájlméretekről és a támogatott képtípusokról."
-      items={faqItems}
-    />
+    <section
+      class="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16"
+    >
+      <div
+        class="morf-inset-panel flex flex-col gap-4 rounded-4xl p-6 sm:flex-row sm:items-center sm:gap-5 sm:p-8 relative"
+      >
+        <img
+          src={morfPeeking3.src}
+          class="absolute -right-[0.45%] bottom-px max-h-45 md:max-h-50 lg:max-h-60 h-[125%] rounded-br-[32px]"
+          alt=""
+        />
+        <span
+          class="morf-soft-secondary text-secondary-foreground inline-flex size-11 shrink-0 items-center justify-center rounded-3xl"
+          aria-hidden="true"
+        >
+          <HugeiconsIcon
+            icon={ShieldKeyIcon}
+            strokeWidth={1.8}
+            className="size-5"
+          />
+        </span>
+        <div class="flex flex-col gap-1 max-w-[82%] sm:max-w-[72%]">
+          <h2 class="font-heading text-xl font-medium">
+            A jelenlegi fájleszközök helyben dolgoznak
+          </h2>
+          <p class="text-muted-foreground text-pretty leading-relaxed">
+            A képkonvertáló és a favicon generátor a feldolgozást a böngésződben
+            végzi. Nincs szerveres képfeltöltés, regisztráció vagy napi
+            fájllimit.
+          </p>
+        </div>
+      </div>
+    </section>
   </main>
 
-  <footer
-    class="text-muted-foreground mx-auto flex w-full max-w-7xl flex-col justify-between gap-3 px-4 py-8 text-sm sm:flex-row sm:px-6 lg:px-8"
-  >
-    <p>© {new Date().getFullYear()} Morf</p>
-    <p>Készítette: Paládi Webfejlesztés / Paládi Bálint</p>
-  </footer>
+  <SiteFooter />
 </MainLayout>

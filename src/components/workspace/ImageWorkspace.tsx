@@ -6,7 +6,6 @@ import {
   FileZipIcon,
   FolderDownloadIcon,
   FolderOpenIcon,
-  ImageUpload01Icon,
   PlayIcon,
   SecurityCheckIcon,
 } from "@hugeicons/core-free-icons";
@@ -29,6 +28,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { FileUploadDropzone } from "@/components/upload/FileUploadDropzone";
 import { FileJobCard } from "@/components/workspace/FileJobCard";
 import { WorkspaceSettings } from "@/components/workspace/WorkspaceSettings";
 import { createProcessingError } from "@/features/image-processing/errors";
@@ -511,45 +511,25 @@ export default function ImageWorkspace() {
       ))}
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(20rem,0.75fr)]">
-        <Card
-          {...getRootProps({ role: "region" })}
-          className="min-h-80 justify-center"
-          aria-label="Képfájlok hozzáadása"
-        >
-          <CardHeader className="text-center">
-            <CardTitle>
-              {isDragActive ? "Engedd el a képeket" : "Dobd ide a képeket"}
-            </CardTitle>
-            <CardDescription>
-              JPG, PNG és WebP állóképek · több fájlt is választhatsz
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex justify-center">
-            <input
-              {...getInputProps({
-                accept: "image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp",
-              })}
-            />
-            <Button
-              type="button"
-              size="lg"
-              disabled={isBatchActive}
-              onClick={open}
-            >
-              <HugeiconsIcon
-                icon={ImageUpload01Icon}
-                strokeWidth={2}
-                data-icon="inline-start"
-                aria-hidden="true"
-              />
-              Képek kiválasztása
-            </Button>
-          </CardContent>
-          <CardFooter className="text-muted-foreground justify-center text-center text-sm">
-            A biztonságos méretkorlátot az eszköztípus és a rendelkezésre álló
-            memória alapján állítjuk be.
-          </CardFooter>
-        </Card>
+        <div>
+          <input
+            {...getInputProps({
+              accept: "image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp",
+            })}
+            className="sr-only"
+            aria-label="Konvertálandó képek kiválasztása"
+          />
+          <FileUploadDropzone
+            getRootProps={getRootProps}
+            isDragActive={isDragActive}
+            onBrowse={open}
+            title="Húzd ide a képeket"
+            activeTitle="Engedd el a képeket"
+            description="JPG, PNG vagy WebP állóképek · több fájlt is választhatsz"
+            buttonLabel="Képek kiválasztása"
+            disabled={isBatchActive}
+          />
+        </div>
 
         <Card>
           <CardHeader>

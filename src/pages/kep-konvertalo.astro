@@ -1,0 +1,170 @@
+---
+import ImageWorkspace from "@/components/workspace/ImageWorkspace";
+import SiteFooter from "@/components/layout/SiteFooter.astro";
+import SiteHeader from "@/components/layout/SiteHeader.astro";
+import FaqSection from "@/components/sections/FaqSection.astro";
+import PrivacySection from "@/components/sections/PrivacySection.astro";
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import MainLayout from "@/layouts/main.astro";
+
+const privacyItems = [
+  "A kép dekódolása, az EXIF-orientáció alkalmazása, az átméretezés és a kiválasztott formátumba kódolás külön Web Workerben fut a saját böngésződben.",
+  "A preview-khoz ideiglenes Blob URL-ek készülnek. Ezeket Morf felszabadítja, amikor eltávolítod a fájlt vagy elhagyod az oldalt.",
+  "Nincs regisztráció, napi limit, fájlhoz kapcsolt analitika vagy szerveres képfeltöltés az aktív munkafelületen.",
+];
+
+const faqItems = [
+  {
+    question: "Valóban nem töltődnek fel a képek?",
+    answer:
+      "Igen. A kiválasztott fájlok feldolgozása a böngésződben történik, Morf szerverére nem kerülnek fel.",
+  },
+  {
+    question: "Milyen formátumok között konvertálhatok?",
+    answer:
+      "JPG, PNG és WebP állóképeket adhatsz hozzá, a kimenet pedig JPG, PNG vagy WebP lehet. A Morf a fájl tényleges tartalmát is ellenőrzi, nem csak a kiterjesztését.",
+  },
+  {
+    question: "Mi történik az átlátszó háttérrel JPG konvertáláskor?",
+    answer:
+      "A JPG nem támogatja az átlátszóságot, ezért az átlátszó képpontok hátteret kapnak. Ha meg szeretnéd tartani az átlátszóságot, válassz PNG vagy WebP kimenetet.",
+  },
+  {
+    question: "Mekkora képet konvertálhatok?",
+    answer:
+      "Nincs napi limit vagy fájlszámláló, de a biztonságos fájlméretet az eszközöd memóriája és teljesítménye korlátozza. Mobilon Morf konzervatívabb határt használ.",
+  },
+  {
+    question: "Az animált képek megőrzik az animációt?",
+    answer:
+      "Nem. Az első verzió állóképekhez készült, animációmegőrzést nem ígér.",
+  },
+];
+---
+
+<MainLayout
+  title="Képkonvertáló – JPG, PNG és WebP | Morf"
+  description="Konvertálj több JPG, PNG vagy WebP képet egyszerre, állítsd be a méretet és a minőséget, majd mentsd egyenként vagy ZIP-ben. Feltöltés nélkül."
+>
+  <SiteHeader
+    active="converter"
+    actionHref="#workspace"
+    actionLabel="Konvertáló megnyitása"
+    actionShortLabel="Megnyitás"
+  />
+
+  <main>
+    <section
+      class="mx-auto grid w-full max-w-7xl gap-10 px-4 pt-16 pb-14 sm:px-6 sm:pt-24 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)] lg:items-end lg:px-8 lg:pt-32 lg:pb-20"
+    >
+      <div class="flex flex-col items-start gap-6">
+        <Badge variant="secondary">JPG · PNG · WebP</Badge>
+        <div class="flex flex-col gap-4">
+          <h1
+            class="font-heading max-w-4xl text-5xl font-medium tracking-tight text-balance sm:text-6xl lg:text-7xl"
+          >
+            Konvertálj több képet egyszerre.
+          </h1>
+          <p
+            class="text-muted-foreground max-w-2xl text-lg leading-relaxed sm:text-xl"
+          >
+            Válaszd ki a kimeneti formátumot, a méretet és a minőséget. A Morf a
+            képeket közvetlenül a böngésződben alakítja át.
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <a href="#workspace" class={buttonVariants({ size: "lg" })}
+            >Képek konvertálása</a
+          >
+          <a
+            href="#hogyan-mukodik"
+            class={buttonVariants({ variant: "ghost", size: "lg" })}
+            >Hogyan működik?</a
+          >
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-5 text-sm">
+        <div>
+          <p class="font-medium">Egyszerre több fájl</p>
+          <p class="text-muted-foreground mt-1">
+            Azonos beállításokkal egy egész képsorozatot is átalakíthatsz.
+          </p>
+        </div>
+        <div>
+          <p class="font-medium">Méret és minőség egy helyen</p>
+          <p class="text-muted-foreground mt-1">
+            Konvertálás közben aránytartó átméretezést és tömörítést is
+            beállíthatsz.
+          </p>
+        </div>
+        <div>
+          <p class="font-medium">Rugalmas mentés</p>
+          <p class="text-muted-foreground mt-1">
+            Mentsd az eredményeket egyenként, kiválasztott helyre vagy egyetlen
+            ZIP-fájlba.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <ImageWorkspace client:load />
+
+    <section
+      id="hogyan-mukodik"
+      class="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-20 sm:px-6 lg:px-8"
+    >
+      <div class="max-w-2xl">
+        <p class="text-muted-foreground text-sm font-medium">Három lépés</p>
+        <h2
+          class="font-heading mt-2 text-3xl font-medium tracking-tight sm:text-4xl"
+        >
+          Három lépés a kész képekig
+        </h2>
+      </div>
+      <ol class="grid gap-8 md:grid-cols-3">
+        <li class="flex flex-col gap-3">
+          <Badge variant="outline">01</Badge>
+          <h3 class="font-heading text-xl font-medium">Add hozzá a képeket</h3>
+          <p class="text-muted-foreground">
+            Húzd be vagy válaszd ki a JPG, PNG és WebP állóképeket. A fájlokat
+            feldolgozás előtt át is nevezheted.
+          </p>
+        </li>
+        <li class="flex flex-col gap-3">
+          <Badge variant="outline">02</Badge>
+          <h3 class="font-heading text-xl font-medium">
+            Állítsd be a kimenetet
+          </h3>
+          <p class="text-muted-foreground">
+            Válassz célformátumot vagy felhasználási presetet, majd add meg a
+            kívánt méretet és minőséget.
+          </p>
+        </li>
+        <li class="flex flex-col gap-3">
+          <Badge variant="outline">03</Badge>
+          <h3 class="font-heading text-xl font-medium">Konvertálj és ments</h3>
+          <p class="text-muted-foreground">
+            Indítsd el a konvertálást, majd mentsd a fájlokat egyenként vagy egy
+            ütközésmentes nevű ZIP-csomagban.
+          </p>
+        </li>
+      </ol>
+    </section>
+
+    <PrivacySection
+      title="A konvertálás a böngésződben történik"
+      description="A kiválasztott képek nem kerülnek a Morf szerverére: a beolvasás, az átméretezés és az új fájl elkészítése is a saját eszközödön fut."
+      items={privacyItems}
+    />
+
+    <FaqSection
+      title="Képkonvertálás, röviden"
+      description="Válaszok a támogatott formátumokról, az átlátszóságról, a fájlméretről és a helyi feldolgozásról."
+      items={faqItems}
+    />
+  </main>
+
+  <SiteFooter />
+</MainLayout>

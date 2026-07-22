@@ -6,7 +6,6 @@ import {
   FileImageIcon,
   ImageUploadIcon,
   InformationCircleIcon,
-  LockKeyIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useDropzone } from "react-dropzone";
@@ -18,6 +17,7 @@ import {
 import { FaviconExportPanel } from "@/components/favicon/FaviconExportPanel";
 import { FaviconPreviews } from "@/components/favicon/FaviconPreviews";
 import { FaviconSettings } from "@/components/favicon/FaviconSettings";
+import { FileUploadDropzone } from "@/components/upload/FileUploadDropzone";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -57,7 +57,6 @@ import {
   saveFileAs,
   saveGeneratedFileAs,
 } from "@/lib/downloads";
-import { cn } from "@/lib/utils";
 
 interface PreviewUrls {
   standard?: string;
@@ -485,57 +484,19 @@ export default function FaviconWorkspace() {
       </div>
 
       {!source ? (
-        <Card>
-          <CardContent>
-            <div
-              {...getRootProps()}
-              className={cn(
-                "morf-dropzone flex min-h-80 flex-col items-center justify-center gap-5 rounded-4xl border border-dashed p-8 text-center transition-all",
-                isDragActive
-                  ? "border-primary bg-primary/10"
-                  : "border-border/80",
-              )}
-            >
-              <span className="morf-icon-orb flex size-16 items-center justify-center rounded-3xl text-secondary-foreground">
-                <HugeiconsIcon
-                  icon={ImageUploadIcon}
-                  className="size-7"
-                  strokeWidth={1.8}
-                />
-              </span>
-              <div className="flex max-w-xl flex-col gap-2">
-                <h3 className="font-heading text-xl font-medium">
-                  Húzd ide a logót vagy ikont
-                </h3>
-                <p className="text-muted-foreground">
-                  PNG, JPG, WebP vagy biztonságosan megtisztítható SVG ·
-                  legfeljebb 20 MB · ajánlott 1024 × 1024 px
-                </p>
-              </div>
-              <Button
-                type="button"
-                size="lg"
-                disabled={loadingSource}
-                onClick={open}
-              >
-                <HugeiconsIcon
-                  icon={ImageUploadIcon}
-                  data-icon="inline-start"
-                  strokeWidth={2}
-                />
-                {loadingSource ? "Kép ellenőrzése" : "Kép kiválasztása"}
-              </Button>
-              <p className="text-muted-foreground flex items-center gap-2 text-xs">
-                <HugeiconsIcon
-                  icon={LockKeyIcon}
-                  className="size-4"
-                  strokeWidth={2}
-                />
-                A fájl nem hagyja el az eszközödet.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <FileUploadDropzone
+          getRootProps={getRootProps}
+          isDragActive={isDragActive}
+          onBrowse={open}
+          title="Húzd ide a logót vagy ikont"
+          activeTitle="Engedd el a képet"
+          description="PNG, JPG, WebP vagy biztonságosan megtisztítható SVG · legfeljebb 20 MB · ajánlott 1024 × 1024 px"
+          buttonLabel="Kép kiválasztása"
+          busyLabel="Kép ellenőrzése"
+          busy={loadingSource}
+          disabled={generating}
+          privacyNote="A fájl nem hagyja el az eszközödet."
+        />
       ) : (
         <>
           <Card size="sm">

@@ -1,5 +1,7 @@
 ---
 import FaviconWorkspace from "@/components/favicon/FaviconWorkspace";
+import SiteFooter from "@/components/layout/SiteFooter.astro";
+import SiteHeader from "@/components/layout/SiteHeader.astro";
 import FaviconPackageGuide from "@/components/sections/FaviconPackageGuide.astro";
 import FaqSection from "@/components/sections/FaqSection.astro";
 import PrivacySection from "@/components/sections/PrivacySection.astro";
@@ -42,33 +44,12 @@ const faqItems = [
   title="Favicon és appikon generátor – Morf"
   description="Készíts egy képből többméretes favicon.ico, PNG, Apple Touch és PWA maskable ikoncsomagot közvetlenül a böngésződben."
 >
-  <header>
-    <nav
-      class="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-5 sm:px-6 lg:px-8"
-      aria-label="Fő navigáció"
-    >
-      <a href="/" class="flex items-center gap-3" aria-label="Morf kezdőlap">
-        <img src="/favicon.svg" alt="" class="size-8" />
-        <span class="font-heading text-xl font-medium">Morf</span>
-      </a>
-      <div class="flex items-center gap-2">
-        <a
-          href="/"
-          class:list={[
-            buttonVariants({ variant: "ghost", size: "sm" }),
-            "hidden sm:inline-flex",
-          ]}>Képkonvertáló</a
-        >
-        <a
-          href="#favicon-workspace"
-          class={buttonVariants({ variant: "outline", size: "sm" })}
-          ><span class="sm:hidden">Megnyitás</span><span
-            class="hidden sm:inline">Generátor megnyitása</span
-          ></a
-        >
-      </div>
-    </nav>
-  </header>
+  <SiteHeader
+    active="favicon"
+    actionHref="#favicon-workspace"
+    actionLabel="Generátor megnyitása"
+    actionShortLabel="Megnyitás"
+  />
 
   <main>
     <section
@@ -136,10 +117,5 @@ const faqItems = [
     />
   </main>
 
-  <footer
-    class="text-muted-foreground mx-auto flex w-full max-w-7xl flex-col justify-between gap-3 px-4 py-8 text-sm sm:flex-row sm:px-6 lg:px-8"
-  >
-    <p>© {new Date().getFullYear()} Morf</p>
-    <p>Készítette: Paládi Webfejlesztés / Paládi Bálint</p>
-  </footer>
+  <SiteFooter />
 </MainLayout>
