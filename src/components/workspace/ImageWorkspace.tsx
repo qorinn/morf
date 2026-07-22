@@ -100,9 +100,7 @@ export default function ImageWorkspace() {
   const retryJob = useWorkspaceStore((state) => state.retryJob);
   const removeJob = useWorkspaceStore((state) => state.removeJob);
   const clearJobs = useWorkspaceStore((state) => state.clearJobs);
-  const outputFormat = useWorkspaceStore(
-    (state) => state.settings.outputFormat,
-  );
+  const settings = useWorkspaceStore((state) => state.settings);
   const [dropErrors, setDropErrors] = useState<DropError[]>([]);
   const [workspaceError, setWorkspaceError] = useState<string>();
   const [isBatchActive, setIsBatchActive] = useState(false);
@@ -178,17 +176,20 @@ export default function ImageWorkspace() {
         return;
       }
 
-      const handle = createImageWorker();
-      activeWorkers.current.set(job.id, handle.worker);
-      setJobStatus(job.id, "loading-engine", 2);
-
-      const cancellation = new Promise<never>((_, reject) => {
-        cancelRejectors.current.set(job.id, () =>
-          reject(new DOMException("A feldolgozás megszakítva.", "AbortError")),
-        );
-      });
+      let handle: ReturnType<typeof createImageWorker> | undefined;
 
       try {
+        handle = createImageWorker();
+        activeWorkers.current.set(job.id, handle.worker);
+        setJobStatus(job.id, "loading-engine", 2);
+
+        const cancellation = new Promise<never>((_, reject) => {
+          cancelRejectors.current.set(job.id, () =>
+            reject(
+              new DOMException("A feldolgozás megszakítva.", "AbortError"),
+            ),
+          );
+        });
         const buffer = await job.file.arrayBuffer();
         const request = transfer(
           {
@@ -236,7 +237,7 @@ export default function ImageWorkspace() {
           failJob(job.id, createProcessingError(error));
         }
       } finally {
-        handle.worker.terminate();
+        handle?.worker.terminate();
         activeWorkers.current.delete(job.id);
         cancelRejectors.current.delete(job.id);
         cancelledJobs.current.delete(job.id);
@@ -301,6 +302,13 @@ export default function ImageWorkspace() {
       cancelRejectors.current.get(id)?.();
     },
     [setJobStatus],
+  );
+
+  const updateJobDimensions = useCallback(
+    (id: string, width: number, height: number) => {
+      updateJob(id, { originalWidth: width, originalHeight: height });
+    },
+    [updateJob],
   );
 
   const runSaveAction = useCallback(
@@ -655,10 +663,11 @@ export default function ImageWorkspace() {
               <FileJobCard
                 key={job.id}
                 job={job}
-                outputFormat={outputFormat}
+                estimateSettings={settings}
                 canSaveAs={saveCapabilities.file}
                 isSaving={Boolean(activeSaveAction)}
                 onCancel={cancelJob}
+                onDimensions={updateJobDimensions}
                 onDownload={downloadOne}
                 onRename={renameJob}
                 onRetry={retryJob}

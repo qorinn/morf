@@ -25,11 +25,11 @@ import {
   ProgressLabel,
   ProgressValue,
 } from "@/components/ui/progress";
-import type {
-  FileJob,
-  FileJobStatus,
-  ImageFormat,
-} from "@/features/image-processing/types";
+import {
+  estimateImageOutputSize,
+  type ImageSizeEstimateOptions,
+} from "@/features/image-processing/estimate-output-size";
+import type { FileJob, FileJobStatus } from "@/features/image-processing/types";
 import {
   calculateSaving,
   createOutputFileNameFromBase,
@@ -38,10 +38,14 @@ import {
 
 type FileJobCardProps = {
   job: FileJob;
-  outputFormat: ImageFormat;
+  estimateSettings: Pick<
+    ImageSizeEstimateOptions,
+    "outputFormat" | "maxWidth" | "maxHeight" | "quality"
+  >;
   canSaveAs: boolean;
   isSaving: boolean;
   onCancel: (id: string) => void;
+  onDimensions: (id: string, width: number, height: number) => void;
   onDownload: (job: FileJob) => void;
   onRename: (id: string, outputBaseName: string) => void;
   onRetry: (id: string) => void;
@@ -76,10 +80,11 @@ function getBadgeVariant(status: FileJobStatus) {
 
 export function FileJobCard({
   job,
-  outputFormat,
+  estimateSettings,
   canSaveAs,
   isSaving,
   onCancel,
+  onDimensions,
   onDownload,
   onRename,
   onRetry,
@@ -89,8 +94,18 @@ export function FileJobCard({
   const isActive = activeStatuses.includes(job.status);
   const outputFileName = createOutputFileNameFromBase(
     job.outputBaseName,
-    job.result?.format ?? outputFormat,
+    job.result?.format ?? estimateSettings.outputFormat,
   );
+  const estimatedResult =
+    job.originalWidth && job.originalHeight
+      ? estimateImageOutputSize({
+          sourceSize: job.file.size,
+          sourceFormat: job.inputFormat,
+          width: job.originalWidth,
+          height: job.originalHeight,
+          ...estimateSettings,
+        })
+      : undefined;
   const saving = job.result
     ? calculateSaving(job.file.size, job.result.size)
     : undefined;
@@ -103,6 +118,17 @@ export function FileJobCard({
             src={job.previewUrl}
             alt=""
             className="bg-muted size-14 shrink-0 rounded-2xl object-cover"
+            onLoad={(event) => {
+              const { naturalWidth, naturalHeight } = event.currentTarget;
+              if (
+                naturalWidth > 0 &&
+                naturalHeight > 0 &&
+                (naturalWidth !== job.originalWidth ||
+                  naturalHeight !== job.originalHeight)
+              ) {
+                onDimensions(job.id, naturalWidth, naturalHeight);
+              }
+            }}
           />
           <div className="min-w-0">
             <CardTitle className="truncate">{job.file.name}</CardTitle>
@@ -145,6 +171,15 @@ export function FileJobCard({
             <ProgressLabel>{statusLabels[job.status]}</ProgressLabel>
             <ProgressValue />
           </Progress>
+        )}
+
+        {!job.result && estimatedResult && (
+          <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+            <div>
+              <dt className="text-muted-foreground">Várható új méret</dt>
+              <dd>≈ {formatBytes(estimatedResult.bytes)}</dd>
+            </div>
+          </dl>
         )}
 
         {job.result && (
