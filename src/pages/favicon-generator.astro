@@ -1,0 +1,145 @@
+---
+import FaviconWorkspace from "@/components/favicon/FaviconWorkspace";
+import FaviconPackageGuide from "@/components/sections/FaviconPackageGuide.astro";
+import FaqSection from "@/components/sections/FaqSection.astro";
+import PrivacySection from "@/components/sections/PrivacySection.astro";
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import MainLayout from "@/layouts/main.astro";
+
+const privacyItems = [
+  "A forráskép ellenőrzése, szerkesztése és minden exportfájl generálása a saját böngésződben történik.",
+  "Az SVG-kből eltávolítjuk a futtatható kódot, eseménykezelőket és külső erőforrásokat, mielőtt előnézet vagy export készülne.",
+  "Az átméretezés, a PNG-kódolás, az ICO összeállítása és a ZIP létrehozása külön Web Workerben fut.",
+];
+
+const faqItems = [
+  {
+    question: "Milyen képből lesz jó favicon?",
+    answer:
+      "Egyszerű, négyzetes, erős kontrasztú grafikát használj. Az 1024 × 1024 px-es forrás ideális; 512 px alatt Morf figyelmeztet, mert a nagy PWA-ikon lágyabb lehet.",
+  },
+  {
+    question: "Az SVG megmarad vektorosnak?",
+    answer:
+      "Igen, ha SVG-t töltesz fel, a csomag a biztonságosan megtisztított SVG-t is tartalmazza. Raszteres képből Morf nem készít ál-vektoros fájlt.",
+  },
+  {
+    question: "Mi van a favicon.ico fájlban?",
+    answer:
+      "Egy szabványos ICO-konténer, benne külön 16 × 16, 32 × 32 és 48 × 48 pixeles PNG frame-ekkel.",
+  },
+  {
+    question: "Miért különbözik a maskable ikon?",
+    answer:
+      "Az Android többféle alakra maszkolhatja az appikont. A külön, nagyobb safe-zone-nal és teljes háttérrel készített változat segít elkerülni a fontos részek levágását.",
+  },
+];
+---
+
+<MainLayout
+  title="Favicon és appikon generátor – Morf"
+  description="Készíts egy képből többméretes favicon.ico, PNG, Apple Touch és PWA maskable ikoncsomagot közvetlenül a böngésződben."
+>
+  <header>
+    <nav
+      class="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-5 sm:px-6 lg:px-8"
+      aria-label="Fő navigáció"
+    >
+      <a href="/" class="flex items-center gap-3" aria-label="Morf kezdőlap">
+        <img src="/favicon.svg" alt="" class="size-8" />
+        <span class="font-heading text-xl font-medium">Morf</span>
+      </a>
+      <div class="flex items-center gap-2">
+        <a
+          href="/"
+          class:list={[
+            buttonVariants({ variant: "ghost", size: "sm" }),
+            "hidden sm:inline-flex",
+          ]}>Képkonvertáló</a
+        >
+        <a
+          href="#favicon-workspace"
+          class={buttonVariants({ variant: "outline", size: "sm" })}
+          ><span class="sm:hidden">Megnyitás</span><span
+            class="hidden sm:inline">Generátor megnyitása</span
+          ></a
+        >
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section
+      class="mx-auto grid w-full max-w-7xl gap-10 px-4 pt-14 pb-12 sm:px-6 sm:pt-22 lg:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.75fr)] lg:items-end lg:px-8 lg:pt-28 lg:pb-18"
+    >
+      <div class="flex flex-col items-start gap-6">
+        <Badge variant="secondary">ICO · PNG · Apple · PWA</Badge>
+        <div class="flex flex-col gap-4">
+          <h1
+            class="font-heading max-w-4xl text-5xl font-medium tracking-tight text-balance sm:text-6xl lg:text-7xl"
+          >
+            Egy ikon. Minden helyre készen.
+          </h1>
+          <p
+            class="text-muted-foreground max-w-2xl text-lg leading-relaxed sm:text-xl"
+          >
+            Vágd négyzetre, ellenőrizd 16 pixelben, és töltsd le a teljes
+            favicon- vagy PWA-csomagot. A képed végig az eszközödön marad.
+          </p>
+        </div>
+        <a href="#favicon-workspace" class={buttonVariants({ size: "lg" })}
+          >Favicon készítése</a
+        >
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <Card size="sm">
+          <CardContent>
+            <p class="font-heading text-3xl font-medium">3×</p>
+            <p class="text-muted-foreground mt-1">méret egy valódi ICO-ban</p>
+          </CardContent>
+        </Card>
+        <Card size="sm">
+          <CardContent>
+            <p class="font-heading text-3xl font-medium">1024</p>
+            <p class="text-muted-foreground mt-1">pixeles belső master</p>
+          </CardContent>
+        </Card>
+        <Card size="sm" className="col-span-2">
+          <CardContent>
+            <p class="font-medium">Maskable safe-zone előnézettel</p>
+            <p class="text-muted-foreground mt-1">
+              Kör és squircle maszk, külön 192 és 512 px-es exporttal.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    </section>
+
+    <FaviconWorkspace client:load />
+
+    <FaviconPackageGuide />
+
+    <PrivacySection
+      eyebrow="Privacy by design"
+      title="A logód nem kerül feltöltésre"
+      description="Morf a teljes ikoncsomagot helyben állítja össze, a szerver csak magát az alkalmazást szolgálja ki."
+      items={privacyItems}
+    />
+
+    <FaqSection
+      title="Favicon kérdések, röviden"
+      description="A forrásképről, az ICO-ról, az SVG-ről és a PWA maskable ikonokról."
+      items={faqItems}
+    />
+  </main>
+
+  <footer
+    class="text-muted-foreground mx-auto flex w-full max-w-7xl flex-col justify-between gap-3 px-4 py-8 text-sm sm:flex-row sm:px-6 lg:px-8"
+  >
+    <p>© {new Date().getFullYear()} Morf</p>
+    <p>Készítette: Paládi Webfejlesztés / Paládi Bálint</p>
+  </footer>
+</MainLayout>

@@ -8,6 +8,11 @@ import { defineConfig } from "astro/config";
 export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
+    resolve: {
+      // A React islandek, a Zustand és a közös UI-csomagok ugyanazt a
+      // React-példányt használják akkor is, ha a Vite újraoptimalizál.
+      dedupe: ["react", "react-dom"],
+    },
     optimizeDeps: {
       // A jSquash WASM modulok import.meta.url alapú codec-betöltését a Vite
       // dependency optimizer dev módban érvénytelen cache URL-re írhatja át.
@@ -16,6 +21,9 @@ export default defineConfig({
         "@jsquash/png",
         "@jsquash/resize",
         "@jsquash/webp",
+        // A Cropper.js csak böngészőben tölthető be, és a Vite elavult
+        // optimize-dep URL-jei megszakíthatják a dinamikus importját.
+        "cropperjs",
       ],
     },
   },
