@@ -29,6 +29,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { RECOMMENDED_SOURCE_DIMENSION } from "@/features/favicon-generator/config";
+import { slugifyProjectName } from "@/features/favicon-generator/package-content";
 import {
   canvasToObjectUrl,
   canvasToRasterPayload,
@@ -54,6 +55,7 @@ import {
   getSaveCapabilities,
   isFilePickerCancellation,
   saveFileAs,
+  saveGeneratedFileAs,
 } from "@/lib/downloads";
 import { cn } from "@/lib/utils";
 
@@ -308,27 +310,14 @@ export default function FaviconWorkspace() {
     if (archive) downloadFile(archive);
   }, [saveableArchive]);
 
-  const saveArchiveAs = useCallback(async () => {
-    const archive = saveableArchive();
-    if (!archive) return;
-    try {
-      await saveFileAs(archive);
-    } catch (error) {
-      if (!isFilePickerCancellation(error)) {
-        setGenerationError(
-          "A ZIP mentése nem sikerült. Próbáld meg a böngészős letöltést.",
-        );
-      }
+  const createArchive = useCallback(async () => {
+    if (!source || generating) {
+      throw new Error("A csomag jelenleg nem készíthető el.");
     }
-  }, [saveableArchive]);
-
-  const generatePackage = useCallback(async () => {
-    if (!source || generating) return;
     if (typeof Worker === "undefined" || typeof WebAssembly === "undefined") {
-      setGenerationError(
+      throw new Error(
         "A böngésződ nem támogatja a szükséges helyi feldolgozást.",
       );
-      return;
     }
 
     setGenerating(true);
@@ -393,18 +382,12 @@ export default function FaviconWorkspace() {
       });
       setResult(generated);
       setArchiveBlob(blob);
-      downloadFile({
+      return {
         blob,
         fileName: generated.archiveName,
         mimeType: "application/zip",
         description: "Favicon ZIP-csomag",
-      });
-    } catch (error) {
-      setGenerationError(
-        error instanceof Error && /ICO/i.test(error.message)
-          ? "A favicon.ico létrehozása sikertelen volt. Ellenőrizd a forrásképet, majd próbáld újra."
-          : "A favicon csomagot nem sikerült elkészíteni. Ellenőrizd a beállításokat, majd próbáld újra.",
-      );
+      };
     } finally {
       workerHandle.worker.terminate();
       setGenerating(false);
@@ -417,6 +400,52 @@ export default function FaviconWorkspace() {
     settings,
     source,
     webAppBackgroundColor,
+  ]);
+
+  const reportGenerationError = useCallback((error: unknown) => {
+    setGenerationError(
+      error instanceof Error && /ICO/i.test(error.message)
+        ? "A favicon.ico létrehozása sikertelen volt. Ellenőrizd a forrásképet, majd próbáld újra."
+        : error instanceof Error && /nem támogatja/i.test(error.message)
+          ? error.message
+          : "A favicon csomagot nem sikerült elkészíteni. Ellenőrizd a beállításokat, majd próbáld újra.",
+    );
+  }, []);
+
+  const generatePackage = useCallback(async () => {
+    try {
+      downloadFile(await createArchive());
+    } catch (error) {
+      reportGenerationError(error);
+    }
+  }, [createArchive, reportGenerationError]);
+
+  const saveArchiveAs = useCallback(async () => {
+    try {
+      const archive = saveableArchive();
+      if (archive) {
+        await saveFileAs(archive);
+        return;
+      }
+
+      await saveGeneratedFileAs(
+        {
+          fileName: `${slugifyProjectName(manifest.projectName)}-favicon-package.zip`,
+          mimeType: "application/zip",
+          description: "Favicon ZIP-csomag",
+        },
+        async () => (await createArchive()).blob,
+      );
+    } catch (error) {
+      if (!isFilePickerCancellation(error)) {
+        reportGenerationError(error);
+      }
+    }
+  }, [
+    createArchive,
+    manifest.projectName,
+    reportGenerationError,
+    saveableArchive,
   ]);
 
   const warnings = source

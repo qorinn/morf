@@ -41,6 +41,8 @@ export type SaveableFile = {
   description?: string;
 };
 
+export type GeneratedSaveableFile = Omit<SaveableFile, "blob">;
+
 const downloadUrlLifetime = 30_000;
 
 function getFileSystemAccessWindow(): FileSystemAccessWindow | undefined {
@@ -187,6 +189,24 @@ export async function saveFileAs(file: SaveableFile): Promise<void> {
   await writeBlobToFile(handle, file.blob);
 }
 
+/**
+ * Aszinkron létrehozandó fájl mentése natív fájlválasztóval.
+ * A célhelyet még a generálás előtt kéri el, így a böngésző megőrzi a
+ * felhasználói kattintáshoz kötött fájlrendszer-engedélyt.
+ */
+export async function saveGeneratedFileAs(
+  file: GeneratedSaveableFile,
+  generateBlob: () => Promise<Blob>,
+): Promise<void> {
+  const handle = await pickFileSaveDestination(
+    sanitizeSaveFileName(file.fileName),
+    file.mimeType || "application/octet-stream",
+    file.description,
+  );
+  const blob = await generateBlob();
+  await writeBlobToFile(handle, blob);
+}
+
 /** Több fájl mentése egy, a felhasználó által kiválasztott mappába. */
 export async function saveFilesToChosenDirectory(
   files: SaveableFile[],
@@ -216,6 +236,20 @@ export async function createZipArchive(files: SaveableFile[]): Promise<Blob> {
 
   return new Blob([zipSync(zipFiles, { level: 0 })], {
     type: "application/zip",
+  });
+}
+
+/** Több fájl ZIP-be csomagolása és böngészős letöltése. */
+export async function downloadFilesAsZip(
+  files: SaveableFile[],
+  archiveName: string,
+): Promise<void> {
+  const archive = await createZipArchive(files);
+  downloadFile({
+    blob: archive,
+    fileName: archiveName,
+    mimeType: "application/zip",
+    description: "ZIP-archívum",
   });
 }
 

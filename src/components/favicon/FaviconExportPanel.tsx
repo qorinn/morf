@@ -301,9 +301,10 @@ export function FaviconExportPanel({
                 }
               />
               <FieldDescription>
-                Ez a HTML kódot rendezi. Annak a mappának vagy URL-útnak az előtagja, ahová az ikonokat
-                másolod. Például <code>/assets/icons/</code> esetén a kód erre a
-                helyre hivatkozik.
+                Ez a HTML kódot rendezi. Annak a mappának vagy URL-útnak az
+                előtagja, ahová az ikonokat másolod. Például{" "}
+                <code>/assets/icons/</code> esetén a kód erre a helyre
+                hivatkozik.
               </FieldDescription>
             </Field>
           </FieldGroup>
@@ -500,27 +501,30 @@ export function FaviconExportPanel({
               ? "Csomag újragenerálása"
               : "Favicon csomag letöltése"}
         </Button>
+        {canSaveAs && (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={generating || !hasExportTarget}
+            onClick={onSaveAs}
+          >
+            <HugeiconsIcon
+              icon={FileDownloadIcon}
+              data-icon="inline-start"
+              strokeWidth={2}
+            />
+            Mentés másként
+          </Button>
+        )}
         {result && (
-          <>
-            <Button type="button" variant="outline" onClick={onDownload}>
-              <HugeiconsIcon
-                icon={Download04Icon}
-                data-icon="inline-start"
-                strokeWidth={2}
-              />
-              ZIP letöltése újra
-            </Button>
-            {canSaveAs && (
-              <Button type="button" variant="outline" onClick={onSaveAs}>
-                <HugeiconsIcon
-                  icon={FileDownloadIcon}
-                  data-icon="inline-start"
-                  strokeWidth={2}
-                />
-                Mentés másként
-              </Button>
-            )}
-          </>
+          <Button type="button" variant="outline" onClick={onDownload}>
+            <HugeiconsIcon
+              icon={Download04Icon}
+              data-icon="inline-start"
+              strokeWidth={2}
+            />
+            ZIP letöltése újra
+          </Button>
         )}
       </CardFooter>
     </Card>

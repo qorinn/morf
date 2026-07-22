@@ -3,6 +3,7 @@ import { proxy, transfer } from "comlink";
 import {
   Delete02Icon,
   Download04Icon,
+  FileZipIcon,
   FolderDownloadIcon,
   FolderOpenIcon,
   ImageUpload01Icon,
@@ -42,6 +43,7 @@ import { createOutputFileNameFromBase } from "@/lib/filenames/image-filenames";
 import {
   downloadFile,
   downloadFiles,
+  downloadFilesAsZip,
   getSaveCapabilities,
   isFilePickerCancellation,
   saveFileAs,
@@ -379,6 +381,13 @@ export default function ImageWorkspace() {
     });
   }, [runSaveAction]);
 
+  const downloadZip = useCallback(() => {
+    void runSaveAction("zip-download", async () => {
+      const files = getCompletedFiles(useWorkspaceStore.getState().jobs);
+      await downloadFilesAsZip(files, "morf-kepek.zip");
+    });
+  }, [runSaveAction]);
+
   const saveZipAs = useCallback(() => {
     void runSaveAction("zip-as", async () => {
       const files = getCompletedFiles(useWorkspaceStore.getState().jobs);
@@ -621,6 +630,22 @@ export default function ImageWorkspace() {
                       Mentés másként
                     </Button>
                   )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={Boolean(activeSaveAction)}
+                    onClick={downloadZip}
+                  >
+                    <HugeiconsIcon
+                      icon={FileZipIcon}
+                      strokeWidth={2}
+                      data-icon="inline-start"
+                      aria-hidden="true"
+                    />
+                    {activeSaveAction === "zip-download"
+                      ? "ZIP készítése…"
+                      : "Mentés ZIP-be"}
+                  </Button>
                   {saveCapabilities.file && (
                     <Button
                       type="button"

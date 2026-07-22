@@ -6,6 +6,7 @@ import {
   createZipArchive,
   makeFileNamesUnique,
   sanitizeSaveFileName,
+  saveGeneratedFileAs,
 } from "./file-saver.ts";
 
 test("az ismétlődő fájlneveket minden workflow számára egyedivé teszi", () => {
@@ -42,4 +43,51 @@ test("tetszőleges Blob fájlokból újrahasználható ZIP-et készít", async (
   assert.deepEqual(Object.keys(files), ["adat.txt", "adat-2.txt"]);
   assert.equal(strFromU8(files["adat.txt"]), "első");
   assert.equal(strFromU8(files["adat-2.txt"]), "második");
+});
+
+test("a mentési helyet az aszinkron fájlgenerálás előtt választja ki", async () => {
+  const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+  const events: string[] = [];
+  let writtenBlob: Blob | undefined;
+
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: {
+      isSecureContext: true,
+      showSaveFilePicker: async () => {
+        events.push("picker");
+        return {
+          createWritable: async () => ({
+            write: async (blob: Blob) => {
+              events.push("write");
+              writtenBlob = blob;
+            },
+            close: async () => undefined,
+          }),
+        };
+      },
+    },
+  });
+
+  try {
+    await saveGeneratedFileAs(
+      {
+        fileName: "ikonok.zip",
+        mimeType: "application/zip",
+      },
+      async () => {
+        events.push("generate");
+        return new Blob(["morf"], { type: "application/zip" });
+      },
+    );
+  } finally {
+    if (originalWindow) {
+      Object.defineProperty(globalThis, "window", originalWindow);
+    } else {
+      Reflect.deleteProperty(globalThis, "window");
+    }
+  }
+
+  assert.deepEqual(events, ["picker", "generate", "write"]);
+  assert.equal(await writtenBlob?.text(), "morf");
 });
