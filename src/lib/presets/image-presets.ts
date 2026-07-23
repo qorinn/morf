@@ -3,7 +3,7 @@ import { z } from "zod";
 export const imageRecipeSchema = z.object({
   schemaVersion: z.literal(1),
   name: z.string().min(1).max(80),
-  outputFormat: z.enum(["jpeg", "png", "webp"]),
+  outputFormat: z.enum(["jpeg", "png", "webp", "avif"]),
   resize: z.object({
     maxWidth: z.number().int().positive().max(12_000).optional(),
     maxHeight: z.number().int().positive().max(12_000).optional(),

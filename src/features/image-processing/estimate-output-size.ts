@@ -1,9 +1,9 @@
 import { calculateContainedDimensions } from "./dimensions.ts";
-import type { ImageFormat } from "./types.ts";
+import type { ImageFormat, InputImageFormat } from "./types.ts";
 
 export type ImageSizeEstimateOptions = {
   sourceSize: number;
-  sourceFormat: ImageFormat;
+  sourceFormat: InputImageFormat;
   outputFormat: ImageFormat;
   width: number;
   height: number;
@@ -18,10 +18,12 @@ export type ImageSizeEstimate = {
   height: number;
 };
 
-const formatFactors: Record<ImageFormat, Record<ImageFormat, number>> = {
-  jpeg: { jpeg: 1, png: 2.2, webp: 0.78 },
-  png: { jpeg: 0.45, png: 0.95, webp: 0.55 },
-  webp: { jpeg: 1.2, png: 2, webp: 0.95 },
+const formatFactors: Record<InputImageFormat, Record<ImageFormat, number>> = {
+  jpeg: { jpeg: 1, png: 2.2, webp: 0.78, avif: 0.62 },
+  png: { jpeg: 0.45, png: 0.95, webp: 0.55, avif: 0.42 },
+  webp: { jpeg: 1.2, png: 2, webp: 0.95, avif: 0.7 },
+  avif: { jpeg: 1.35, png: 2.4, webp: 1.15, avif: 0.95 },
+  heic: { jpeg: 1.3, png: 2.5, webp: 1.1, avif: 0.9 },
 };
 
 function getQualityFactor(format: ImageFormat, quality: number): number {

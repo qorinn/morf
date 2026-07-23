@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
+import decodeAvif, { init as initAvifDecoder } from "@jsquash/avif/decode.js";
+import encodeAvif, { init as initAvifEncoder } from "@jsquash/avif/encode.js";
 import decodeJpeg, { init as initJpegDecoder } from "@jsquash/jpeg/decode.js";
 import encodeJpeg, { init as initJpegEncoder } from "@jsquash/jpeg/encode.js";
 import decodePng, { init as initPngDecoder } from "@jsquash/png/decode.js";
@@ -40,16 +42,27 @@ test("JPEG és PNG forrásból átméretezett WebP készül", async () => {
   const webpWasmPath = (await simd())
     ? "./codec/enc/webp_enc_simd.wasm"
     : "./codec/enc/webp_enc.wasm";
-  const [jpegEncoder, jpegDecoder, pngCodec, resizeCodec, webpEncoder] =
-    await Promise.all([
-      compileWasm("@jsquash/jpeg/encode.js", "./codec/enc/mozjpeg_enc.wasm"),
-      compileWasm("@jsquash/jpeg/decode.js", "./codec/dec/mozjpeg_dec.wasm"),
-      compileWasm("@jsquash/png/encode.js", "./codec/pkg/squoosh_png_bg.wasm"),
-      compileWasm("@jsquash/resize", "./lib/resize/pkg/squoosh_resize_bg.wasm"),
-      compileWasm("@jsquash/webp/encode.js", webpWasmPath),
-    ]);
+  const [
+    avifEncoder,
+    avifDecoder,
+    jpegEncoder,
+    jpegDecoder,
+    pngCodec,
+    resizeCodec,
+    webpEncoder,
+  ] = await Promise.all([
+    compileWasm("@jsquash/avif/encode.js", "./codec/enc/avif_enc.wasm"),
+    compileWasm("@jsquash/avif/decode.js", "./codec/dec/avif_dec.wasm"),
+    compileWasm("@jsquash/jpeg/encode.js", "./codec/enc/mozjpeg_enc.wasm"),
+    compileWasm("@jsquash/jpeg/decode.js", "./codec/dec/mozjpeg_dec.wasm"),
+    compileWasm("@jsquash/png/encode.js", "./codec/pkg/squoosh_png_bg.wasm"),
+    compileWasm("@jsquash/resize", "./lib/resize/pkg/squoosh_resize_bg.wasm"),
+    compileWasm("@jsquash/webp/encode.js", webpWasmPath),
+  ]);
 
   await Promise.all([
+    (initAvifEncoder as EmscriptenInitializer)(avifEncoder),
+    (initAvifDecoder as EmscriptenInitializer)(avifDecoder),
     (initJpegEncoder as EmscriptenInitializer)(jpegEncoder),
     (initJpegDecoder as EmscriptenInitializer)(jpegDecoder),
     initPngEncoder(pngCodec),
@@ -85,4 +98,17 @@ test("JPEG és PNG forrásból átméretezett WebP készül", async () => {
   assert.ok(webpBuffer.byteLength > 0);
   assert.equal(String.fromCharCode(...header.slice(0, 4)), "RIFF");
   assert.equal(String.fromCharCode(...header.slice(8, 12)), "WEBP");
+
+  const avifBuffer = await encodeAvif(resized, {
+    quality: 70,
+    qualityAlpha: 70,
+    speed: 8,
+  });
+  const decodedAvif = await decodeAvif(avifBuffer);
+  const avifHeader = new Uint8Array(avifBuffer.slice(4, 12));
+
+  assert.ok(avifBuffer.byteLength > 0);
+  assert.equal(String.fromCharCode(...avifHeader), "ftypavif");
+  assert.equal(decodedAvif?.width, 4);
+  assert.equal(decodedAvif?.height, 3);
 });

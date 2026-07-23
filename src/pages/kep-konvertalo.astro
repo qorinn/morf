@@ -23,12 +23,12 @@ const faqItems = [
   {
     question: "Milyen formátumok között konvertálhatok?",
     answer:
-      "JPG, PNG és WebP állóképeket adhatsz hozzá, a kimenet pedig JPG, PNG vagy WebP lehet. A Morf a fájl tényleges tartalmát is ellenőrzi, nem csak a kiterjesztését.",
+      "JPG, PNG, WebP, AVIF és HEIC/HEIF állóképeket adhatsz hozzá, a kimenet pedig JPG, PNG, WebP vagy AVIF lehet. A Morf a fájl tényleges tartalmát is ellenőrzi, nem csak a kiterjesztését.",
   },
   {
     question: "Mi történik az átlátszó háttérrel JPG konvertáláskor?",
     answer:
-      "A JPG nem támogatja az átlátszóságot, ezért az átlátszó képpontok hátteret kapnak. Ha meg szeretnéd tartani az átlátszóságot, válassz PNG vagy WebP kimenetet.",
+      "A JPG nem támogatja az átlátszóságot, ezért az átlátszó képpontok hátteret kapnak. Ha meg szeretnéd tartani az átlátszóságot, válassz PNG, WebP vagy AVIF kimenetet.",
   },
   {
     question: "Mekkora képet konvertálhatok?",
@@ -44,8 +44,8 @@ const faqItems = [
 ---
 
 <MainLayout
-  title="Képkonvertáló – JPG, PNG és WebP | Morf"
-  description="Konvertálj több JPG, PNG vagy WebP képet egyszerre, állítsd be a méretet és a minőséget, majd mentsd egyenként vagy ZIP-ben. Feltöltés nélkül."
+  title="Képkonvertáló – JPG, PNG, WebP, AVIF és HEIC | Morf"
+  description="Rendezd konfigurációs csoportokba tetszőleges számú JPG, PNG, WebP, AVIF vagy HEIC képedet, majd konvertáld őket egyetlen futtatással."
 >
   <SiteHeader
     active="converter"
@@ -59,7 +59,7 @@ const faqItems = [
       class="mx-auto grid w-full max-w-7xl gap-10 px-4 pt-16 pb-14 sm:px-6 sm:pt-24 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)] lg:items-end lg:px-8 lg:pt-32 lg:pb-20"
     >
       <div class="flex flex-col items-start gap-6">
-        <Badge variant="secondary">JPG · PNG · WebP</Badge>
+        <Badge variant="secondary">JPG · PNG · WebP · AVIF · HEIC</Badge>
         <div class="flex flex-col gap-4">
           <h1
             class="font-heading max-w-4xl text-5xl font-medium tracking-tight text-balance sm:text-6xl lg:text-7xl"
@@ -69,8 +69,8 @@ const faqItems = [
           <p
             class="text-muted-foreground max-w-2xl text-lg leading-relaxed sm:text-xl"
           >
-            Válaszd ki a kimeneti formátumot, a méretet és a minőséget. A Morf a
-            képeket közvetlenül a böngésződben alakítja át.
+            Rendezd a képeket közös vagy külön konfigurációs csoportokba. A Morf
+            egyetlen futtatással, közvetlenül a böngésződben alakítja át őket.
           </p>
         </div>
         <div class="flex flex-wrap gap-3">
@@ -89,7 +89,8 @@ const faqItems = [
         <div>
           <p class="font-medium">Egyszerre több fájl</p>
           <p class="text-muted-foreground mt-1">
-            Azonos beállításokkal egy egész képsorozatot is átalakíthatsz.
+            A képek közös vagy külön csoportok beállításait használhatják, és
+            egyenként kihagyhatók a konvertálásból.
           </p>
         </div>
         <div>
@@ -128,8 +129,8 @@ const faqItems = [
           <Badge variant="outline">01</Badge>
           <h3 class="font-heading text-xl font-medium">Add hozzá a képeket</h3>
           <p class="text-muted-foreground">
-            Húzd be vagy válaszd ki a JPG, PNG és WebP állóképeket. A fájlokat
-            feldolgozás előtt át is nevezheted.
+            Húzd be vagy válaszd ki a JPG, PNG, WebP, AVIF és HEIC állóképeket.
+            Alapból minden kép egy közös csoportba kerül, kijelölés nélkül.
           </p>
         </li>
         <li class="flex flex-col gap-3">
@@ -138,16 +139,16 @@ const faqItems = [
             Állítsd be a kimenetet
           </h3>
           <p class="text-muted-foreground">
-            Válassz célformátumot vagy felhasználási presetet, majd add meg a
-            kívánt méretet és minőséget.
+            Hozz létre konfigurációs csoportokat, állítsd be a formátumot,
+            méretet és minőséget, majd rendeld hozzájuk a képeket.
           </p>
         </li>
         <li class="flex flex-col gap-3">
           <Badge variant="outline">03</Badge>
           <h3 class="font-heading text-xl font-medium">Konvertálj és ments</h3>
           <p class="text-muted-foreground">
-            Indítsd el a konvertálást, majd mentsd a fájlokat egyenként vagy egy
-            ütközésmentes nevű ZIP-csomagban.
+            Egyetlen indítással minden bevont kép a saját csoportjának
+            beállításaival készül el, majd egyenként vagy ZIP-ben menthető.
           </p>
         </li>
       </ol>

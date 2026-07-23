@@ -1,8 +1,13 @@
+import { useState } from "react";
 import {
+  CircleArrowShrink02Icon,
+  CircleArrowExpand01Icon,
   Cancel01Icon,
   Delete02Icon,
   Download04Icon,
   FolderOpenIcon,
+  GripVerticalIcon,
+  ImageNotFound01Icon,
   RefreshIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -18,30 +23,42 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Progress,
   ProgressLabel,
   ProgressValue,
 } from "@/components/ui/progress";
-import {
-  estimateImageOutputSize,
-  type ImageSizeEstimateOptions,
-} from "@/features/image-processing/estimate-output-size";
-import type { FileJob, FileJobStatus } from "@/features/image-processing/types";
+import { estimateImageOutputSize } from "@/features/image-processing/estimate-output-size";
+import type {
+  ConversionGroup,
+  FileJob,
+  FileJobStatus,
+} from "@/features/image-processing/types";
 import {
   calculateSaving,
-  createOutputFileNameFromBase,
   formatBytes,
+  getImageFileExtension,
 } from "@/lib/filenames/image-filenames";
 
 type FileJobCardProps = {
   job: FileJob;
-  estimateSettings: Pick<
-    ImageSizeEstimateOptions,
-    "outputFormat" | "maxWidth" | "maxHeight" | "quality"
-  >;
+  group: ConversionGroup;
+  groups: ConversionGroup[];
+  isSelected: boolean;
   canSaveAs: boolean;
   isSaving: boolean;
   onCancel: (id: string) => void;
@@ -51,6 +68,9 @@ type FileJobCardProps = {
   onRetry: (id: string) => void;
   onRemove: (id: string) => void;
   onSaveAs: (job: FileJob) => void;
+  onGroupChange: (jobId: string, groupId: string) => void;
+  onSelectionChange: (id: string) => void;
+  selectionDisabled: boolean;
 };
 
 const statusLabels: Record<FileJobStatus, string> = {
@@ -78,9 +98,22 @@ function getBadgeVariant(status: FileJobStatus) {
   return "secondary" as const;
 }
 
+function isCardControl(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    Boolean(
+      target.closest(
+        "a, button, input, textarea, [data-card-control], [data-slot=input-group]",
+      ),
+    )
+  );
+}
+
 export function FileJobCard({
   job,
-  estimateSettings,
+  group,
+  groups,
+  isSelected,
   canSaveAs,
   isSaving,
   onCancel,
@@ -90,11 +123,17 @@ export function FileJobCard({
   onRetry,
   onRemove,
   onSaveAs,
+  onGroupChange,
+  onSelectionChange,
+  selectionDisabled,
 }: FileJobCardProps) {
+  const [previewFailed, setPreviewFailed] = useState(
+    job.inputFormat === "heic",
+  );
   const isActive = activeStatuses.includes(job.status);
-  const outputFileName = createOutputFileNameFromBase(
-    job.outputBaseName,
-    job.result?.format ?? estimateSettings.outputFormat,
+  const selectionUnavailable = selectionDisabled || isActive;
+  const outputExtension = getImageFileExtension(
+    job.result?.format ?? group.settings.outputFormat,
   );
   const estimatedResult =
     job.originalWidth && job.originalHeight
@@ -103,33 +142,93 @@ export function FileJobCard({
           sourceFormat: job.inputFormat,
           width: job.originalWidth,
           height: job.originalHeight,
-          ...estimateSettings,
+          ...group.settings,
         })
       : undefined;
   const saving = job.result
     ? calculateSaving(job.file.size, job.result.size)
     : undefined;
+  const groupItems = groups.map((candidate) => ({
+    label: `${candidate.name} · ${candidate.settings.outputFormat.toUpperCase()}${
+      candidate.settings.outputFormat === "png"
+        ? ""
+        : ` · ${candidate.settings.quality}%`
+    }`,
+    value: candidate.id,
+  }));
+  const hasFooterActions =
+    Boolean(job.result) ||
+    isActive ||
+    job.status === "error" ||
+    job.status === "cancelled";
+
+  const toggleSelection = () => {
+    if (!selectionUnavailable) onSelectionChange(job.id);
+  };
 
   return (
-    <Card size="sm">
+    <Card
+      size="sm"
+      interactive={!selectionUnavailable}
+      selected={isSelected}
+      role="button"
+      tabIndex={selectionUnavailable ? -1 : 0}
+      aria-pressed={isSelected}
+      aria-disabled={selectionUnavailable || undefined}
+      aria-label={`${job.file.name}: ${
+        isSelected ? "kijelölés megszüntetése" : "kijelölés"
+      } csoportművelethez`}
+      className="[--card-spacing:--spacing(2.5)]"
+      onClick={(event) => {
+        if (!isCardControl(event.target)) toggleSelection();
+      }}
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) return;
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        toggleSelection();
+      }}
+    >
       <CardHeader>
-        <div className="flex min-w-0 items-center gap-3">
-          <img
-            src={job.previewUrl}
-            alt=""
-            className="bg-muted size-14 shrink-0 rounded-2xl object-cover"
-            onLoad={(event) => {
-              const { naturalWidth, naturalHeight } = event.currentTarget;
-              if (
-                naturalWidth > 0 &&
-                naturalHeight > 0 &&
-                (naturalWidth !== job.originalWidth ||
-                  naturalHeight !== job.originalHeight)
-              ) {
-                onDimensions(job.id, naturalWidth, naturalHeight);
-              }
-            }}
-          />
+        <div className="flex min-w-0 items-center gap-2">
+          <span
+            data-card-control
+            className="text-muted-foreground flex size-5 shrink-0 cursor-grab items-center justify-center touch-none active:cursor-grabbing"
+            title="Átrendezés hamarosan"
+            aria-hidden="true"
+          >
+            <HugeiconsIcon icon={GripVerticalIcon} strokeWidth={2} />
+          </span>
+          <div className="bg-muted flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl">
+            {previewFailed ? (
+              <HugeiconsIcon
+                icon={ImageNotFound01Icon}
+                className="text-muted-foreground"
+                strokeWidth={1.8}
+                aria-hidden="true"
+              />
+            ) : (
+              <img
+                src={job.previewUrl}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="size-full object-cover"
+                onError={() => setPreviewFailed(true)}
+                onLoad={(event) => {
+                  const { naturalWidth, naturalHeight } = event.currentTarget;
+                  if (
+                    naturalWidth > 0 &&
+                    naturalHeight > 0 &&
+                    (naturalWidth !== job.originalWidth ||
+                      naturalHeight !== job.originalHeight)
+                  ) {
+                    onDimensions(job.id, naturalWidth, naturalHeight);
+                  }
+                }}
+              />
+            )}
+          </div>
           <div className="min-w-0">
             <CardTitle className="truncate">{job.file.name}</CardTitle>
             <CardDescription>
@@ -137,31 +236,75 @@ export function FileJobCard({
             </CardDescription>
           </div>
         </div>
-        <CardAction>
-          <Badge variant={getBadgeVariant(job.status)}>
-            {statusLabels[job.status]}
-          </Badge>
+        <CardAction className="flex items-center gap-1.5">
+          {job.status !== "queued" && (
+            <Badge variant={getBadgeVariant(job.status)}>
+              {statusLabels[job.status]}
+            </Badge>
+          )}
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            aria-label={`${job.file.name} eltávolítása`}
+            disabled={isActive}
+            onClick={() => onRemove(job.id)}
+          >
+            <HugeiconsIcon
+              icon={Delete02Icon}
+              strokeWidth={2}
+              data-icon="inline-start"
+              aria-hidden="true"
+            />
+          </Button>
         </CardAction>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-3">
-        <Field>
-          <FieldLabel htmlFor={`output-name-${job.id}`}>
-            Fájlnév (kiterjesztés nélkül)
-          </FieldLabel>
-          <Input
-            id={`output-name-${job.id}`}
-            value={job.outputBaseName}
-            maxLength={80}
-            spellCheck={false}
-            disabled={isActive}
-            onChange={(event) => onRename(job.id, event.target.value)}
-          />
-          <FieldDescription>
-            Letöltéskor:{" "}
-            <span className="text-foreground">{outputFileName}</span>
-          </FieldDescription>
-        </Field>
+      <CardContent className="flex flex-col gap-2">
+        <FieldGroup className="grid gap-2">
+          <Field data-disabled={selectionDisabled || isActive || undefined}>
+            <FieldLabel htmlFor={`group-${job.id}`} className="sr-only">
+              Konfigurációs csoport
+            </FieldLabel>
+            <Select
+              items={groupItems}
+              value={group.id}
+              disabled={selectionDisabled || isActive}
+              onValueChange={(value) => value && onGroupChange(job.id, value)}
+            >
+              <SelectTrigger id={`group-${job.id}`} className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {groupItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor={`output-name-${job.id}`} className="sr-only">
+              Fájlnév
+            </FieldLabel>
+            <InputGroup data-disabled={isActive || undefined}>
+              <InputGroupInput
+                id={`output-name-${job.id}`}
+                value={job.outputBaseName}
+                maxLength={80}
+                spellCheck={false}
+                disabled={isActive}
+                onChange={(event) => onRename(job.id, event.target.value)}
+              />
+              <InputGroupAddon align="inline-end">
+                .{outputExtension}
+              </InputGroupAddon>
+            </InputGroup>
+          </Field>
+        </FieldGroup>
 
         {isActive && (
           <Progress
@@ -174,7 +317,7 @@ export function FileJobCard({
         )}
 
         {!job.result && estimatedResult && (
-          <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+          <dl className="grid grid-cols-2 gap-2 text-sm">
             <div>
               <dt className="text-muted-foreground">Várható új méret</dt>
               <dd>≈ {formatBytes(estimatedResult.bytes)}</dd>
@@ -183,7 +326,7 @@ export function FileJobCard({
         )}
 
         {job.result && (
-          <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+          <dl className="grid grid-cols-[1fr_1fr_auto] items-end gap-3 text-sm">
             <div>
               <dt className="text-muted-foreground">Eredeti</dt>
               <dd>{formatBytes(job.file.size)}</dd>
@@ -192,20 +335,28 @@ export function FileJobCard({
               <dt className="text-muted-foreground">Új méret</dt>
               <dd>{formatBytes(job.result.size)}</dd>
             </div>
-            <div>
-              <dt className="text-muted-foreground">Felbontás</dt>
-              <dd>
-                {job.originalWidth}×{job.originalHeight} → {job.result.width}×
-                {job.result.height}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Megtakarítás</dt>
-              <dd>
+            <div
+              className="text-muted-foreground flex size-8 items-center justify-center"
+              title={
+                saving !== undefined && saving >= 0
+                  ? `${saving}% megtakarítás`
+                  : "Az új fájl nagyobb lett"
+              }
+            >
+              <HugeiconsIcon
+                icon={
+                  saving !== undefined && saving >= 0
+                    ? CircleArrowShrink02Icon
+                    : CircleArrowExpand01Icon
+                }
+                strokeWidth={2}
+                aria-hidden="true"
+              />
+              <span className="sr-only">
                 {saving !== undefined && saving >= 0
-                  ? `${saving}%`
-                  : "Nagyobb lett"}
-              </dd>
+                  ? `${saving}% megtakarítás`
+                  : "Az új fájl nagyobb lett"}
+              </span>
             </div>
           </dl>
         )}
@@ -218,8 +369,8 @@ export function FileJobCard({
         )}
       </CardContent>
 
-      <CardFooter className="flex flex-wrap justify-between gap-2">
-        <div className="flex flex-wrap gap-2">
+      {hasFooterActions && (
+        <CardFooter className="flex flex-wrap gap-2">
           {job.result && (
             <Button
               type="button"
@@ -279,22 +430,8 @@ export function FileJobCard({
               Újrapróbálás
             </Button>
           )}
-        </div>
-        <Button
-          size="icon-sm"
-          variant="ghost"
-          aria-label={`${job.file.name} eltávolítása`}
-          disabled={isActive}
-          onClick={() => onRemove(job.id)}
-        >
-          <HugeiconsIcon
-            icon={Delete02Icon}
-            strokeWidth={2}
-            data-icon="inline-start"
-            aria-hidden="true"
-          />
-        </Button>
-      </CardFooter>
+        </CardFooter>
+      )}
     </Card>
   );
 }

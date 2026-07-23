@@ -17,3 +17,12 @@ test("a séma elutasítja az érvénytelen minőséget", () => {
 
   assert.equal(imageRecipeSchema.safeParse(invalid).success, false);
 });
+
+test("az AVIF választható kimeneti formátum", () => {
+  const avifRecipe = {
+    ...imagePresets[0].recipe,
+    outputFormat: "avif",
+  };
+
+  assert.equal(imageRecipeSchema.safeParse(avifRecipe).success, true);
+});

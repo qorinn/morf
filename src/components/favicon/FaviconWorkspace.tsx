@@ -76,6 +76,9 @@ const initialSettings: FaviconEditorSettings = {
 const initialManifest: ManifestSettings = {
   name: "Application name",
   shortName: "App name",
+  id: "/",
+  startUrl: "/",
+  scope: "/",
   themeColor: "#ffffff",
   backgroundColor: "#ffffff",
   display: "standalone",
@@ -403,11 +406,13 @@ export default function FaviconWorkspace() {
 
   const reportGenerationError = useCallback((error: unknown) => {
     setGenerationError(
-      error instanceof Error && /ICO/i.test(error.message)
-        ? "A favicon.ico létrehozása sikertelen volt. Ellenőrizd a forrásképet, majd próbáld újra."
-        : error instanceof Error && /nem támogatja/i.test(error.message)
-          ? error.message
-          : "A favicon csomagot nem sikerült elkészíteni. Ellenőrizd a beállításokat, majd próbáld újra.",
+      error instanceof Error && /^Manifest:/i.test(error.message)
+        ? error.message.replace(/^Manifest:\s*/i, "")
+        : error instanceof Error && /ICO/i.test(error.message)
+          ? "A favicon.ico létrehozása sikertelen volt. Ellenőrizd a forrásképet, majd próbáld újra."
+          : error instanceof Error && /nem támogatja/i.test(error.message)
+            ? error.message
+            : "A favicon csomagot nem sikerült elkészíteni. Ellenőrizd a beállításokat, majd próbáld újra.",
     );
   }, []);
 

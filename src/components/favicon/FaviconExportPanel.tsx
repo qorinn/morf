@@ -53,6 +53,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { validateManifestNavigation } from "@/features/favicon-generator/package-content";
 import type {
   DisplayMode,
   FaviconExportOptions,
@@ -131,6 +132,15 @@ export function FaviconExportPanel({
   const hasWebsite = exportOptions.targets.includes("website");
   const hasWebApp = exportOptions.targets.includes("web-app");
   const hasExportTarget = exportOptions.targets.length > 0;
+  const manifestNavigationErrors =
+    hasWebApp && exportOptions.includeWebManifest
+      ? validateManifestNavigation(manifest)
+      : {};
+  const hasManifestNavigationErrors = Object.values(
+    manifestNavigationErrors,
+  ).some(Boolean);
+  const exportConfigurationValid =
+    hasExportTarget && !hasManifestNavigationErrors;
 
   const setTarget = (target: FaviconExportTarget, checked: boolean) => {
     const targets = checked
@@ -340,6 +350,76 @@ export function FaviconExportPanel({
                   Helyszűkében, például az ikon alatt használt rövid változat.
                 </FieldDescription>
               </Field>
+              <Field data-invalid={Boolean(manifestNavigationErrors.id)}>
+                <FieldLabel htmlFor="favicon-app-id">
+                  Alkalmazásazonosító (id)
+                </FieldLabel>
+                <Input
+                  id="favicon-app-id"
+                  value={manifest.id}
+                  placeholder="/ vagy /app/"
+                  required
+                  aria-invalid={Boolean(manifestNavigationErrors.id)}
+                  onChange={(event) =>
+                    onManifestChange({ id: event.target.value })
+                  }
+                />
+                <FieldDescription>
+                  Stabil, gyökérrel kezdődő URL-azonosító. Telepítés után ne
+                  változtasd meg; általában <code>/</code> vagy az alkalmazás
+                  útvonala, például <code>/app/</code>.
+                </FieldDescription>
+                {manifestNavigationErrors.id && (
+                  <FieldError>{manifestNavigationErrors.id}</FieldError>
+                )}
+              </Field>
+              <Field data-invalid={Boolean(manifestNavigationErrors.startUrl)}>
+                <FieldLabel htmlFor="favicon-start-url">
+                  Indulási URL (start_url)
+                </FieldLabel>
+                <Input
+                  id="favicon-start-url"
+                  value={manifest.startUrl}
+                  placeholder="/ vagy /app/"
+                  required
+                  aria-invalid={Boolean(manifestNavigationErrors.startUrl)}
+                  onChange={(event) =>
+                    onManifestChange({ startUrl: event.target.value })
+                  }
+                />
+                <FieldDescription>
+                  Ezt az oldalt nyitja meg a telepített alkalmazás ikonja.
+                </FieldDescription>
+                {manifestNavigationErrors.startUrl && (
+                  <FieldError>{manifestNavigationErrors.startUrl}</FieldError>
+                )}
+              </Field>
+              <Field
+                className="md:col-span-2"
+                data-invalid={Boolean(manifestNavigationErrors.scope)}
+              >
+                <FieldLabel htmlFor="favicon-scope">
+                  Navigációs hatókör (scope)
+                </FieldLabel>
+                <Input
+                  id="favicon-scope"
+                  value={manifest.scope}
+                  placeholder="/ vagy /app/"
+                  required
+                  aria-invalid={Boolean(manifestNavigationErrors.scope)}
+                  onChange={(event) =>
+                    onManifestChange({ scope: event.target.value })
+                  }
+                />
+                <FieldDescription>
+                  Az ide tartozó URL-ek maradnak az alkalmazás felületén belül.
+                  Tartalmaznia kell az indulási URL-t; általában ugyanaz vagy
+                  egy tágabb útvonal.
+                </FieldDescription>
+                {manifestNavigationErrors.scope && (
+                  <FieldError>{manifestNavigationErrors.scope}</FieldError>
+                )}
+              </Field>
               <Field>
                 <FieldLabel htmlFor="favicon-theme-color">
                   Theme color
@@ -484,7 +564,7 @@ export function FaviconExportPanel({
         <Button
           type="button"
           size="lg"
-          disabled={generating || !hasExportTarget}
+          disabled={generating || !exportConfigurationValid}
           onClick={onGenerate}
         >
           <HugeiconsIcon
@@ -505,7 +585,7 @@ export function FaviconExportPanel({
           <Button
             type="button"
             variant="outline"
-            disabled={generating || !hasExportTarget}
+            disabled={generating || !exportConfigurationValid}
             onClick={onSaveAs}
           >
             <HugeiconsIcon

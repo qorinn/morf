@@ -14,6 +14,79 @@ function ensureHexColor(value: string, fallback = "#ffffff"): string {
   return /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : fallback;
 }
 
+export interface ManifestNavigationErrors {
+  id?: string;
+  startUrl?: string;
+  scope?: string;
+}
+
+const manifestValidationOrigin = "https://manifest.local";
+
+function parseRootRelativeManifestUrl(
+  value: string,
+  label: string,
+): { url?: URL; error?: string } {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return { error: `${label}: adj meg egy URL-útvonalat.` };
+  }
+  if (!trimmed.startsWith("/")) {
+    return {
+      error: `${label}: gyökérrel kezdődő útvonalat használj, például / vagy /app/.`,
+    };
+  }
+
+  try {
+    const url = new URL(trimmed, manifestValidationOrigin);
+    if (url.origin !== manifestValidationOrigin) {
+      return {
+        error: `${label}: csak az alkalmazással azonos domain használható.`,
+      };
+    }
+    return { url };
+  } catch {
+    return { error: `${label}: az URL-útvonal nem érvényes.` };
+  }
+}
+
+export function validateManifestNavigation(
+  settings: Pick<ManifestSettings, "id" | "startUrl" | "scope">,
+): ManifestNavigationErrors {
+  const errors: ManifestNavigationErrors = {};
+  const id = parseRootRelativeManifestUrl(settings.id, "Az alkalmazás ID");
+  const startUrl = parseRootRelativeManifestUrl(
+    settings.startUrl,
+    "Az indulási URL",
+  );
+  const scope = parseRootRelativeManifestUrl(settings.scope, "A hatókör");
+
+  if (id.error) errors.id = id.error;
+  if (startUrl.error) errors.startUrl = startUrl.error;
+  if (scope.error) errors.scope = scope.error;
+
+  if (id.url?.hash) {
+    errors.id = "Az alkalmazás ID nem tartalmazhat # fragmentumot.";
+  }
+  if (scope.url && (scope.url.search || scope.url.hash)) {
+    errors.scope =
+      "A hatókör nem tartalmazhat query paramétert vagy # fragmentumot.";
+  }
+
+  if (startUrl.url && scope.url && !errors.startUrl && !errors.scope) {
+    const scopePath = scope.url.pathname.endsWith("/")
+      ? scope.url.pathname
+      : `${scope.url.pathname}/`;
+    const startPath = startUrl.url.pathname;
+    const startsAtScopeRoot = startPath === scope.url.pathname;
+    if (!startsAtScopeRoot && !startPath.startsWith(scopePath)) {
+      errors.startUrl =
+        "Az indulási URL-nek a megadott hatókörön belül kell lennie.";
+    }
+  }
+
+  return errors;
+}
+
 export function normalizeBasePath(value: string): string {
   const trimmed = value.trim();
   if (!trimmed || trimmed === "/") return "/";
@@ -75,6 +148,12 @@ export function createHtmlCode({
 }
 
 export function createManifest(settings: ManifestSettings): string {
+  const navigationErrors = validateManifestNavigation(settings);
+  const navigationError = Object.values(navigationErrors)[0];
+  if (navigationError) {
+    throw new Error(`Manifest: ${navigationError}`);
+  }
+
   const icon = (
     filename: string,
     size: number,
@@ -88,8 +167,11 @@ export function createManifest(settings: ManifestSettings): string {
 
   return `${JSON.stringify(
     {
+      id: settings.id.trim(),
       name: settings.name.trim() || "Application name",
       short_name: settings.shortName.trim() || "App name",
+      start_url: settings.startUrl.trim(),
+      scope: settings.scope.trim(),
       icons: [
         icon("web-app-manifest-192x192.png", 192, "any"),
         icon("web-app-manifest-512x512.png", 512, "any"),
@@ -145,7 +227,7 @@ A generált fájlokat másold a webhely publikus vagy statikus könyvtárába.
 
 ${websiteFiles}${svgLine}${webAppFiles}${manifestLine}${codeLine}- \`README.md\`: ez a telepítési és fájlhasználati útmutató
 
-${installation}${includeManifest ? "A manifest fájlt ugyanazon a domainen szolgáld ki, mint az oldalt. " : ""}A böngészők cache-elhetik az ikonokat, ezért a frissítés nem mindig azonnali.
+${installation}${includeManifest ? "A manifest fájlt ugyanazon a domainen szolgáld ki, mint az oldalt. Az `id` maradjon stabil, a `start_url` pedig legyen a `scope` hatókörén belül. Az offline működéshez külön service worker szükséges. " : ""}A böngészők cache-elhetik az ikonokat, ezért a frissítés nem mindig azonnali.
 `;
 }
 

@@ -1,8 +1,25 @@
-import type { ImageRecipe } from "@/lib/presets/image-presets";
+import type { ImageRecipe, PresetId } from "@/lib/presets/image-presets";
 
-export const imageFormats = ["jpeg", "png", "webp"] as const;
+export const outputImageFormats = ["jpeg", "png", "webp", "avif"] as const;
+export const inputImageFormats = [...outputImageFormats, "heic"] as const;
 
-export type ImageFormat = (typeof imageFormats)[number];
+export type ImageFormat = (typeof outputImageFormats)[number];
+export type InputImageFormat = (typeof inputImageFormats)[number];
+
+export type ImageConversionSettings = {
+  presetId: PresetId;
+  outputFormat: ImageFormat;
+  maxWidth: number;
+  maxHeight: number;
+  quality: number;
+};
+
+export type ConversionGroup = {
+  id: string;
+  name: string;
+  shouldProcess: boolean;
+  settings: ImageConversionSettings;
+};
 
 export type FileJobStatus =
   | "queued"
@@ -43,7 +60,7 @@ export type ProcessProgress = {
 
 export type ProcessImageRequest = {
   buffer: ArrayBuffer;
-  inputFormat: ImageFormat;
+  inputFormat: InputImageFormat;
   recipe: ImageRecipe;
 };
 
@@ -77,9 +94,11 @@ export type FileJobResult = {
 export type FileJob = {
   id: string;
   file: File;
-  inputFormat: ImageFormat;
+  inputFormat: InputImageFormat;
   previewUrl: string;
   outputBaseName: string;
+  groupId: string;
+  shouldProcess: boolean;
   status: FileJobStatus;
   progress: number;
   originalWidth?: number;

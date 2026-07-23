@@ -17,6 +17,7 @@ export default defineConfig({
       // A jSquash WASM modulok import.meta.url alapú codec-betöltését a Vite
       // dependency optimizer dev módban érvénytelen cache URL-re írhatja át.
       exclude: [
+        "@jsquash/avif",
         "@jsquash/jpeg",
         "@jsquash/png",
         "@jsquash/resize",

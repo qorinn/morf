@@ -5,6 +5,7 @@ import { expose, transfer } from "comlink";
 import { calculateContainedDimensions } from "@/features/image-processing/dimensions";
 import type {
   ImageFormat,
+  InputImageFormat,
   ProcessImageApi,
   ProcessImageRequest,
   ProcessImageResult,
@@ -18,15 +19,17 @@ const mimeTypes: Record<ImageFormat, string> = {
   jpeg: "image/jpeg",
   png: "image/png",
   webp: "image/webp",
+  avif: "image/avif",
 };
 
 const extensions: Record<ImageFormat, string> = {
   jpeg: "jpg",
   png: "png",
   webp: "webp",
+  avif: "avif",
 };
 
-async function loadDecoder(format: ImageFormat): Promise<Decoder> {
+async function loadDecoder(format: InputImageFormat): Promise<Decoder> {
   switch (format) {
     case "jpeg": {
       const { decode } = await import("@jsquash/jpeg");
@@ -39,6 +42,26 @@ async function loadDecoder(format: ImageFormat): Promise<Decoder> {
     case "webp": {
       const { decode } = await import("@jsquash/webp");
       return decode;
+    }
+    case "avif": {
+      const { decode } = await import("@jsquash/avif");
+      return async (buffer) => {
+        const image = await decode(buffer);
+        if (!image) throw new Error("AVIF decode failed.");
+        return image;
+      };
+    }
+    case "heic": {
+      const { default: decodeHeic } = await import("heic-decode");
+      return async (buffer) => {
+        const image = await decodeHeic({ buffer: new Uint8Array(buffer) });
+        return {
+          data: image.data,
+          width: image.width,
+          height: image.height,
+          colorSpace: "srgb",
+        } as ImageData;
+      };
     }
   }
 }
@@ -56,6 +79,15 @@ async function loadEncoder(format: ImageFormat): Promise<Encoder> {
     case "webp": {
       const { encode } = await import("@jsquash/webp");
       return (image, quality) => encode(image, { quality });
+    }
+    case "avif": {
+      const { encode } = await import("@jsquash/avif");
+      return (image, quality) =>
+        encode(image, {
+          quality,
+          qualityAlpha: quality,
+          speed: 6,
+        });
     }
   }
 }

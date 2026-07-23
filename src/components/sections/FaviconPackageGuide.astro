@@ -82,7 +82,7 @@ const manifestFiles = [
   {
     name: "site.webmanifest",
     description:
-      "A telepíthető webalkalmazás nevét, ikonjait, színeit és megjelenítési módját leíró fájl. Ezt választva a generátor a szükséges HTML-hivatkozást is elkészíti.",
+      "A telepíthető webalkalmazás stabil azonosítóját, indulási URL-jét, navigációs hatókörét, nevét, ikonjait, színeit és megjelenítési módját leíró, használatra kész fájl.",
   },
   {
     name: "favicon-code.html",
@@ -110,7 +110,7 @@ const manifestFiles = [
     >
       Az exportcélok szabadon kombinálhatók. Egyszerű weboldalhoz csak a
       Weboldal opció kell; telepíthető webapphoz válaszd a webappikonokat, és
-      kérésre a site.webmanifest fájlt is.
+      kérésre a használatra kész site.webmanifest fájlt is.
     </p>
   </header>
 
@@ -187,14 +187,14 @@ const manifestFiles = [
           <h3 class="text-xl">+ site.webmanifest</h3>
         </CardTitle>
         <CardDescription>
-          A webapp nevét, ikonjait, színeit és megjelenését összekapcsoló
-          manifestet készít. A webapp ikonok kiegészítője.
+          A webapp azonosítóját, indulási URL-jét, hatókörét, nevét, ikonjait,
+          színeit és megjelenését összekapcsoló manifestet készít.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <p class="font-medium">
-          Jelöld be, ha még nincs saját web app manifested, vagy a teljeset a
-          generátorral szeretnéd elkészíteni.
+          Jelöld be, ha még nincs saját web app manifested. Az offline
+          működéshez ettől függetlenül külön service worker szükséges.
         </p>
       </CardContent>
     </Card>
@@ -320,7 +320,8 @@ const manifestFiles = [
             A manifest kiegészítés
           </h3>
           <p class="text-muted-foreground mt-1 text-sm leading-relaxed">
-            A + site.webmanifest opció a webapp ikonok mellé ezeket adja.
+            A + site.webmanifest opció a webapp ikonok mellé a telepítési
+            metaadatokat és a HTML-hivatkozást adja.
           </p>
         </div>
       </div>

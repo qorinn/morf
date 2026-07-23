@@ -5,14 +5,22 @@ import { cn } from "@/lib/utils";
 function Card({
   className,
   size = "default",
+  interactive = false,
+  selected = false,
   ...props
-}: React.ComponentProps<"div"> & { size?: "default" | "sm" }) {
+}: React.ComponentProps<"div"> & {
+  size?: "default" | "sm";
+  interactive?: boolean;
+  selected?: boolean;
+}) {
   return (
     <div
       data-slot="card"
       data-size={size}
+      data-interactive={interactive || undefined}
+      data-selected={selected || undefined}
       className={cn(
-        "morf-card-surface group/card text-card-foreground ring-foreground/5 flex flex-col gap-(--card-spacing) overflow-hidden rounded-4xl py-(--card-spacing) text-sm ring-1 [--card-spacing:--spacing(6)] has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(4)] *:[img:first-child]:rounded-t-4xl *:[img:last-child]:rounded-b-4xl",
+        "morf-card-surface group/card text-card-foreground ring-foreground/5 flex flex-col gap-(--card-spacing) overflow-hidden rounded-4xl py-(--card-spacing) text-sm ring-1 transition-[box-shadow,background-color] [--card-spacing:--spacing(6)] has-[>img:first-child]:pt-0 data-[interactive=true]:cursor-pointer data-[interactive=true]:outline-none data-[interactive=true]:focus-visible:ring-3 data-[interactive=true]:focus-visible:ring-ring/30 data-[selected=true]:bg-primary/5 data-[selected=true]:shadow-md data-[selected=true]:ring-2 data-[selected=true]:ring-primary/50 data-[size=sm]:[--card-spacing:--spacing(4)] motion-reduce:transition-none *:[img:first-child]:rounded-t-4xl *:[img:last-child]:rounded-b-4xl",
         className,
       )}
       {...props}

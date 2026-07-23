@@ -28,6 +28,10 @@ test("a megadott kimeneti nevet és a helyes kiterjesztést használja", () => {
   );
   assert.equal(sanitizeOutputBaseName("../Tiltott:név*?  "), "-Tiltott-név--");
   assert.equal(createOutputFileNameFromBase("   ", "jpeg"), "kep-morf.jpg");
+  assert.equal(
+    createOutputFileNameFromBase("modern-kep", "avif"),
+    "modern-kep.avif",
+  );
 });
 
 test("ütközésnél számozott fájlnevet ad", () => {

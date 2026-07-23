@@ -7,7 +7,6 @@ import {
   FolderDownloadIcon,
   FolderOpenIcon,
   PlayIcon,
-  SecurityCheckIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useDropzone } from "react-dropzone";
@@ -19,27 +18,41 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Field, FieldLabel } from "@/components/ui/field";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Toaster, toast } from "@/components/ui/toast";
 import { FileUploadDropzone } from "@/components/upload/FileUploadDropzone";
 import { FileJobCard } from "@/components/workspace/FileJobCard";
 import { WorkspaceSettings } from "@/components/workspace/WorkspaceSettings";
+import { conversionSettingsToRecipe } from "@/features/image-processing/conversion-settings";
 import { createProcessingError } from "@/features/image-processing/errors";
 import type {
   FileJob,
   FileJobError,
+  ImageConversionSettings,
   ProcessProgress,
 } from "@/features/image-processing/types";
 import { validateImageFile } from "@/features/image-processing/validation";
 import { createImageWorker } from "@/features/image-processing/worker-client";
 import { createOutputFileNameFromBase } from "@/lib/filenames/image-filenames";
+import { cn } from "@/lib/utils";
 import {
   downloadFile,
   downloadFiles,
@@ -52,7 +65,7 @@ import {
   type SaveCapabilities,
   type SaveableFile,
 } from "@/lib/downloads";
-import { imageRecipeSchema } from "@/lib/presets/image-presets";
+import { imagePresets, imageRecipeSchema } from "@/lib/presets/image-presets";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 
 type DropError = {
@@ -60,6 +73,7 @@ type DropError = {
   error: FileJobError;
 };
 
+const newGroupTarget = "__new-group__";
 const activeStatuses = ["loading-engine", "decoding", "processing", "encoding"];
 
 function isActiveJob(job: FileJob): boolean {
@@ -90,22 +104,44 @@ function getCompletedFiles(jobs: FileJob[]): SaveableFile[] {
 
 export default function ImageWorkspace() {
   const jobs = useWorkspaceStore((state) => state.jobs);
+  const groups = useWorkspaceStore((state) => state.groups);
   const addJobs = useWorkspaceStore((state) => state.addJobs);
+  const selectedJobIds = useWorkspaceStore((state) => state.selectedJobIds);
+  const toggleJobSelection = useWorkspaceStore(
+    (state) => state.toggleJobSelection,
+  );
+  const setAllJobsSelected = useWorkspaceStore(
+    (state) => state.setAllJobsSelected,
+  );
+  const setGroupProcessing = useWorkspaceStore(
+    (state) => state.setGroupProcessing,
+  );
+  const setAllJobsProcessing = useWorkspaceStore(
+    (state) => state.setAllJobsProcessing,
+  );
+  const setActiveGroup = useWorkspaceStore((state) => state.setActiveGroup);
+  const assignJobToGroup = useWorkspaceStore((state) => state.assignJobToGroup);
+  const assignSelectedJobsToGroup = useWorkspaceStore(
+    (state) => state.assignSelectedJobsToGroup,
+  );
+  const createGroupFromSelectedJobs = useWorkspaceStore(
+    (state) => state.createGroupFromSelectedJobs,
+  );
+  const createSeparateGroupsFromSelectedJobs = useWorkspaceStore(
+    (state) => state.createSeparateGroupsFromSelectedJobs,
+  );
   const updateJob = useWorkspaceStore((state) => state.updateJob);
   const completeJob = useWorkspaceStore((state) => state.completeJob);
   const renameJob = useWorkspaceStore((state) => state.renameJob);
   const failJob = useWorkspaceStore((state) => state.failJob);
   const setJobStatus = useWorkspaceStore((state) => state.setJobStatus);
-  const requeueCompletedJobs = useWorkspaceStore(
-    (state) => state.requeueCompletedJobs,
-  );
   const retryJob = useWorkspaceStore((state) => state.retryJob);
   const removeJob = useWorkspaceStore((state) => state.removeJob);
   const clearJobs = useWorkspaceStore((state) => state.clearJobs);
-  const settings = useWorkspaceStore((state) => state.settings);
   const [dropErrors, setDropErrors] = useState<DropError[]>([]);
   const [workspaceError, setWorkspaceError] = useState<string>();
   const [isBatchActive, setIsBatchActive] = useState(false);
+  const [bulkTargetGroupId, setBulkTargetGroupId] = useState("");
   const [activeSaveAction, setActiveSaveAction] = useState<string>();
   const [saveCapabilities, setSaveCapabilities] = useState<SaveCapabilities>({
     file: false,
@@ -163,9 +199,9 @@ export default function ImageWorkspace() {
   });
 
   const processOneJob = useCallback(
-    async (job: FileJob) => {
+    async (job: FileJob, settings: ImageConversionSettings) => {
       const recipeResult = imageRecipeSchema.safeParse(
-        useWorkspaceStore.getState().getRecipe(),
+        conversionSettingsToRecipe(settings),
       );
 
       if (!recipeResult.success) {
@@ -257,16 +293,17 @@ export default function ImageWorkspace() {
       return;
     }
 
-    let queuedJobs = useWorkspaceStore
-      .getState()
-      .jobs.filter((job) => job.status === "queued");
+    const state = useWorkspaceStore.getState();
+    const queuedJobs = state.jobs.flatMap((job) => {
+      if (!job.shouldProcess || job.status !== "queued") return [];
 
-    if (queuedJobs.length === 0) {
-      requeueCompletedJobs();
-      queuedJobs = useWorkspaceStore
-        .getState()
-        .jobs.filter((job) => job.status === "queued");
-    }
+      const group = state.groups.find(
+        (candidate) => candidate.id === job.groupId,
+      );
+      return group?.shouldProcess
+        ? [{ job, settings: { ...group.settings } }]
+        : [];
+    });
 
     if (queuedJobs.length === 0) return;
 
@@ -277,9 +314,9 @@ export default function ImageWorkspace() {
 
     const runNext = async () => {
       while (cursor < queuedJobs.length) {
-        const job = queuedJobs[cursor];
+        const queuedJob = queuedJobs[cursor];
         cursor += 1;
-        await processOneJob(job);
+        await processOneJob(queuedJob.job, queuedJob.settings);
       }
     };
 
@@ -290,11 +327,28 @@ export default function ImageWorkspace() {
           runNext,
         ),
       );
+
+      const completedJobCount = queuedJobs.filter(({ job }) =>
+        useWorkspaceStore
+          .getState()
+          .jobs.some(
+            (candidate) =>
+              candidate.id === job.id && candidate.status === "completed",
+          ),
+      ).length;
+
+      if (completedJobCount > 0) {
+        toast.add({
+          type: "success",
+          title: "Elkészültek a fájlok",
+          description: `${completedJobCount} kép letölthető.`,
+        });
+      }
     } finally {
       batchRunRef.current = false;
       setIsBatchActive(false);
     }
-  }, [processOneJob, requeueCompletedJobs]);
+  }, [processOneJob]);
 
   const cancelJob = useCallback(
     (id: string) => {
@@ -400,6 +454,16 @@ export default function ImageWorkspace() {
   }, []);
 
   useEffect(() => {
+    if (
+      bulkTargetGroupId &&
+      bulkTargetGroupId !== newGroupTarget &&
+      !groups.some((group) => group.id === bulkTargetGroupId)
+    ) {
+      setBulkTargetGroupId("");
+    }
+  }, [bulkTargetGroupId, groups]);
+
+  useEffect(() => {
     const warnBeforeUnload = (event: BeforeUnloadEvent) => {
       if (!batchRunRef.current) return;
       event.preventDefault();
@@ -422,7 +486,33 @@ export default function ImageWorkspace() {
     (job) => job.status === "completed",
   ).length;
   const failedCount = jobs.filter((job) => job.status === "error").length;
-  const queuedCount = jobs.filter((job) => job.status === "queued").length;
+  const selectedCount = selectedJobIds.filter((id) =>
+    jobs.some((job) => job.id === id),
+  ).length;
+  const processIncludedCount = jobs.filter(
+    (job) =>
+      job.shouldProcess &&
+      groups.some((group) => group.id === job.groupId && group.shouldProcess),
+  ).length;
+  const processableCount = jobs.filter(
+    (job) =>
+      job.shouldProcess &&
+      job.status === "queued" &&
+      groups.some((group) => group.id === job.groupId && group.shouldProcess),
+  ).length;
+  const allGroupsIncluded =
+    groups.every((group) => group.shouldProcess) && groups.length > 0;
+  const groupItems = [
+    ...groups.map((group) => ({
+      label: `${group.name} · ${group.settings.outputFormat.toUpperCase()}${
+        group.settings.outputFormat === "png"
+          ? ""
+          : ` · ${group.settings.quality}%`
+      }`,
+      value: group.id,
+    })),
+    { label: "Új közös csoport", value: newGroupTarget },
+  ];
   const representativeJob =
     jobs.find(isActiveJob) ??
     jobs.find((job) => job.status === "error") ??
@@ -453,7 +543,7 @@ export default function ImageWorkspace() {
     return {
       title: "Kezdésre kész",
       message:
-        "Dobj be JPG, PNG vagy WebP képeket, válassz célt, majd indítsd el a feldolgozást.",
+        "Dobj be képeket, rendezd őket konfigurációs csoportokba, majd indítsd el a közös konvertálást.",
     };
   }, [completedCount, isBatchActive, representativeJob?.status]);
 
@@ -479,21 +569,6 @@ export default function ImageWorkspace() {
         message={mascotCopy.message}
       />
 
-      {isBatchActive && (
-        <Alert>
-          <HugeiconsIcon
-            icon={SecurityCheckIcon}
-            strokeWidth={2}
-            aria-hidden="true"
-          />
-          <AlertTitle>A feldolgozás aktív</AlertTitle>
-          <AlertDescription>
-            Ne zárd be és ne frissítsd az oldalt. A képeid nem kerülnek
-            feltöltésre.
-          </AlertDescription>
-        </Alert>
-      )}
-
       {workspaceError && (
         <Alert variant="destructive">
           <AlertTitle>Nem sikerült befejezni a műveletet</AlertTitle>
@@ -510,11 +585,17 @@ export default function ImageWorkspace() {
         </Alert>
       ))}
 
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(20rem,0.75fr)]">
+      <div
+        className={cn(
+          "grid items-start gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(20rem,0.75fr)]",
+          selectedCount > 0 && "pb-28",
+        )}
+      >
         <div>
           <input
             {...getInputProps({
-              accept: "image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp",
+              accept:
+                "image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.avif,.heic,.heif",
             })}
             className="sr-only"
             aria-label="Konvertálandó képek kiválasztása"
@@ -525,164 +606,368 @@ export default function ImageWorkspace() {
             onBrowse={open}
             title="Húzd ide a képeket"
             activeTitle="Engedd el a képeket"
-            description="JPG, PNG vagy WebP állóképek · több fájlt is választhatsz"
+            description="JPG, PNG, WebP, AVIF vagy HEIC/HEIF állóképek · nincs fájlszámkorlát"
             buttonLabel="Képek kiválasztása"
             disabled={isBatchActive}
           />
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Beállítások</CardTitle>
-            <CardDescription>
-              A preset kiindulópont; minden érték módosítható.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        <Card className="lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:max-h-[calc(100dvh-3rem)]">
+          <CardContent className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
             <WorkspaceSettings disabled={isBatchActive} />
           </CardContent>
-          <CardFooter className="text-muted-foreground text-sm">
-            Az újrakódolás eltávolítja a beágyazott metaadatokat, az
-            EXIF-orientációt pedig helyesen alkalmazza.
-          </CardFooter>
         </Card>
-      </div>
 
-      {jobs.length > 0 && (
-        <div className="flex flex-col gap-5">
-          <Separator />
-          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-            <div className="flex flex-col gap-1">
-              <h3 className="font-heading text-2xl font-medium">Fájlok</h3>
-              <p className="text-muted-foreground text-sm" aria-live="polite">
-                {jobs.length} fájl · {completedCount} kész · {failedCount} hibás
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                disabled={
-                  isBatchActive || (queuedCount === 0 && completedCount === 0)
-                }
-                onClick={startProcessing}
-              >
-                <HugeiconsIcon
-                  icon={PlayIcon}
-                  strokeWidth={2}
-                  data-icon="inline-start"
-                  aria-hidden="true"
-                />
-                {isBatchActive
-                  ? "Feldolgozás…"
-                  : queuedCount > 0
-                    ? `Feldolgozás (${queuedCount})`
-                    : `Újrafeldolgozás (${completedCount})`}
-              </Button>
-              {completedCount > 0 && (
-                <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={Boolean(activeSaveAction)}
-                    onClick={downloadAllFiles}
-                  >
-                    <HugeiconsIcon
-                      icon={Download04Icon}
-                      strokeWidth={2}
-                      data-icon="inline-start"
-                      aria-hidden="true"
-                    />
-                    Mentés
-                  </Button>
-                  {saveCapabilities.directory && (
+        {jobs.length > 0 && (
+          <div className="flex flex-col gap-5 lg:col-start-1 lg:row-start-2">
+            <Separator />
+            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+              <div className="flex flex-col gap-1">
+                <h3 className="font-heading text-2xl font-medium">Fájlok</h3>
+                <p className="text-muted-foreground text-sm" aria-live="polite">
+                  {jobs.length} fájl · {groups.length} csoport · {selectedCount}{" "}
+                  kijelölve · {processIncludedCount} konvertálásra ·{" "}
+                  {completedCount} kész · {failedCount} hibás
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isBatchActive || selectedCount === jobs.length}
+                  onClick={() => setAllJobsSelected(true)}
+                >
+                  Mind kijelölése
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isBatchActive || selectedCount === 0}
+                  onClick={() => setAllJobsSelected(false)}
+                >
+                  Kijelölés törlése
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isBatchActive}
+                  onClick={() => setAllJobsProcessing(!allGroupsIncluded)}
+                >
+                  {allGroupsIncluded
+                    ? "Összes csoport kihagyása"
+                    : "Összes csoport konvertálása"}
+                </Button>
+                <Button
+                  type="button"
+                  disabled={isBatchActive || processableCount === 0}
+                  onClick={startProcessing}
+                >
+                  <HugeiconsIcon
+                    icon={PlayIcon}
+                    strokeWidth={2}
+                    data-icon="inline-start"
+                    aria-hidden="true"
+                  />
+                  {isBatchActive
+                    ? "Feldolgozás…"
+                    : `Konvertálás indítása (${processableCount})`}
+                </Button>
+                {completedCount > 0 && (
+                  <>
                     <Button
                       type="button"
                       variant="outline"
                       disabled={Boolean(activeSaveAction)}
-                      onClick={saveAllFilesAs}
+                      onClick={downloadAllFiles}
                     >
                       <HugeiconsIcon
-                        icon={FolderOpenIcon}
+                        icon={Download04Icon}
                         strokeWidth={2}
                         data-icon="inline-start"
                         aria-hidden="true"
                       />
-                      Mentés másként
+                      Mentés
                     </Button>
-                  )}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={Boolean(activeSaveAction)}
-                    onClick={downloadZip}
-                  >
-                    <HugeiconsIcon
-                      icon={FileZipIcon}
-                      strokeWidth={2}
-                      data-icon="inline-start"
-                      aria-hidden="true"
-                    />
-                    {activeSaveAction === "zip-download"
-                      ? "ZIP készítése…"
-                      : "Mentés ZIP-be"}
-                  </Button>
-                  {saveCapabilities.file && (
+                    {saveCapabilities.directory && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={Boolean(activeSaveAction)}
+                        onClick={saveAllFilesAs}
+                      >
+                        <HugeiconsIcon
+                          icon={FolderOpenIcon}
+                          strokeWidth={2}
+                          data-icon="inline-start"
+                          aria-hidden="true"
+                        />
+                        Mentés másként
+                      </Button>
+                    )}
                     <Button
                       type="button"
                       variant="outline"
                       disabled={Boolean(activeSaveAction)}
-                      onClick={saveZipAs}
+                      onClick={downloadZip}
                     >
                       <HugeiconsIcon
-                        icon={FolderDownloadIcon}
+                        icon={FileZipIcon}
                         strokeWidth={2}
                         data-icon="inline-start"
                         aria-hidden="true"
                       />
-                      {activeSaveAction === "zip-as"
+                      {activeSaveAction === "zip-download"
                         ? "ZIP készítése…"
-                        : "Mentés másként ZIP-be"}
+                        : "Mentés ZIP-be"}
                     </Button>
-                  )}
-                </>
-              )}
-              <Button
-                type="button"
-                variant="ghost"
-                disabled={isBatchActive}
-                onClick={clearJobs}
+                    {saveCapabilities.file && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={Boolean(activeSaveAction)}
+                        onClick={saveZipAs}
+                      >
+                        <HugeiconsIcon
+                          icon={FolderDownloadIcon}
+                          strokeWidth={2}
+                          data-icon="inline-start"
+                          aria-hidden="true"
+                        />
+                        {activeSaveAction === "zip-as"
+                          ? "ZIP készítése…"
+                          : "Mentés másként ZIP-be"}
+                      </Button>
+                    )}
+                  </>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={isBatchActive}
+                  onClick={clearJobs}
+                >
+                  <HugeiconsIcon
+                    icon={Delete02Icon}
+                    strokeWidth={2}
+                    data-icon="inline-start"
+                    aria-hidden="true"
+                  />
+                  Lista törlése
+                </Button>
+              </div>
+            </div>
+
+            {selectedCount > 0 && (
+              <Card
+                size="sm"
+                role="region"
+                aria-label="Kijelölt képek műveletei"
+                className="fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 mx-auto max-w-5xl [--card-spacing:--spacing(2)]"
               >
-                <HugeiconsIcon
-                  icon={Delete02Icon}
-                  strokeWidth={2}
-                  data-icon="inline-start"
-                  aria-hidden="true"
-                />
-                Lista törlése
-              </Button>
+                <CardContent className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <span className="shrink-0 text-sm font-medium">
+                    {selectedCount} kijelölve
+                  </span>
+                  <Field className="min-w-0 flex-1">
+                    <FieldLabel htmlFor="bulk-group-target" className="sr-only">
+                      Közös célcsoport
+                    </FieldLabel>
+                    <Select
+                      items={groupItems}
+                      value={bulkTargetGroupId || null}
+                      disabled={isBatchActive}
+                      onValueChange={(value) =>
+                        setBulkTargetGroupId(value ?? "")
+                      }
+                    >
+                      <SelectTrigger id="bulk-group-target" className="w-full">
+                        <SelectValue placeholder="Közös célcsoport…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {groupItems.map((item) => (
+                            <SelectItem key={item.value} value={item.value}>
+                              {item.label}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      disabled={isBatchActive || !bulkTargetGroupId}
+                      onClick={() => {
+                        if (bulkTargetGroupId === newGroupTarget) {
+                          createGroupFromSelectedJobs();
+                          toast.add({
+                            type: "success",
+                            title: "Kijelölt művelet kész",
+                            description: `${selectedCount} kép új közös csoportba került.`,
+                          });
+                        } else {
+                          const targetGroup = groups.find(
+                            (group) => group.id === bulkTargetGroupId,
+                          );
+                          assignSelectedJobsToGroup(bulkTargetGroupId);
+                          toast.add({
+                            type: "success",
+                            title: "Kijelölt művelet kész",
+                            description: `${selectedCount} kép a(z) „${targetGroup?.name ?? "kiválasztott"}” csoportba került.`,
+                          });
+                        }
+                        setBulkTargetGroupId("");
+                      }}
+                    >
+                      Közös csoport
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={isBatchActive}
+                      onClick={() => {
+                        const createdGroupCount =
+                          createSeparateGroupsFromSelectedJobs();
+                        toast.add(
+                          createdGroupCount === 0
+                            ? {
+                                type: "info",
+                                title: "Nincs szükség átrendezésre",
+                                description:
+                                  "A kijelölt képek már külön konfigurációs csoportokban vannak.",
+                              }
+                            : {
+                                type: "success",
+                                title: "Kijelölt művelet kész",
+                                description: `${createdGroupCount} új, képenként külön konfigurációs csoport készült.`,
+                              },
+                        );
+                        setBulkTargetGroupId("");
+                      }}
+                    >
+                      Külön csoportok
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      disabled={isBatchActive}
+                      onClick={() => setAllJobsSelected(false)}
+                    >
+                      Kijelölés törlése
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <div className="flex flex-col gap-4">
+              {groups.map((group) => {
+                const groupJobs = jobs.filter(
+                  (job) => job.groupId === group.id,
+                );
+                const quality =
+                  group.settings.outputFormat === "png"
+                    ? ""
+                    : ` · ${group.settings.quality}%`;
+                const presetName =
+                  imagePresets.find(
+                    (preset) => preset.id === group.settings.presetId,
+                  )?.recipe.name ?? "Egyedi";
+
+                return (
+                  <Card
+                    key={group.id}
+                    size="sm"
+                    className="[--card-spacing:--spacing(3)]"
+                  >
+                    <CardHeader>
+                      <div className="min-w-0">
+                        <CardTitle className="truncate">
+                          <Button
+                            type="button"
+                            variant="link"
+                            size="sm"
+                            className="h-auto p-0"
+                            disabled={isBatchActive}
+                            onClick={() => setActiveGroup(group.id)}
+                          >
+                            {group.name}
+                          </Button>
+                        </CardTitle>
+                        <CardDescription>
+                          {groupJobs.length} kép · {presetName} ·{" "}
+                          {group.settings.outputFormat.toUpperCase()}
+                          {quality} · {group.settings.maxWidth}×
+                          {group.settings.maxHeight} px ·{" "}
+                          {group.shouldProcess
+                            ? "Konvertálásra kijelölve"
+                            : "Kihagyva"}
+                        </CardDescription>
+                      </div>
+                      <CardAction>
+                        <Field
+                          orientation="horizontal"
+                          className="w-auto gap-0"
+                          data-disabled={isBatchActive || undefined}
+                        >
+                          <FieldLabel className="min-h-11 cursor-pointer rounded-lg px-2 text-sm font-medium transition-colors hover:bg-muted focus-within:ring-2 focus-within:ring-ring/40">
+                            <Checkbox
+                              id={`process-group-${group.id}`}
+                              checked={group.shouldProcess}
+                              disabled={isBatchActive}
+                              onCheckedChange={(checked) =>
+                                setGroupProcessing(group.id, checked === true)
+                              }
+                            />
+                            Konvertálás
+                          </FieldLabel>
+                        </Field>
+                      </CardAction>
+                    </CardHeader>
+                    <CardContent>
+                      {groupJobs.length === 0 ? (
+                        <p className="text-muted-foreground text-sm">
+                          Még nincs kép ebben a csoportban.
+                        </p>
+                      ) : (
+                        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                          {groupJobs.map((job) => (
+                            <FileJobCard
+                              key={job.id}
+                              job={job}
+                              group={group}
+                              groups={groups}
+                              isSelected={selectedJobIds.includes(job.id)}
+                              canSaveAs={saveCapabilities.file}
+                              isSaving={Boolean(activeSaveAction)}
+                              onCancel={cancelJob}
+                              onDimensions={updateJobDimensions}
+                              onDownload={downloadOne}
+                              onGroupChange={assignJobToGroup}
+                              onRename={renameJob}
+                              onRetry={retryJob}
+                              onRemove={removeJob}
+                              onSaveAs={saveOneAs}
+                              onSelectionChange={toggleJobSelection}
+                              selectionDisabled={isBatchActive}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </div>
-
-          <div className="grid gap-4">
-            {jobs.map((job) => (
-              <FileJobCard
-                key={job.id}
-                job={job}
-                estimateSettings={settings}
-                canSaveAs={saveCapabilities.file}
-                isSaving={Boolean(activeSaveAction)}
-                onCancel={cancelJob}
-                onDimensions={updateJobDimensions}
-                onDownload={downloadOne}
-                onRename={renameJob}
-                onRetry={retryJob}
-                onRemove={removeJob}
-                onSaveAs={saveOneAs}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+        )}
+      </div>
+      <Toaster />
     </section>
   );
 }

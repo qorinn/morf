@@ -39,3 +39,14 @@ test("érvénytelen képméretnél nem ad félrevezető becslést", () => {
     undefined,
   );
 });
+
+test("HEIC forráshoz és AVIF kimenethez is ad becslést", () => {
+  const estimate = estimateImageOutputSize({
+    ...baseOptions,
+    sourceFormat: "heic",
+    outputFormat: "avif",
+  });
+
+  assert.ok(estimate);
+  assert.ok(estimate.bytes > 0);
+});

@@ -24,6 +24,24 @@ test("magic byte alapján azonosítja a támogatott képeket", () => {
     ),
     "webp",
   );
+  assert.equal(
+    detectImageFormat(
+      Uint8Array.from([
+        0, 0, 0, 24, 102, 116, 121, 112, 97, 118, 105, 102, 0, 0, 0, 0, 97, 118,
+        105, 102, 109, 105, 102, 49,
+      ]),
+    ),
+    "avif",
+  );
+  assert.equal(
+    detectImageFormat(
+      Uint8Array.from([
+        0, 0, 0, 24, 102, 116, 121, 112, 104, 101, 105, 99, 0, 0, 0, 0, 109,
+        105, 102, 49, 104, 101, 105, 99,
+      ]),
+    ),
+    "heic",
+  );
   assert.equal(detectImageFormat(Uint8Array.from([0, 1, 2, 3])), undefined);
 });
 
@@ -39,6 +57,10 @@ test("mobilon és kevés memórián konzervatív limitet használ", () => {
   assert.equal(
     getFileSizeLimit({ isMobile: false, deviceMemory: 16 }, "png"),
     130 * 1024 * 1024,
+  );
+  assert.equal(
+    getFileSizeLimit({ isMobile: false, deviceMemory: 16 }, "heic"),
+    120 * 1024 * 1024,
   );
 });
 

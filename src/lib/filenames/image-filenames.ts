@@ -4,7 +4,12 @@ const extensions: Record<ImageFormat, string> = {
   jpeg: "jpg",
   png: "png",
   webp: "webp",
+  avif: "avif",
 };
+
+export function getImageFileExtension(format: ImageFormat): string {
+  return extensions[format];
+}
 
 export function sanitizeBaseName(fileName: string): string {
   const withoutExtension = fileName.replace(/\.[^/.]+$/, "");
@@ -44,7 +49,7 @@ export function createOutputFileNameFromBase(
   baseName: string,
   format: ImageFormat,
 ): string {
-  return `${sanitizeOutputBaseName(baseName)}.${extensions[format]}`;
+  return `${sanitizeOutputBaseName(baseName)}.${getImageFileExtension(format)}`;
 }
 
 export function createUniqueFileName(

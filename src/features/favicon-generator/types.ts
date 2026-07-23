@@ -27,6 +27,9 @@ export interface FaviconEditorSettings {
 export interface ManifestSettings {
   name: string;
   shortName: string;
+  id: string;
+  startUrl: string;
+  scope: string;
   themeColor: string;
   backgroundColor: string;
   display: DisplayMode;

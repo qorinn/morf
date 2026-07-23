@@ -19,6 +19,9 @@ test("a PWA manifest helyes ikonokat és purpose értékeket tartalmaz", () => {
     createManifest({
       name: "Morf App",
       shortName: "Morf",
+      id: "/app/",
+      startUrl: "/app/",
+      scope: "/app/",
       themeColor: "#123456",
       backgroundColor: "#ffffff",
       display: "standalone",
@@ -28,11 +31,33 @@ test("a PWA manifest helyes ikonokat és purpose értékeket tartalmaz", () => {
   );
 
   assert.equal(manifest.icons.length, 4);
+  assert.equal(manifest.id, "/app/");
+  assert.equal(manifest.start_url, "/app/");
+  assert.equal(manifest.scope, "/app/");
   assert.deepEqual(
     manifest.icons.map((item: { purpose: string }) => item.purpose),
     ["any", "any", "maskable", "maskable"],
   );
   assert.equal(manifest.icons[0].src, "/assets/web-app-manifest-192x192.png");
+});
+
+test("a manifest elutasítja a scope-on kívüli start URL-t", () => {
+  assert.throws(
+    () =>
+      createManifest({
+        name: "Morf App",
+        shortName: "Morf",
+        id: "/app/",
+        startUrl: "/masik/",
+        scope: "/app/",
+        themeColor: "#123456",
+        backgroundColor: "#ffffff",
+        display: "standalone",
+        basePath: "/assets",
+        projectName: "Morf",
+      }),
+    /hatókörön belül/,
+  );
 });
 
 test("raszteres csomag HTML-je nem hivatkozik SVG-re", () => {

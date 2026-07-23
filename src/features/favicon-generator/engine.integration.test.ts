@@ -53,6 +53,9 @@ test("a PWA ZIP minden előírt, dekódolható képméretet és többméretes IC
       manifest: {
         name: "Morf",
         shortName: "Morf",
+        id: "/",
+        startUrl: "/",
+        scope: "/",
         themeColor: "#ffffff",
         backgroundColor: "#ffffff",
         display: "standalone",
@@ -106,6 +109,9 @@ test("a PWA ZIP minden előírt, dekódolható képméretet és többméretes IC
       manifest: {
         name: "Morf",
         shortName: "Morf",
+        id: "/",
+        startUrl: "/",
+        scope: "/",
         themeColor: "#ffffff",
         backgroundColor: "#ffffff",
         display: "standalone",
@@ -142,6 +148,9 @@ test("a PWA ZIP minden előírt, dekódolható képméretet és többméretes IC
       manifest: {
         name: "Morf",
         shortName: "Morf",
+        id: "/",
+        startUrl: "/",
+        scope: "/",
         themeColor: "#ffffff",
         backgroundColor: "#ffffff",
         display: "standalone",

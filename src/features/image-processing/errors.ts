@@ -8,7 +8,12 @@ function inferCategory(message: string): FileJobErrorCategory {
 
   if (normalized.includes("memory") || normalized.includes("allocation"))
     return "out-of-memory";
-  if (normalized.includes("decode")) return "decode-failed";
+  if (
+    normalized.includes("decode") ||
+    normalized.includes("heic") ||
+    normalized.includes("heif")
+  )
+    return "decode-failed";
   if (normalized.includes("encode")) return "encode-failed";
   if (normalized.includes("wasm") || normalized.includes("fetch"))
     return "engine-load-failed";
@@ -21,7 +26,7 @@ const messages: Record<
 > = {
   "unsupported-format": {
     message: "Ez a képformátum nem támogatott.",
-    suggestion: "Válassz JPG, PNG vagy WebP állóképet.",
+    suggestion: "Válassz JPG, PNG, WebP, AVIF vagy HEIC állóképet.",
   },
   "file-too-large": {
     message: "A kép túl nagy az eszköz biztonságos memóriakeretéhez.",
