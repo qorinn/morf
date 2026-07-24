@@ -26,3 +26,13 @@ test("az AVIF választható kimeneti formátum", () => {
 
   assert.equal(imageRecipeSchema.safeParse(avifRecipe).success, true);
 });
+
+test("a célméret és a veszteségmentes mód része a receptnek", () => {
+  const recipe = {
+    ...imagePresets[0].recipe,
+    maxFileSizeBytes: 500 * 1024,
+    lossless: true,
+  };
+
+  assert.equal(imageRecipeSchema.safeParse(recipe).success, true);
+});

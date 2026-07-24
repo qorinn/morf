@@ -3,6 +3,7 @@
 import { expose, transfer } from "comlink";
 
 import { calculateContainedDimensions } from "@/features/image-processing/dimensions";
+import { encodeAtHighestQualityUnderLimit } from "@/features/image-processing/target-size";
 import type {
   ImageFormat,
   InputImageFormat,
@@ -13,7 +14,15 @@ import type {
 } from "@/features/image-processing/types";
 
 type Decoder = (buffer: ArrayBuffer) => Promise<ImageData>;
-type Encoder = (image: ImageData, quality: number) => Promise<ArrayBuffer>;
+type EncoderOptions = {
+  quality: number;
+  lossless: boolean;
+  mode: "normal" | "target" | "lossless";
+};
+type Encoder = (
+  image: ImageData,
+  options: EncoderOptions,
+) => Promise<ArrayBuffer>;
 
 const mimeTypes: Record<ImageFormat, string> = {
   jpeg: "image/jpeg",
@@ -70,7 +79,11 @@ async function loadEncoder(format: ImageFormat): Promise<Encoder> {
   switch (format) {
     case "jpeg": {
       const { encode } = await import("@jsquash/jpeg");
-      return (image, quality) => encode(image, { quality });
+      return (image, options) =>
+        encode(image, {
+          quality: options.quality,
+          chroma_quality: options.quality,
+        });
     }
     case "png": {
       const { encode } = await import("@jsquash/png");
@@ -78,15 +91,22 @@ async function loadEncoder(format: ImageFormat): Promise<Encoder> {
     }
     case "webp": {
       const { encode } = await import("@jsquash/webp");
-      return (image, quality) => encode(image, { quality });
+      return (image, options) =>
+        encode(image, {
+          quality: options.quality,
+          lossless: options.lossless ? 1 : 0,
+          exact: options.lossless ? 1 : 0,
+          method: options.mode === "target" ? 3 : 4,
+        });
     }
     case "avif": {
       const { encode } = await import("@jsquash/avif");
-      return (image, quality) =>
+      return (image, options) =>
         encode(image, {
-          quality,
-          qualityAlpha: quality,
-          speed: 6,
+          quality: options.quality,
+          qualityAlpha: options.quality,
+          lossless: options.lossless,
+          speed: options.mode === "target" ? 8 : 6,
         });
     }
   }
@@ -120,6 +140,106 @@ function compositeTransparencyOnWhite(image: ImageData): ImageData {
   return image;
 }
 
+async function resizeImage(
+  image: ImageData,
+  width: number,
+  height: number,
+): Promise<ImageData> {
+  const { default: resize } = await import("@jsquash/resize");
+  return resize(image, {
+    width,
+    height,
+    method: "lanczos3",
+    fitMethod: "contain",
+    premultiply: true,
+    linearRGB: true,
+  });
+}
+
+function getSmallerDimensions(
+  image: ImageData,
+  encodedBytes: number,
+  maxBytes: number,
+): { width: number; height: number } {
+  const estimatedScale = Math.sqrt(maxBytes / Math.max(1, encodedBytes)) * 0.96;
+  const scale = Math.min(0.9, Math.max(0.1, estimatedScale));
+  let width = Math.max(1, Math.floor(image.width * scale));
+  let height = Math.max(1, Math.floor(image.height * scale));
+
+  if (width === image.width && width > 1) width -= 1;
+  if (height === image.height && height > 1) height -= 1;
+
+  return { width, height };
+}
+
+async function encodeUnderTargetSize(
+  initialImage: ImageData,
+  format: ImageFormat,
+  encoder: Encoder,
+  maxBytes: number,
+  onProgress: (progress: ProcessProgress) => void,
+): Promise<{ buffer: ArrayBuffer; image: ImageData }> {
+  let image = initialImage;
+  let attempt = 0;
+
+  while (true) {
+    attempt += 1;
+    report(
+      onProgress,
+      "encoding",
+      Math.min(98, 72 + Math.round(Math.min(attempt, 13) * 2)),
+    );
+
+    if (format === "png") {
+      const buffer = await encoder(image, {
+        quality: 100,
+        lossless: true,
+        mode: "target",
+      });
+      if (buffer.byteLength <= maxBytes) return { buffer, image };
+
+      if (image.width === 1 && image.height === 1) {
+        throw new Error("TARGET_SIZE_UNREACHABLE");
+      }
+
+      const target = getSmallerDimensions(image, buffer.byteLength, maxBytes);
+      image = await resizeImage(image, target.width, target.height);
+      continue;
+    }
+
+    let minimumQualityBuffer: ArrayBuffer | undefined;
+    const candidate = await encodeAtHighestQualityUnderLimit(
+      async (quality) => {
+        const buffer = await encoder(image, {
+          quality,
+          lossless: false,
+          mode: "target",
+        });
+        if (quality === 1) minimumQualityBuffer = buffer;
+        return buffer;
+      },
+      maxBytes,
+    );
+    if (candidate) return { buffer: candidate.buffer, image };
+
+    if (image.width === 1 && image.height === 1) {
+      throw new Error("TARGET_SIZE_UNREACHABLE");
+    }
+
+    minimumQualityBuffer ??= await encoder(image, {
+      quality: 1,
+      lossless: false,
+      mode: "target",
+    });
+    const target = getSmallerDimensions(
+      image,
+      minimumQualityBuffer.byteLength,
+      maxBytes,
+    );
+    image = await resizeImage(image, target.width, target.height);
+  }
+}
+
 const api: ProcessImageApi = {
   async processImage(
     request: ProcessImageRequest,
@@ -132,38 +252,79 @@ const api: ProcessImageApi = {
     let image = await decoder(request.buffer);
     const originalWidth = image.width;
     const originalHeight = image.height;
+    const { outputFormat, lossless, maxFileSizeBytes } = request.recipe;
 
-    const target = calculateContainedDimensions(
-      image.width,
-      image.height,
-      request.recipe.resize.maxWidth,
-      request.recipe.resize.maxHeight,
-    );
+    const canReturnOriginal =
+      request.inputFormat === outputFormat &&
+      (lossless ||
+        (maxFileSizeBytes !== null &&
+          request.buffer.byteLength <= maxFileSizeBytes));
+
+    if (canReturnOriginal) {
+      report(onProgress, "encoding", 100);
+      return transfer(
+        {
+          buffer: request.buffer,
+          originalWidth,
+          originalHeight,
+          width: originalWidth,
+          height: originalHeight,
+          mimeType: mimeTypes[outputFormat],
+          extension: extensions[outputFormat],
+        },
+        [request.buffer],
+      );
+    }
+
+    const target = lossless
+      ? { width: image.width, height: image.height }
+      : calculateContainedDimensions(
+          image.width,
+          image.height,
+          request.recipe.resize.maxWidth,
+          request.recipe.resize.maxHeight,
+        );
 
     if (target.width !== image.width || target.height !== image.height) {
       report(onProgress, "processing", 48);
-      const { default: resize } = await import("@jsquash/resize");
-      image = await resize(image, {
-        width: target.width,
-        height: target.height,
-        method: "lanczos3",
-        fitMethod: "contain",
-        premultiply: true,
-        linearRGB: true,
-      });
+      image = await resizeImage(image, target.width, target.height);
     } else {
       report(onProgress, "processing", 58);
     }
 
     report(onProgress, "loading-engine", 68);
-    const encoder = await loadEncoder(request.recipe.outputFormat);
+    const encoder = await loadEncoder(outputFormat);
 
-    if (request.recipe.outputFormat === "jpeg") {
+    if (outputFormat === "jpeg") {
       image = compositeTransparencyOnWhite(image);
     }
 
     report(onProgress, "encoding", 78);
-    const buffer = await encoder(image, request.recipe.quality);
+    let buffer: ArrayBuffer;
+
+    if (lossless) {
+      buffer = await encoder(image, {
+        quality: 100,
+        lossless: true,
+        mode: "lossless",
+      });
+    } else if (maxFileSizeBytes !== null) {
+      const result = await encodeUnderTargetSize(
+        image,
+        outputFormat,
+        encoder,
+        maxFileSizeBytes,
+        onProgress,
+      );
+      buffer = result.buffer;
+      image = result.image;
+    } else {
+      buffer = await encoder(image, {
+        quality: request.recipe.quality,
+        lossless: outputFormat === "png",
+        mode: "normal",
+      });
+    }
     report(onProgress, "encoding", 100);
 
     return transfer(
@@ -173,8 +334,8 @@ const api: ProcessImageApi = {
         originalHeight,
         width: image.width,
         height: image.height,
-        mimeType: mimeTypes[request.recipe.outputFormat],
-        extension: extensions[request.recipe.outputFormat],
+        mimeType: mimeTypes[outputFormat],
+        extension: extensions[outputFormat],
       },
       [buffer],
     );

@@ -12,6 +12,8 @@ export type ImageConversionSettings = {
   maxWidth: number;
   maxHeight: number;
   quality: number;
+  maxFileSizeKb: number | null;
+  lossless: boolean;
 };
 
 export type ConversionGroup = {

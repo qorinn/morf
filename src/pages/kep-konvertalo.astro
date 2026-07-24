@@ -3,6 +3,7 @@ import ImageWorkspace from "@/components/workspace/ImageWorkspace";
 import SiteFooter from "@/components/layout/SiteFooter.astro";
 import SiteHeader from "@/components/layout/SiteHeader.astro";
 import FaqSection from "@/components/sections/FaqSection.astro";
+import ImageConverterGuide from "@/components/sections/ImageConverterGuide.astro";
 import PrivacySection from "@/components/sections/PrivacySection.astro";
 import { Badge } from "@/components/ui/badge";
 import ToolHero from "@/components/sections/ToolHero.astro";
@@ -26,6 +27,26 @@ const faqItems = [
       "JPG, PNG, WebP, AVIF és HEIC/HEIF állóképeket adhatsz hozzá, a kimenet pedig JPG, PNG, WebP vagy AVIF lehet. A Morf a fájl tényleges tartalmát is ellenőrzi, nem csak a kiterjesztését.",
   },
   {
+    question: "Konvertálhatok több képet egyszerre, különböző beállításokkal?",
+    answer:
+      "Igen. A képeket konfigurációs csoportokba rendezheted, és minden csoporthoz külön kimeneti formátumot, maximális felbontást, minőséget, maximum fájlméretet vagy veszteségmentes módot állíthatsz be. Az összes bevont kép egyetlen futtatással készül el.",
+  },
+  {
+    question: "Hogyan csökkenthetem a képeket egy megadott fájlméret alá?",
+    answer:
+      "Kapcsold be a maximum fájlméretet, majd add meg a kívánt határt kilobájtban. A Morf megkeresi a lehető legjobb, még a határ alá férő minőséget, és szükség esetén a felbontást is tovább csökkenti. Ha a fájl eleve kisebb, és a formátuma nem változik, érintetlen marad.",
+  },
+  {
+    question: "A 100%-os minőség ugyanaz, mint a veszteségmentes konvertálás?",
+    answer:
+      "Nem minden formátumnál. A 100%-os minőség veszteséges kódolóknál is jelenthet újrakódolást. A veszteségmentes mód külön beállítás: megtartja az eredeti felbontást, felülírja a minőség- és célméret-beállításokat, JPG-nél pedig a legmagasabb elérhető minőséget használja.",
+  },
+  {
+    question: "Átalakíthatok több HEIC vagy HEIF képet JPG formátumba?",
+    answer:
+      "Igen. Több iPhone-ról származó HEIC vagy HEIF állóképet is hozzáadhatsz egyszerre, majd JPG, PNG, WebP vagy AVIF kimenetet választhatsz hozzájuk. A HEIC és HEIF jelenleg bemeneti formátum, HEIC-kimenetet az eszköz nem készít.",
+  },
+  {
     question: "Mi történik az átlátszó háttérrel JPG konvertáláskor?",
     answer:
       "A JPG nem támogatja az átlátszóságot, ezért az átlátszó képpontok hátteret kapnak. Ha meg szeretnéd tartani az átlátszóságot, válassz PNG, WebP vagy AVIF kimenetet.",
@@ -41,11 +62,78 @@ const faqItems = [
       "Nem. Az első verzió állóképekhez készült, animációmegőrzést nem ígér.",
   },
 ];
+
+const seoTitle = "Online képkonvertáló: JPG, PNG, WebP, AVIF | Morf";
+const seoDescription =
+  "Online képkonvertáló több képhez: alakíts át JPG, PNG, WebP, AVIF és HEIC fájlokat külön beállításokkal, célmérettel, privát módon, regisztráció nélkül.";
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebApplication",
+      "@id": "/kep-konvertalo#alkalmazas",
+      name: "Morf online képkonvertáló",
+      alternateName: "Morf képkonvertáló",
+      description: seoDescription,
+      applicationCategory: "MultimediaApplication",
+      applicationSubCategory: "Képkonvertáló, képtömörítő és képátméretező",
+      operatingSystem: "Web",
+      browserRequirements:
+        "JavaScriptet, Web Workert és WebAssemblyt támogató modern böngésző",
+      inLanguage: "hu",
+      isAccessibleForFree: true,
+      dateModified: "2026-07-24",
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "HUF",
+      },
+      featureList: [
+        "Több kép kötegelt konvertálása",
+        "Különböző beállítású konfigurációs csoportok",
+        "JPG, PNG, WebP és AVIF kimenet",
+        "HEIC és HEIF képek beolvasása",
+        "Aránytartó képátméretezés",
+        "Automatikus igazodás maximum fájlmérethez",
+        "Veszteségmentes konvertálási mód",
+        "Egyenkénti és ZIP-mentés",
+        "Helyi, böngészőben futó képfeldolgozás",
+      ],
+      fileFormat: [
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "image/avif",
+        "image/heic",
+        "image/heif",
+      ],
+      creator: {
+        "@type": "Person",
+        name: "Paládi Bálint",
+      },
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "/kep-konvertalo#gyakori-kerdesek",
+      inLanguage: "hu",
+      mainEntity: faqItems.map((item) => ({
+        "@type": "Question",
+        name: item.question,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: item.answer,
+        },
+      })),
+    },
+  ],
+};
 ---
 
 <MainLayout
-  title="Képkonvertáló – JPG, PNG, WebP, AVIF és HEIC | Morf"
-  description="Rendezd konfigurációs csoportokba tetszőleges számú JPG, PNG, WebP, AVIF vagy HEIC képedet, majd konvertáld őket egyetlen futtatással."
+  title={seoTitle}
+  description={seoDescription}
+  canonicalPath="/kep-konvertalo"
+  structuredData={structuredData}
 >
   <SiteHeader
     active="converter"
@@ -57,30 +145,32 @@ const faqItems = [
   <main>
     <ToolHero
       badge="JPG · PNG · WebP · AVIF · HEIC"
-      title="Konvertálj több képet egyszerre."
-      description="Rendezd a képeket közös vagy külön konfigurációs csoportokba. A Morf egyetlen futtatással, közvetlenül a böngésződben alakítja át őket."
+      title="Online képkonvertáló több képhez."
+      description="Konvertálj egyszerre több JPG, PNG, WebP, AVIF vagy HEIC képet ingyenesen, regisztráció nélkül. Adj eltérő formátum-, méret-, minőség- vagy célfájlméret-beállítást minden konfigurációs csoportnak."
       primaryAction={{ href: "#workspace", label: "Képek konvertálása" }}
       secondaryAction={{ href: "#hogyan-mukodik", label: "Hogyan működik?" }}
       features={[
         {
-          title: "Egyszerre több fájl",
+          title: "Több kép, több beállítás",
           description:
-            "A képek közös vagy külön csoportok beállításait használhatják, és egyenként kihagyhatók a konvertálásból.",
+            "A képek közös vagy külön konfigurációs csoportokba kerülhetnek, eltérő formátummal és exportbeállításokkal.",
         },
         {
-          title: "Méret és minőség egy helyen",
+          title: "Célméret vagy veszteségmentes mód",
           description:
-            "Konvertálás közben aránytartó átméretezést és tömörítést is beállíthatsz.",
+            "Kérj adott fájlméret alatti eredményt, vagy őrizd meg az eredeti felbontást veszteségmentes kódolással.",
         },
         {
-          title: "Rugalmas mentés",
+          title: "Privát feldolgozás és rugalmas mentés",
           description:
-            "Mentsd az eredményeket egyenként, kiválasztott helyre vagy egyetlen ZIP-fájlba.",
+            "A képek a böngésződben maradnak, az eredmények pedig egyenként, kiválasztott helyre vagy ZIP-be menthetők.",
         },
       ]}
     />
 
     <ImageWorkspace client:load />
+
+    <ImageConverterGuide />
 
     <section
       id="hogyan-mukodik"
@@ -132,7 +222,7 @@ const faqItems = [
 
     <FaqSection
       title="Képkonvertálás, röviden"
-      description="Válaszok a támogatott formátumokról, az átlátszóságról, a fájlméretről és a helyi feldolgozásról."
+      description="Válaszok a többképes konvertálásról, a JPG, PNG, WebP, AVIF és HEIC formátumokról, a célfájlméretről, a veszteségmentes módról és a helyi feldolgozásról."
       items={faqItems}
     />
   </main>

@@ -44,6 +44,8 @@ function createGroup(
       maxWidth: 1920,
       maxHeight: 1920,
       quality,
+      maxFileSizeKb: null,
+      lossless: false,
     },
   };
 }
@@ -57,6 +59,8 @@ test("a presetből önálló konvertálási beállítás készül", () => {
     maxWidth: 1920,
     maxHeight: 1920,
     quality: 80,
+    maxFileSizeKb: null,
+    lossless: false,
   });
 });
 
@@ -67,6 +71,8 @@ test("a csoport beállításából érvényes feldolgozási recept készül", ()
     maxWidth: 1440,
     maxHeight: 900,
     quality: 72,
+    maxFileSizeKb: 350,
+    lossless: false,
   });
 
   assert.equal(recipe.outputFormat, "avif");
@@ -76,6 +82,8 @@ test("a csoport beállításából érvényes feldolgozási recept készül", ()
     keepAspectRatio: true,
   });
   assert.equal(recipe.quality, 72);
+  assert.equal(recipe.maxFileSizeBytes, 350 * 1024);
+  assert.equal(recipe.lossless, false);
 });
 
 test("csak minden beállítás egyezése számít azonos konfigurációnak", () => {
@@ -86,6 +94,20 @@ test("csak minden beállítás egyezése számít azonos konfigurációnak", () 
     areConversionSettingsEqual(settings, {
       ...settings,
       quality: settings.quality + 1,
+    }),
+    false,
+  );
+  assert.equal(
+    areConversionSettingsEqual(settings, {
+      ...settings,
+      maxFileSizeKb: 500,
+    }),
+    false,
+  );
+  assert.equal(
+    areConversionSettingsEqual(settings, {
+      ...settings,
+      lossless: true,
     }),
     false,
   );

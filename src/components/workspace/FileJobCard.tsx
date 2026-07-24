@@ -3,11 +3,13 @@ import {
   CircleArrowShrink02Icon,
   CircleArrowExpand01Icon,
   Cancel01Icon,
+  Copy01Icon,
   Delete02Icon,
   Download04Icon,
   FolderOpenIcon,
-  GripVerticalIcon,
   ImageNotFound01Icon,
+  LayerAddIcon,
+  MoreVerticalIcon,
   RefreshIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -23,6 +25,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import {
   InputGroup,
@@ -42,6 +53,7 @@ import {
   ProgressLabel,
   ProgressValue,
 } from "@/components/ui/progress";
+import { getConversionModeLabel } from "@/features/image-processing/conversion-settings";
 import { estimateImageOutputSize } from "@/features/image-processing/estimate-output-size";
 import type {
   ConversionGroup,
@@ -64,6 +76,8 @@ type FileJobCardProps = {
   onCancel: (id: string) => void;
   onDimensions: (id: string, width: number, height: number) => void;
   onDownload: (job: FileJob) => void;
+  onDuplicate: (id: string) => void;
+  onDuplicateToNewGroup: (id: string) => void;
   onRename: (id: string, outputBaseName: string) => void;
   onRetry: (id: string) => void;
   onRemove: (id: string) => void;
@@ -98,14 +112,16 @@ function getBadgeVariant(status: FileJobStatus) {
   return "secondary" as const;
 }
 
-function isCardControl(target: EventTarget | null): boolean {
-  return (
-    target instanceof Element &&
-    Boolean(
-      target.closest(
-        "a, button, input, textarea, [data-card-control], [data-slot=input-group]",
-      ),
-    )
+function isCardSelectionClick(
+  target: EventTarget | null,
+  card: Element,
+): boolean {
+  // Overlay events bubble through the React tree even when their portal is
+  // outside the card in the DOM. Only the card's own DOM can toggle selection.
+  if (!(target instanceof Element) || !card.contains(target)) return false;
+
+  return !target.closest(
+    "a, button, input, label, select, textarea, [role=combobox], [data-card-control], [data-slot=input-group], [data-slot=select-trigger]",
   );
 }
 
@@ -119,6 +135,8 @@ export function FileJobCard({
   onCancel,
   onDimensions,
   onDownload,
+  onDuplicate,
+  onDuplicateToNewGroup,
   onRename,
   onRetry,
   onRemove,
@@ -136,7 +154,10 @@ export function FileJobCard({
     job.result?.format ?? group.settings.outputFormat,
   );
   const estimatedResult =
-    job.originalWidth && job.originalHeight
+    job.originalWidth &&
+    job.originalHeight &&
+    !group.settings.lossless &&
+    group.settings.maxFileSizeKb === null
       ? estimateImageOutputSize({
           sourceSize: job.file.size,
           sourceFormat: job.inputFormat,
@@ -149,11 +170,7 @@ export function FileJobCard({
     ? calculateSaving(job.file.size, job.result.size)
     : undefined;
   const groupItems = groups.map((candidate) => ({
-    label: `${candidate.name} · ${candidate.settings.outputFormat.toUpperCase()}${
-      candidate.settings.outputFormat === "png"
-        ? ""
-        : ` · ${candidate.settings.quality}%`
-    }`,
+    label: `${candidate.name} · ${candidate.settings.outputFormat.toUpperCase()} · ${getConversionModeLabel(candidate.settings)}`,
     value: candidate.id,
   }));
   const hasFooterActions =
@@ -180,7 +197,9 @@ export function FileJobCard({
       } csoportművelethez`}
       className="[--card-spacing:--spacing(2.5)]"
       onClick={(event) => {
-        if (!isCardControl(event.target)) toggleSelection();
+        if (isCardSelectionClick(event.target, event.currentTarget)) {
+          toggleSelection();
+        }
       }}
       onKeyDown={(event) => {
         if (event.target !== event.currentTarget) return;
@@ -191,14 +210,6 @@ export function FileJobCard({
     >
       <CardHeader>
         <div className="flex min-w-0 items-center gap-2">
-          <span
-            data-card-control
-            className="text-muted-foreground flex size-5 shrink-0 cursor-grab items-center justify-center touch-none active:cursor-grabbing"
-            title="Átrendezés hamarosan"
-            aria-hidden="true"
-          >
-            <HugeiconsIcon icon={GripVerticalIcon} strokeWidth={2} />
-          </span>
           <div className="bg-muted flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl">
             {previewFailed ? (
               <HugeiconsIcon
@@ -242,26 +253,63 @@ export function FileJobCard({
               {statusLabels[job.status]}
             </Badge>
           )}
-          <Button
-            size="icon-sm"
-            variant="ghost"
-            aria-label={`${job.file.name} eltávolítása`}
-            disabled={isActive}
-            onClick={() => onRemove(job.id)}
-          >
-            <HugeiconsIcon
-              icon={Delete02Icon}
-              strokeWidth={2}
-              data-icon="inline-start"
-              aria-hidden="true"
-            />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={<Button size="icon-sm" variant="ghost" />}
+              aria-label={`${job.file.name} műveletei`}
+              disabled={selectionDisabled || isActive}
+            >
+              <HugeiconsIcon
+                icon={MoreVerticalIcon}
+                strokeWidth={2}
+                aria-hidden="true"
+              />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Képműveletek</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => onDuplicate(job.id)}>
+                  <HugeiconsIcon
+                    icon={Copy01Icon}
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  />
+                  Duplikálás ebben a csoportban
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onDuplicateToNewGroup(job.id)}>
+                  <HugeiconsIcon
+                    icon={LayerAddIcon}
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  />
+                  Duplikálás új csoportba
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => onRemove(job.id)}
+                >
+                  <HugeiconsIcon
+                    icon={Delete02Icon}
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  />
+                  Törlés
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </CardAction>
       </CardHeader>
 
       <CardContent className="flex flex-col gap-2">
         <FieldGroup className="grid gap-2">
-          <Field data-disabled={selectionDisabled || isActive || undefined}>
+          <Field
+            className="min-w-0 max-w-full"
+            data-disabled={selectionDisabled || isActive || undefined}
+          >
             <FieldLabel htmlFor={`group-${job.id}`} className="sr-only">
               Konfigurációs csoport
             </FieldLabel>
@@ -271,7 +319,10 @@ export function FileJobCard({
               disabled={selectionDisabled || isActive}
               onValueChange={(value) => value && onGroupChange(job.id, value)}
             >
-              <SelectTrigger id={`group-${job.id}`} className="w-full">
+              <SelectTrigger
+                id={`group-${job.id}`}
+                className="w-full max-w-full min-w-0"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -321,6 +372,24 @@ export function FileJobCard({
             <div>
               <dt className="text-muted-foreground">Várható új méret</dt>
               <dd>≈ {formatBytes(estimatedResult.bytes)}</dd>
+            </div>
+          </dl>
+        )}
+
+        {!job.result && group.settings.maxFileSizeKb !== null && (
+          <dl className="grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <dt className="text-muted-foreground">Célméret</dt>
+              <dd>≤ {formatBytes(group.settings.maxFileSizeKb * 1024)}</dd>
+            </div>
+          </dl>
+        )}
+
+        {!job.result && group.settings.lossless && (
+          <dl className="grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <dt className="text-muted-foreground">Feldolgozás</dt>
+              <dd>Veszteségmentes</dd>
             </div>
           </dl>
         )}

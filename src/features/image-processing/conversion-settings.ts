@@ -9,6 +9,7 @@ import {
   type ImageRecipe,
   type PresetId,
 } from "../../lib/presets/image-presets.ts";
+import { formatBytes } from "../../lib/filenames/image-filenames.ts";
 
 const activeStatuses: FileJobStatus[] = [
   "loading-engine",
@@ -28,6 +29,10 @@ export function createConversionSettings(
     maxWidth: preset.recipe.resize.maxWidth ?? 1920,
     maxHeight: preset.recipe.resize.maxHeight ?? 1920,
     quality: preset.recipe.quality,
+    maxFileSizeKb: preset.recipe.maxFileSizeBytes
+      ? Math.max(1, Math.floor(preset.recipe.maxFileSizeBytes / 1024))
+      : null,
+    lossless: preset.recipe.lossless,
   };
 }
 
@@ -44,6 +49,10 @@ export function conversionSettingsToRecipe(
       keepAspectRatio: true,
     },
     quality: settings.quality,
+    maxFileSizeBytes: settings.maxFileSizeKb
+      ? settings.maxFileSizeKb * 1024
+      : null,
+    lossless: settings.lossless,
     stripMetadata: true,
   };
 }
@@ -57,8 +66,29 @@ export function areConversionSettingsEqual(
     first.outputFormat === second.outputFormat &&
     first.maxWidth === second.maxWidth &&
     first.maxHeight === second.maxHeight &&
-    first.quality === second.quality
+    first.quality === second.quality &&
+    first.maxFileSizeKb === second.maxFileSizeKb &&
+    first.lossless === second.lossless
   );
+}
+
+export function getConversionModeLabel(
+  settings: ImageConversionSettings,
+): string {
+  if (settings.lossless) return "veszteségmentes";
+  if (settings.maxFileSizeKb !== null) {
+    return `≤ ${formatBytes(settings.maxFileSizeKb * 1024)}`;
+  }
+  if (settings.outputFormat === "png") return "veszteségmentes tömörítés";
+  return `${settings.quality}%`;
+}
+
+export function getConversionResolutionLabel(
+  settings: ImageConversionSettings,
+): string {
+  return settings.lossless
+    ? "eredeti felbontás"
+    : `${settings.maxWidth}×${settings.maxHeight} px`;
 }
 
 function resetJobForConversionChange(

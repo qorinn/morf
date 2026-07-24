@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Field,
+  FieldContent,
   FieldDescription,
   FieldGroup,
   FieldLabel,
@@ -20,6 +22,7 @@ import { CardDescription, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { getConversionModeLabel } from "@/features/image-processing/conversion-settings";
 import type { ImageFormat } from "@/features/image-processing/types";
 import { imagePresets, type PresetId } from "@/lib/presets/image-presets";
 import { useWorkspaceStore } from "@/stores/workspace-store";
@@ -64,12 +67,8 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
     () =>
       groups.map((group) => {
         const count = jobs.filter((job) => job.groupId === group.id).length;
-        const quality =
-          group.settings.outputFormat === "png"
-            ? ""
-            : ` · ${group.settings.quality}%`;
         return {
-          label: `${group.name || "Névtelen csoport"} · ${count} kép · ${group.settings.outputFormat.toUpperCase()}${quality}`,
+          label: `${group.name || "Névtelen csoport"} · ${count} kép · ${group.settings.outputFormat.toUpperCase()} · ${getConversionModeLabel(group.settings)}`,
           value: group.id,
         };
       }),
@@ -81,7 +80,10 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
   const activePreset = imagePresets.find(
     (preset) => preset.id === settings.presetId,
   );
-  const qualityDisabled = settings.outputFormat === "png";
+  const qualityDisabled =
+    settings.outputFormat === "png" ||
+    settings.maxFileSizeKb !== null ||
+    settings.lossless;
 
   return (
     <FieldGroup>
@@ -223,8 +225,31 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
         </ToggleGroup>
       </Field>
 
+      <Field orientation="horizontal" data-disabled={disabled || undefined}>
+        <Checkbox
+          id={`lossless-${activeGroup.id}`}
+          checked={settings.lossless}
+          disabled={disabled}
+          onCheckedChange={(checked) =>
+            updateGroupSettings(activeGroup.id, {
+              lossless: checked === true,
+            })
+          }
+        />
+        <FieldContent>
+          <FieldLabel htmlFor={`lossless-${activeGroup.id}`}>
+            Veszteségmentes mód
+          </FieldLabel>
+          <FieldDescription>
+            {settings.outputFormat === "jpeg"
+              ? "Nem méretez át és nem optimalizál. A JPG nem támogat valódi veszteségmentes kódolást, ezért ennél a formátumnál a legmagasabb elérhető minőséget használja."
+              : "Az eredeti felbontást megtartja, és veszteségmentesen kódol. Felülírja a felbontást, a minőséget és a maximum fájlméretet."}
+          </FieldDescription>
+        </FieldContent>
+      </Field>
+
       <FieldGroup className="grid gap-4 sm:grid-cols-2">
-        <Field data-disabled={disabled || undefined}>
+        <Field data-disabled={disabled || settings.lossless || undefined}>
           <FieldLabel htmlFor={`max-width-${activeGroup.id}`}>
             Max. szélesség
           </FieldLabel>
@@ -235,7 +260,7 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
             min={1}
             max={12000}
             value={settings.maxWidth}
-            disabled={disabled}
+            disabled={disabled || settings.lossless}
             onChange={(event) =>
               updateGroupSettings(activeGroup.id, {
                 maxWidth: clampNumber(event.target.value, 1, 12_000),
@@ -243,7 +268,7 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
             }
           />
         </Field>
-        <Field data-disabled={disabled || undefined}>
+        <Field data-disabled={disabled || settings.lossless || undefined}>
           <FieldLabel htmlFor={`max-height-${activeGroup.id}`}>
             Max. magasság
           </FieldLabel>
@@ -254,7 +279,7 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
             min={1}
             max={12000}
             value={settings.maxHeight}
-            disabled={disabled}
+            disabled={disabled || settings.lossless}
             onChange={(event) =>
               updateGroupSettings(activeGroup.id, {
                 maxHeight: clampNumber(event.target.value, 1, 12_000),
@@ -263,6 +288,55 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
           />
         </Field>
       </FieldGroup>
+
+      <Field data-disabled={disabled || settings.lossless || undefined}>
+        <div className="flex items-start gap-3">
+          <Checkbox
+            id={`max-file-size-enabled-${activeGroup.id}`}
+            checked={settings.maxFileSizeKb !== null}
+            disabled={disabled || settings.lossless}
+            onCheckedChange={(checked) =>
+              updateGroupSettings(activeGroup.id, {
+                maxFileSizeKb: checked === true ? 500 : null,
+              })
+            }
+          />
+          <FieldContent>
+            <FieldLabel htmlFor={`max-file-size-enabled-${activeGroup.id}`}>
+              Maximum fájlméret
+            </FieldLabel>
+            <FieldDescription>
+              A motor a lehető legjobb minőséget keresi meg a határ alatt. Ha
+              kell, a felbontást is tovább csökkenti.
+            </FieldDescription>
+          </FieldContent>
+        </div>
+        <div className="flex items-center gap-2">
+          <Input
+            id={`max-file-size-${activeGroup.id}`}
+            className="w-32 tabular-nums"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={102400}
+            value={settings.maxFileSizeKb ?? 500}
+            disabled={
+              disabled || settings.lossless || settings.maxFileSizeKb === null
+            }
+            aria-label="Maximum fájlméret kilobájtban"
+            onChange={(event) =>
+              updateGroupSettings(activeGroup.id, {
+                maxFileSizeKb: clampNumber(event.target.value, 1, 102_400),
+              })
+            }
+          />
+          <span className="text-muted-foreground text-sm">KB</span>
+        </div>
+        <FieldDescription>
+          Ha a forrás már a határ alatt van és a formátuma sem változik, a fájl
+          érintetlen marad. A maximum fájlméret a minőségértéket felülírja.
+        </FieldDescription>
+      </Field>
 
       <Field data-disabled={disabled || qualityDisabled || undefined}>
         <FieldLabel htmlFor={`quality-number-${activeGroup.id}`}>
@@ -299,9 +373,13 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
           />
         </div>
         <FieldDescription>
-          {qualityDisabled
-            ? "A PNG veszteségmentes kimenetnél ez a beállítás nem használható."
-            : `${settings.quality}% — nagyobb érték jobb minőséget és nagyobb fájlt jelent.`}
+          {settings.lossless
+            ? "A veszteségmentes mód felülírja ezt a beállítást."
+            : settings.maxFileSizeKb !== null
+              ? "A maximum fájlméret alapján a motor automatikusan választ minőséget."
+              : settings.outputFormat === "png"
+                ? "A PNG veszteségmentes kimenetnél ez a beállítás nem használható."
+                : `${settings.quality}% — nagyobb érték jobb minőséget és nagyobb fájlt jelent.`}
         </FieldDescription>
       </Field>
     </FieldGroup>

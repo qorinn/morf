@@ -57,6 +57,24 @@ test("a kijelölt képek egy meglévő közös csoportba rendezhetők", () => {
   assert.deepEqual(state.selectedJobIds, []);
 });
 
+test("egy kép csoportváltása nem módosítja a kijelölését", () => {
+  addImages(2);
+  useWorkspaceStore.getState().createGroup();
+  const targetGroupId = useWorkspaceStore.getState().activeGroupId;
+  const [selectedJob, unselectedJob] = useWorkspaceStore.getState().jobs;
+
+  useWorkspaceStore.getState().toggleJobSelection(selectedJob.id);
+  useWorkspaceStore.getState().assignJobToGroup(selectedJob.id, targetGroupId);
+  useWorkspaceStore
+    .getState()
+    .assignJobToGroup(unselectedJob.id, targetGroupId);
+
+  const state = useWorkspaceStore.getState();
+  assert.deepEqual(state.selectedJobIds, [selectedJob.id]);
+  assert.equal(state.jobs[0].groupId, targetGroupId);
+  assert.equal(state.jobs[1].groupId, targetGroupId);
+});
+
 test("a kijelölt képekből képenként külön, azonos beállítású csoport készül", () => {
   addImages(3);
   useWorkspaceStore
@@ -201,4 +219,55 @@ test("az inaktív csoportba áthelyezett kép is kimarad a konvertálásból", (
   const state = useWorkspaceStore.getState();
   assert.equal(state.jobs[0].groupId, inactiveGroupId);
   assert.equal(state.jobs[0].shouldProcess, false);
+});
+
+test("a kép ugyanabba a csoportba önálló feladatként duplikálható", () => {
+  addImages(1);
+  const source = useWorkspaceStore.getState().jobs[0];
+
+  useWorkspaceStore.getState().renameJob(source.id, "kampanykep");
+  useWorkspaceStore.getState().duplicateJob(source.id);
+
+  const [original, copy] = useWorkspaceStore.getState().jobs;
+  assert.equal(useWorkspaceStore.getState().jobs.length, 2);
+  assert.notEqual(copy.id, original.id);
+  assert.notEqual(copy.previewUrl, original.previewUrl);
+  assert.strictEqual(copy.file, original.file);
+  assert.equal(copy.groupId, original.groupId);
+  assert.equal(copy.outputBaseName, "kampanykep-masolat");
+  assert.equal(copy.status, "queued");
+  assert.equal(copy.result, undefined);
+});
+
+test("a kép másolata új, azonos beállítású csoportba kerül", () => {
+  addImages(1);
+  const source = useWorkspaceStore.getState().jobs[0];
+  const sourceGroup = useWorkspaceStore.getState().groups[0];
+
+  useWorkspaceStore.getState().duplicateJobToNewGroup(source.id);
+
+  const state = useWorkspaceStore.getState();
+  const copy = state.jobs[1];
+  const newGroup = state.groups[1];
+  assert.equal(state.groups.length, 2);
+  assert.equal(copy.groupId, newGroup.id);
+  assert.deepEqual(newGroup.settings, sourceGroup.settings);
+  assert.equal(state.activeGroupId, newGroup.id);
+});
+
+test("a kijelölt képek együtt törölhetők, a többi megmarad", () => {
+  addImages(3);
+  const [first, second, third] = useWorkspaceStore.getState().jobs;
+  useWorkspaceStore.getState().toggleJobSelection(first.id);
+  useWorkspaceStore.getState().toggleJobSelection(second.id);
+
+  const removedCount = useWorkspaceStore.getState().removeSelectedJobs();
+  const state = useWorkspaceStore.getState();
+
+  assert.equal(removedCount, 2);
+  assert.deepEqual(
+    state.jobs.map((job) => job.id),
+    [third.id],
+  );
+  assert.deepEqual(state.selectedJobIds, []);
 });

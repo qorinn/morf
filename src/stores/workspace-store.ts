@@ -46,6 +46,8 @@ type WorkspaceState = {
   setAllJobsProcessing: (shouldProcess: boolean) => void;
   assignJobToGroup: (jobId: string, groupId: string) => void;
   assignSelectedJobsToGroup: (groupId: string) => void;
+  duplicateJob: (id: string) => void;
+  duplicateJobToNewGroup: (id: string) => void;
   createGroup: () => void;
   createGroupFromSelectedJobs: () => void;
   createSeparateGroupsFromSelectedJobs: () => number;
@@ -68,6 +70,7 @@ type WorkspaceState = {
   setJobStatus: (id: string, status: FileJobStatus, progress?: number) => void;
   retryJob: (id: string) => void;
   removeJob: (id: string) => void;
+  removeSelectedJobs: () => number;
   clearJobs: () => void;
 };
 
@@ -107,6 +110,42 @@ function isActiveJob(job: FileJob): boolean {
 function releaseJobUrls(job: FileJob) {
   URL.revokeObjectURL(job.previewUrl);
   if (job.result) URL.revokeObjectURL(job.result.url);
+}
+
+function createDuplicateOutputBaseName(
+  sourceBaseName: string,
+  jobs: FileJob[],
+): string {
+  const usedNames = new Set(jobs.map((job) => job.outputBaseName));
+  const sourceRoot = sourceBaseName.replace(/-masolat(?:-\d+)?$/i, "");
+  const copyRoot = `${sourceRoot.slice(0, 70)}-masolat`;
+
+  if (!usedNames.has(copyRoot)) return copyRoot;
+
+  let suffix = 2;
+  while (usedNames.has(`${copyRoot}-${suffix}`)) suffix += 1;
+  return `${copyRoot}-${suffix}`;
+}
+
+function duplicateJob(
+  job: FileJob,
+  jobs: FileJob[],
+  groupId: string,
+  shouldProcess: boolean,
+): FileJob {
+  return {
+    id: crypto.randomUUID(),
+    file: job.file,
+    inputFormat: job.inputFormat,
+    previewUrl: URL.createObjectURL(job.file),
+    outputBaseName: createDuplicateOutputBaseName(job.outputBaseName, jobs),
+    groupId,
+    shouldProcess,
+    status: "queued",
+    progress: 0,
+    originalWidth: job.originalWidth,
+    originalHeight: job.originalHeight,
+  };
 }
 
 function updateGroupConfiguration(
@@ -214,6 +253,53 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
         ),
         activeGroupId: groupId,
         selectedJobIds: [],
+      };
+    }),
+  duplicateJob: (id) =>
+    set((state) => {
+      const sourceJob = state.jobs.find((job) => job.id === id);
+      if (!sourceJob || isActiveJob(sourceJob)) return {};
+
+      const sourceGroup = state.groups.find(
+        (group) => group.id === sourceJob.groupId,
+      );
+      const copy = duplicateJob(
+        sourceJob,
+        state.jobs,
+        sourceJob.groupId,
+        sourceGroup?.shouldProcess ?? sourceJob.shouldProcess,
+      );
+      const sourceIndex = state.jobs.findIndex((job) => job.id === id);
+      const jobs = [...state.jobs];
+      jobs.splice(sourceIndex + 1, 0, copy);
+
+      return { jobs };
+    }),
+  duplicateJobToNewGroup: (id) =>
+    set((state) => {
+      const sourceJob = state.jobs.find((job) => job.id === id);
+      if (!sourceJob || isActiveJob(sourceJob)) return {};
+
+      const sourceGroup =
+        state.groups.find((group) => group.id === sourceJob.groupId) ??
+        state.groups[0];
+      const group = createGroup(
+        state.nextGroupNumber,
+        sourceGroup.settings,
+        sourceGroup.shouldProcess,
+      );
+      const copy = duplicateJob(
+        sourceJob,
+        state.jobs,
+        group.id,
+        group.shouldProcess,
+      );
+
+      return {
+        groups: [...state.groups, group],
+        jobs: [...state.jobs, copy],
+        activeGroupId: group.id,
+        nextGroupNumber: state.nextGroupNumber + 1,
       };
     }),
   createGroup: () =>
@@ -433,6 +519,30 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
         selectedJobIds: state.selectedJobIds.filter((jobId) => jobId !== id),
       };
     }),
+  removeSelectedJobs: () => {
+    let removedCount = 0;
+
+    set((state) => {
+      const selectedIds = new Set(state.selectedJobIds);
+      const removableJobs = state.jobs.filter(
+        (job) => selectedIds.has(job.id) && !isActiveJob(job),
+      );
+      if (removableJobs.length === 0) return {};
+
+      removableJobs.forEach(releaseJobUrls);
+      const removedIds = new Set(removableJobs.map((job) => job.id));
+      removedCount = removableJobs.length;
+
+      return {
+        jobs: state.jobs.filter((job) => !removedIds.has(job.id)),
+        selectedJobIds: state.selectedJobIds.filter(
+          (id) => !removedIds.has(id),
+        ),
+      };
+    });
+
+    return removedCount;
+  },
   clearJobs: () =>
     set((state) => {
       state.jobs.forEach(releaseJobUrls);

@@ -9,8 +9,11 @@ import encodeJpeg, { init as initJpegEncoder } from "@jsquash/jpeg/encode.js";
 import decodePng, { init as initPngDecoder } from "@jsquash/png/decode.js";
 import encodePng, { init as initPngEncoder } from "@jsquash/png/encode.js";
 import resize, { initResize } from "@jsquash/resize";
+import decodeWebp, { init as initWebpDecoder } from "@jsquash/webp/decode.js";
 import encodeWebp, { init as initWebpEncoder } from "@jsquash/webp/encode.js";
 import { simd } from "wasm-feature-detect";
+
+import { encodeAtHighestQualityUnderLimit } from "./target-size.ts";
 
 type EmscriptenInitializer = (
   module: WebAssembly.Module,
@@ -50,6 +53,7 @@ test("JPEG és PNG forrásból átméretezett WebP készül", async () => {
     pngCodec,
     resizeCodec,
     webpEncoder,
+    webpDecoder,
   ] = await Promise.all([
     compileWasm("@jsquash/avif/encode.js", "./codec/enc/avif_enc.wasm"),
     compileWasm("@jsquash/avif/decode.js", "./codec/dec/avif_dec.wasm"),
@@ -58,6 +62,7 @@ test("JPEG és PNG forrásból átméretezett WebP készül", async () => {
     compileWasm("@jsquash/png/encode.js", "./codec/pkg/squoosh_png_bg.wasm"),
     compileWasm("@jsquash/resize", "./lib/resize/pkg/squoosh_resize_bg.wasm"),
     compileWasm("@jsquash/webp/encode.js", webpWasmPath),
+    compileWasm("@jsquash/webp/decode.js", "./codec/dec/webp_dec.wasm"),
   ]);
 
   await Promise.all([
@@ -69,6 +74,7 @@ test("JPEG és PNG forrásból átméretezett WebP készül", async () => {
     initPngDecoder(pngCodec),
     initResize(resizeCodec),
     (initWebpEncoder as EmscriptenInitializer)(webpEncoder),
+    (initWebpDecoder as EmscriptenInitializer)(webpDecoder),
   ]);
 
   const fixture = createFixture();
@@ -111,4 +117,39 @@ test("JPEG és PNG forrásból átméretezett WebP készül", async () => {
   assert.equal(String.fromCharCode(...avifHeader), "ftypavif");
   assert.equal(decodedAvif?.width, 4);
   assert.equal(decodedAvif?.height, 3);
+
+  const losslessWebpBuffer = await encodeWebp(fixture, {
+    lossless: 1,
+    exact: 1,
+    method: 6,
+  });
+  const decodedLosslessWebp = await decodeWebp(losslessWebpBuffer);
+
+  assert.deepEqual(
+    Array.from(decodedLosslessWebp.data),
+    Array.from(fixture.data),
+  );
+
+  const losslessAvifBuffer = await encodeAvif(fixture, { lossless: true });
+  const decodedLosslessAvif = await decodeAvif(losslessAvifBuffer);
+
+  assert.ok(decodedLosslessAvif);
+  assert.deepEqual(
+    Array.from(decodedLosslessAvif.data),
+    Array.from(fixture.data),
+  );
+
+  const targetFixture = createFixture(128, 96);
+  const smallestWebp = await encodeWebp(targetFixture, { quality: 1 });
+  const largestWebp = await encodeWebp(targetFixture, { quality: 100 });
+  const targetBytes = Math.floor(
+    (smallestWebp.byteLength + largestWebp.byteLength) / 2,
+  );
+  const targetResult = await encodeAtHighestQualityUnderLimit(
+    (quality) => encodeWebp(targetFixture, { quality }),
+    targetBytes,
+  );
+
+  assert.ok(targetResult);
+  assert.ok(targetResult.buffer.byteLength <= targetBytes);
 });

@@ -1,0 +1,24 @@
+# Morf
+
+Morf is a Hungarian collection of browser-based tools. Its current image tools process files locally in the user's browser without uploading source images to a Morf server.
+
+## Image converter
+
+- Page: /kep-konvertalo
+- Language: Hungarian
+- Purpose: Convert, resize and compress multiple images in one workflow.
+- Input formats: JPG/JPEG, PNG, WebP, AVIF, HEIC and HEIF still images.
+- Output formats: JPG/JPEG, PNG, WebP and AVIF.
+- Batch workflow: Images can be assigned to multiple configuration groups with different output settings and processed in one run.
+- Settings: Output format, maximum width and height, quality, maximum file size and lossless mode.
+- File-size target: Morf searches for the best quality below the configured maximum and can reduce resolution when needed.
+- Lossless mode: Keeps the original resolution and overrides quality, resize and maximum-file-size settings. JPG uses the highest available quality because JPEG is not a lossless output format.
+- Per-image actions: Rename, move between groups, skip, duplicate in the same group or duplicate into a new group.
+- Saving: Individual download, browser-supported save-to-location workflows and ZIP download.
+- Privacy: Decoding, EXIF orientation handling, resizing and encoding run locally in a Web Worker.
+
+## Other tools
+
+- Favicon and PWA icon generator: /favicon-generator
+- Tool directory: /
+

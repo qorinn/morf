@@ -6,14 +6,24 @@ interface Props {
   title?: string;
   description?: string;
   content?: { title?: string };
+  canonicalPath?: string;
+  structuredData?: Record<string, unknown>;
 }
 
 const {
   content,
   title: titleProp,
   description = "Morf – helyi, célalapú képfeldolgozás a böngészőben.",
+  canonicalPath = Astro.url.pathname,
+  structuredData,
 } = Astro.props;
 const title = titleProp ?? content?.title ?? "Morf";
+const canonicalUrl = Astro.site
+  ? new URL(canonicalPath, Astro.site).href
+  : canonicalPath;
+const structuredDataJson = structuredData
+  ? JSON.stringify(structuredData).replaceAll("<", "\\u003c")
+  : undefined;
 ---
 
 <html lang="hu">
@@ -22,9 +32,37 @@ const title = titleProp ?? content?.title ?? "Morf";
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" />
+    <link rel="canonical" href={canonicalUrl} />
     <meta name="description" content={description} />
+    <meta
+      name="robots"
+      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    />
+    <meta name="author" content="Paládi Bálint" />
+    <meta name="application-name" content="Morf" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="hu_HU" />
+    <meta property="og:site_name" content="Morf" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    {
+      Astro.site && (
+        <meta
+          property="og:url"
+          content={new URL(canonicalPath, Astro.site).href}
+        />
+      )
+    }
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
+    {
+      structuredDataJson && (
+        <script is:inline type="application/ld+json" set:html={structuredDataJson} />
+      )
+    }
   </head>
   <body class="relative isolate min-h-screen overflow-x-clip antialiased">
     <PageBackground />

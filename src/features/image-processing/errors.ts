@@ -8,6 +8,8 @@ function inferCategory(message: string): FileJobErrorCategory {
 
   if (normalized.includes("memory") || normalized.includes("allocation"))
     return "out-of-memory";
+  if (normalized.includes("target_size_unreachable"))
+    return "target-size-unreachable";
   if (
     normalized.includes("decode") ||
     normalized.includes("heic") ||
@@ -52,7 +54,8 @@ const messages: Record<
   },
   "invalid-settings": {
     message: "A feldolgozási beállítások nem érvényesek.",
-    suggestion: "Adj meg pozitív képméretet és 1–100 közötti minőséget.",
+    suggestion:
+      "Adj meg pozitív képméretet, érvényes maximum fájlméretet és 1–100 közötti minőséget.",
   },
   cancelled: {
     message: "A feldolgozás megszakítva.",
