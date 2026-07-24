@@ -1,0 +1,99 @@
+---
+import fullLogo from "@/assets/brand/morf-logo-full.svg";
+import minimalLogo from "@/assets/brand/morf-logo-minimal.svg";
+import { buttonVariants } from "@/components/ui/button";
+
+interface Props {
+  active?: "home" | "converter" | "favicon";
+  actionHref?: string;
+  actionLabel?: string;
+  actionShortLabel?: string;
+}
+
+const {
+  active = "home",
+  actionHref,
+  actionLabel,
+  actionShortLabel = actionLabel,
+} = Astro.props;
+
+const navItems = [
+  { key: "converter", href: "/kep-konvertalo", label: "Képkonvertáló" },
+  { key: "favicon", href: "/favicon-generator", label: "Favicon generátor" },
+] as const;
+---
+
+<header>
+  <div class="border-b bg-secondary/60 text-secondary-foreground">
+    <p
+      class="mx-auto flex min-h-8 w-full max-w-7xl items-center justify-center gap-2 px-4 py-1.5 text-center text-xs leading-4 sm:px-6 lg:px-8"
+    >
+      <span
+        class="inline-block size-1.5 shrink-0 rounded-full bg-secondary-foreground"
+        aria-hidden="true"></span>
+      <span>
+        <strong class="font-semibold">Nem kész verzió.</strong>
+        <span class="sm:hidden"> A Morf még nincs tesztelve.</span>
+        <span class="hidden sm:inline"> A Morf jelenleg még épül, és nincs tesztelve.</span>
+      </span>
+    </p>
+  </div>
+
+  <nav
+    class="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-5 sm:px-6 lg:px-8"
+    aria-label="Fő navigáció"
+  >
+    <a
+      href="/"
+      class="flex items-center"
+      aria-label="Morf kezdőlap"
+      aria-current={active === "home" ? "page" : undefined}
+    >
+      <img
+        src={minimalLogo.src}
+        width={minimalLogo.width}
+        height={minimalLogo.height}
+        alt=""
+        class="size-10 sm:hidden"
+      />
+      <img
+        src={fullLogo.src}
+        width={fullLogo.width}
+        height={fullLogo.height}
+        alt=""
+        class="hidden h-10 w-auto sm:block"
+      />
+    </a>
+
+    <div class="flex items-center gap-2">
+      <div class="hidden items-center gap-1 sm:flex">
+        {
+          navItems.map((item) => (
+            <a
+              href={item.href}
+              aria-current={active === item.key ? "page" : undefined}
+              class={buttonVariants({
+                variant: active === item.key ? "secondary" : "ghost",
+                size: "sm",
+              })}
+            >
+              {item.label}
+            </a>
+          ))
+        }
+      </div>
+
+      {
+        actionHref && actionLabel && (
+          <a
+            href={actionHref}
+            class={buttonVariants({ variant: "outline", size: "sm" })}
+          >
+            <span class="sm:hidden">{actionShortLabel}</span>
+            <span class="hidden sm:inline">{actionLabel}</span>
+          </a>
+        )
+      }
+    </div>
+  </nav>
+</header>

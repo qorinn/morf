@@ -1,0 +1,231 @@
+---
+import ImageWorkspace from "@/components/workspace/ImageWorkspace";
+import SiteFooter from "@/components/layout/SiteFooter.astro";
+import SiteHeader from "@/components/layout/SiteHeader.astro";
+import FaqSection from "@/components/sections/FaqSection.astro";
+import ImageConverterGuide from "@/components/sections/ImageConverterGuide.astro";
+import PrivacySection from "@/components/sections/PrivacySection.astro";
+import { Badge } from "@/components/ui/badge";
+import ToolHero from "@/components/sections/ToolHero.astro";
+import MainLayout from "@/layouts/main.astro";
+
+const privacyItems = [
+  "A kép dekódolása, az EXIF-orientáció alkalmazása, az átméretezés és a kiválasztott formátumba kódolás külön Web Workerben fut a saját böngésződben.",
+  "A preview-khoz ideiglenes Blob URL-ek készülnek. Ezeket Morf felszabadítja, amikor eltávolítod a fájlt vagy elhagyod az oldalt.",
+  "Nincs regisztráció, napi limit, fájlhoz kapcsolt analitika vagy szerveres képfeltöltés az aktív munkafelületen.",
+];
+
+const faqItems = [
+  {
+    question: "Valóban nem töltődnek fel a képek?",
+    answer:
+      "Igen. A kiválasztott fájlok feldolgozása a böngésződben történik, Morf szerverére nem kerülnek fel.",
+  },
+  {
+    question: "Milyen formátumok között konvertálhatok?",
+    answer:
+      "JPG, PNG, WebP, AVIF és HEIC/HEIF állóképeket adhatsz hozzá, a kimenet pedig JPG, PNG, WebP vagy AVIF lehet. A Morf a fájl tényleges tartalmát is ellenőrzi, nem csak a kiterjesztését.",
+  },
+  {
+    question: "Konvertálhatok több képet egyszerre, különböző beállításokkal?",
+    answer:
+      "Igen. A képeket konfigurációs csoportokba rendezheted, és minden csoporthoz külön kimeneti formátumot, maximális felbontást, minőséget, maximum fájlméretet vagy veszteségmentes módot állíthatsz be. Az összes bevont kép egyetlen futtatással készül el.",
+  },
+  {
+    question: "Hogyan csökkenthetem a képeket egy megadott fájlméret alá?",
+    answer:
+      "Kapcsold be a maximum fájlméretet, majd add meg a kívánt határt kilobájtban. A Morf megkeresi a lehető legjobb, még a határ alá férő minőséget, és szükség esetén a felbontást is tovább csökkenti. Ha a fájl eleve kisebb, és a formátuma nem változik, érintetlen marad.",
+  },
+  {
+    question: "A 100%-os minőség ugyanaz, mint a veszteségmentes konvertálás?",
+    answer:
+      "Nem minden formátumnál. A 100%-os minőség veszteséges kódolóknál is jelenthet újrakódolást. A veszteségmentes mód külön beállítás: megtartja az eredeti felbontást, felülírja a minőség- és célméret-beállításokat, JPG-nél pedig a legmagasabb elérhető minőséget használja.",
+  },
+  {
+    question: "Átalakíthatok több HEIC vagy HEIF képet JPG formátumba?",
+    answer:
+      "Igen. Több iPhone-ról származó HEIC vagy HEIF állóképet is hozzáadhatsz egyszerre, majd JPG, PNG, WebP vagy AVIF kimenetet választhatsz hozzájuk. A HEIC és HEIF jelenleg bemeneti formátum, HEIC-kimenetet az eszköz nem készít.",
+  },
+  {
+    question: "Mi történik az átlátszó háttérrel JPG konvertáláskor?",
+    answer:
+      "A JPG nem támogatja az átlátszóságot, ezért az átlátszó képpontok hátteret kapnak. Ha meg szeretnéd tartani az átlátszóságot, válassz PNG, WebP vagy AVIF kimenetet.",
+  },
+  {
+    question: "Mekkora képet konvertálhatok?",
+    answer:
+      "Nincs napi limit vagy fájlszámláló, de a biztonságos fájlméretet az eszközöd memóriája és teljesítménye korlátozza. Mobilon Morf konzervatívabb határt használ.",
+  },
+  {
+    question: "Az animált képek megőrzik az animációt?",
+    answer:
+      "Nem. Az első verzió állóképekhez készült, animációmegőrzést nem ígér.",
+  },
+];
+
+const seoTitle = "Online képkonvertáló: JPG, PNG, WebP, AVIF | Morf";
+const seoDescription =
+  "Online képkonvertáló több képhez: alakíts át JPG, PNG, WebP, AVIF és HEIC fájlokat külön beállításokkal, célmérettel, privát módon, regisztráció nélkül.";
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebApplication",
+      "@id": "/kep-konvertalo#alkalmazas",
+      name: "Morf online képkonvertáló",
+      alternateName: "Morf képkonvertáló",
+      description: seoDescription,
+      applicationCategory: "MultimediaApplication",
+      applicationSubCategory: "Képkonvertáló, képtömörítő és képátméretező",
+      operatingSystem: "Web",
+      browserRequirements:
+        "JavaScriptet, Web Workert és WebAssemblyt támogató modern böngésző",
+      inLanguage: "hu",
+      isAccessibleForFree: true,
+      dateModified: "2026-07-24",
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "HUF",
+      },
+      featureList: [
+        "Több kép kötegelt konvertálása",
+        "Különböző beállítású konfigurációs csoportok",
+        "JPG, PNG, WebP és AVIF kimenet",
+        "HEIC és HEIF képek beolvasása",
+        "Aránytartó képátméretezés",
+        "Automatikus igazodás maximum fájlmérethez",
+        "Veszteségmentes konvertálási mód",
+        "Egyenkénti és ZIP-mentés",
+        "Helyi, böngészőben futó képfeldolgozás",
+      ],
+      fileFormat: [
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "image/avif",
+        "image/heic",
+        "image/heif",
+      ],
+      creator: {
+        "@type": "Person",
+        name: "Paládi Bálint",
+      },
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "/kep-konvertalo#gyakori-kerdesek",
+      inLanguage: "hu",
+      mainEntity: faqItems.map((item) => ({
+        "@type": "Question",
+        name: item.question,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: item.answer,
+        },
+      })),
+    },
+  ],
+};
+---
+
+<MainLayout
+  title={seoTitle}
+  description={seoDescription}
+  canonicalPath="/kep-konvertalo"
+  structuredData={structuredData}
+>
+  <SiteHeader
+    active="converter"
+    actionHref="#workspace"
+    actionLabel="Konvertáló megnyitása"
+    actionShortLabel="Megnyitás"
+  />
+
+  <main>
+    <ToolHero
+      badge="JPG · PNG · WebP · AVIF · HEIC"
+      title="Online képkonvertáló több képhez."
+      description="Konvertálj egyszerre több JPG, PNG, WebP, AVIF vagy HEIC képet ingyenesen, regisztráció nélkül. Adj eltérő formátum-, méret-, minőség- vagy célfájlméret-beállítást minden konfigurációs csoportnak."
+      primaryAction={{ href: "#workspace", label: "Képek konvertálása" }}
+      secondaryAction={{ href: "#hogyan-mukodik", label: "Hogyan működik?" }}
+      features={[
+        {
+          title: "Több kép, több beállítás",
+          description:
+            "A képek közös vagy külön konfigurációs csoportokba kerülhetnek, eltérő formátummal és exportbeállításokkal.",
+        },
+        {
+          title: "Célméret vagy veszteségmentes mód",
+          description:
+            "Kérj adott fájlméret alatti eredményt, vagy őrizd meg az eredeti felbontást veszteségmentes kódolással.",
+        },
+        {
+          title: "Privát feldolgozás és rugalmas mentés",
+          description:
+            "A képek a böngésződben maradnak, az eredmények pedig egyenként, kiválasztott helyre vagy ZIP-be menthetők.",
+        },
+      ]}
+    />
+
+    <ImageWorkspace client:load />
+
+    <ImageConverterGuide />
+
+    <section
+      id="hogyan-mukodik"
+      class="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-20 sm:px-6 lg:px-8"
+    >
+      <div class="max-w-2xl">
+        <p class="text-muted-foreground text-sm font-medium">Három lépés</p>
+        <h2
+          class="font-heading mt-2 text-3xl font-medium tracking-tight sm:text-4xl"
+        >
+          Három lépés a kész képekig
+        </h2>
+      </div>
+      <ol class="grid gap-8 md:grid-cols-3">
+        <li class="flex flex-col gap-3">
+          <Badge variant="outline">01</Badge>
+          <h3 class="font-heading text-xl font-medium">Add hozzá a képeket</h3>
+          <p class="text-muted-foreground">
+            Húzd be vagy válaszd ki a JPG, PNG, WebP, AVIF és HEIC állóképeket.
+            Alapból minden kép egy közös csoportba kerül, kijelölés nélkül.
+          </p>
+        </li>
+        <li class="flex flex-col gap-3">
+          <Badge variant="outline">02</Badge>
+          <h3 class="font-heading text-xl font-medium">
+            Állítsd be a kimenetet
+          </h3>
+          <p class="text-muted-foreground">
+            Hozz létre konfigurációs csoportokat, állítsd be a formátumot,
+            méretet és minőséget, majd rendeld hozzájuk a képeket.
+          </p>
+        </li>
+        <li class="flex flex-col gap-3">
+          <Badge variant="outline">03</Badge>
+          <h3 class="font-heading text-xl font-medium">Konvertálj és ments</h3>
+          <p class="text-muted-foreground">
+            Egyetlen indítással minden bevont kép a saját csoportjának
+            beállításaival készül el, majd egyenként vagy ZIP-ben menthető.
+          </p>
+        </li>
+      </ol>
+    </section>
+
+    <PrivacySection
+      title="A konvertálás a böngésződben történik"
+      description="A kiválasztott képek nem kerülnek a Morf szerverére: a beolvasás, az átméretezés és az új fájl elkészítése is a saját eszközödön fut."
+      items={privacyItems}
+    />
+
+    <FaqSection
+      title="Képkonvertálás, röviden"
+      description="Válaszok a többképes konvertálásról, a JPG, PNG, WebP, AVIF és HEIC formátumokról, a célfájlméretről, a veszteségmentes módról és a helyi feldolgozásról."
+      items={faqItems}
+    />
+  </main>
+
+  <SiteFooter />
+</MainLayout>
