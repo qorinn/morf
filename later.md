@@ -3,3 +3,7 @@
 3. A konvertált képeket lehessen körbevágni Cropperjs-el. Ehhez jobb lenne ha készítenél újrahasználható, közös CropperJS komponenst, a favicon generátorból.
 
 képkonvertáló SEO, és részletezés
+
+a főoldalon milyen erényeket emeljek ki (pl biztonság)? Milyen új szekciókat adjak hozzá?
+
+ A kép konvertáló presetjeit soroljam-e fel külön?

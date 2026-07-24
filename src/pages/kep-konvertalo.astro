@@ -5,7 +5,7 @@ import SiteHeader from "@/components/layout/SiteHeader.astro";
 import FaqSection from "@/components/sections/FaqSection.astro";
 import PrivacySection from "@/components/sections/PrivacySection.astro";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import ToolHero from "@/components/sections/ToolHero.astro";
 import MainLayout from "@/layouts/main.astro";
 
 const privacyItems = [
@@ -55,60 +55,30 @@ const faqItems = [
   />
 
   <main>
-    <section
-      class="mx-auto grid w-full max-w-7xl gap-10 px-4 pt-16 pb-14 sm:px-6 sm:pt-24 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)] lg:items-end lg:px-8 lg:pt-32 lg:pb-20"
-    >
-      <div class="flex flex-col items-start gap-6">
-        <Badge variant="secondary">JPG · PNG · WebP · AVIF · HEIC</Badge>
-        <div class="flex flex-col gap-4">
-          <h1
-            class="font-heading max-w-4xl text-5xl font-medium tracking-tight text-balance sm:text-6xl lg:text-7xl"
-          >
-            Konvertálj több képet egyszerre.
-          </h1>
-          <p
-            class="text-muted-foreground max-w-2xl text-lg leading-relaxed sm:text-xl"
-          >
-            Rendezd a képeket közös vagy külön konfigurációs csoportokba. A Morf
-            egyetlen futtatással, közvetlenül a böngésződben alakítja át őket.
-          </p>
-        </div>
-        <div class="flex flex-wrap gap-3">
-          <a href="#workspace" class={buttonVariants({ size: "lg" })}
-            >Képek konvertálása</a
-          >
-          <a
-            href="#hogyan-mukodik"
-            class={buttonVariants({ variant: "ghost", size: "lg" })}
-            >Hogyan működik?</a
-          >
-        </div>
-      </div>
-
-      <div class="flex flex-col gap-5 text-sm">
-        <div>
-          <p class="font-medium">Egyszerre több fájl</p>
-          <p class="text-muted-foreground mt-1">
-            A képek közös vagy külön csoportok beállításait használhatják, és
-            egyenként kihagyhatók a konvertálásból.
-          </p>
-        </div>
-        <div>
-          <p class="font-medium">Méret és minőség egy helyen</p>
-          <p class="text-muted-foreground mt-1">
-            Konvertálás közben aránytartó átméretezést és tömörítést is
-            beállíthatsz.
-          </p>
-        </div>
-        <div>
-          <p class="font-medium">Rugalmas mentés</p>
-          <p class="text-muted-foreground mt-1">
-            Mentsd az eredményeket egyenként, kiválasztott helyre vagy egyetlen
-            ZIP-fájlba.
-          </p>
-        </div>
-      </div>
-    </section>
+    <ToolHero
+      badge="JPG · PNG · WebP · AVIF · HEIC"
+      title="Konvertálj több képet egyszerre."
+      description="Rendezd a képeket közös vagy külön konfigurációs csoportokba. A Morf egyetlen futtatással, közvetlenül a böngésződben alakítja át őket."
+      primaryAction={{ href: "#workspace", label: "Képek konvertálása" }}
+      secondaryAction={{ href: "#hogyan-mukodik", label: "Hogyan működik?" }}
+      features={[
+        {
+          title: "Egyszerre több fájl",
+          description:
+            "A képek közös vagy külön csoportok beállításait használhatják, és egyenként kihagyhatók a konvertálásból.",
+        },
+        {
+          title: "Méret és minőség egy helyen",
+          description:
+            "Konvertálás közben aránytartó átméretezést és tömörítést is beállíthatsz.",
+        },
+        {
+          title: "Rugalmas mentés",
+          description:
+            "Mentsd az eredményeket egyenként, kiválasztott helyre vagy egyetlen ZIP-fájlba.",
+        },
+      ]}
+    />
 
     <ImageWorkspace client:load />
 

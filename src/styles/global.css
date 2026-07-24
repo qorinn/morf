@@ -62,53 +62,37 @@
   --dark-section-border: oklch(0.62 0.08 169 / 0.28);
 
   --gradient-primary:
-    radial-gradient(
-      110% 120% at 18% 0%,
+    radial-gradient(110% 120% at 18% 0%,
       var(--primary-highlight) 0%,
-      transparent 48%
-    ),
+      transparent 48%),
     linear-gradient(145deg, var(--primary) 18%, var(--primary-shadow) 100%);
   --gradient-primary-hover:
-    radial-gradient(
-      120% 130% at 12% -8%,
+    radial-gradient(120% 130% at 12% -8%,
       oklch(0.94 0.07 166) 0%,
-      transparent 48%
-    ),
-    linear-gradient(
-      145deg,
+      transparent 48%),
+    linear-gradient(145deg,
       var(--primary-highlight) 8%,
-      var(--primary-shadow) 100%
-    );
+      var(--primary-shadow) 100%);
   --gradient-surface:
-    radial-gradient(
-      100% 85% at 8% 0%,
+    radial-gradient(100% 85% at 8% 0%,
       var(--surface-highlight) 0%,
-      transparent 58%
-    ),
-    linear-gradient(
-      155deg,
+      #ffffff69 58%),
+    linear-gradient(155deg,
       var(--card) 20%,
       var(--surface-mid) 64%,
-      var(--surface-shadow) 125%
-    );
-  --gradient-control: linear-gradient(
-    180deg,
-    var(--surface-highlight) 0%,
-    var(--surface-mid) 52%,
-    var(--surface-shadow) 135%
-  );
+      var(--surface-shadow) 125%);
+  --gradient-control: linear-gradient(180deg,
+      var(--surface-highlight) 0%,
+      var(--surface-mid) 52%,
+      var(--surface-shadow) 135%);
   --gradient-soft-secondary:
-    radial-gradient(
-      120% 130% at 14% -20%,
+    radial-gradient(120% 130% at 14% -20%,
       var(--secondary-highlight) 0%,
-      transparent 48%
-    ),
-    linear-gradient(
-      145deg,
+      transparent 48%),
+    linear-gradient(145deg,
       var(--secondary) 12%,
       var(--accent) 68%,
-      var(--secondary-shadow) 125%
-    );
+      var(--secondary-shadow) 125%);
   --shadow-primary:
     inset 0 1px 0 oklch(1 0 0 / 0.62),
     inset 0 -1px 0 oklch(0.38 0.09 171 / 0.2),
@@ -238,32 +222,23 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground min-h-screen;
     background-image:
-      radial-gradient(
-        55rem 34rem at 8% -8%,
-        var(--ambient-mint),
-        transparent 66%
-      ),
-      radial-gradient(
-        42rem 28rem at 96% 8%,
-        var(--ambient-violet),
-        transparent 72%
-      ),
       linear-gradient(oklch(0.45 0.04 172 / 0.018) 1px, transparent 1px),
       linear-gradient(90deg, oklch(0.45 0.04 172 / 0.018) 1px, transparent 1px);
     background-attachment: fixed;
     background-size:
-      auto,
-      auto,
       3rem 3rem,
       3rem 3rem;
   }
+
   button:not(:disabled),
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
+
   html {
     @apply scroll-smooth font-sans;
   }
@@ -278,22 +253,16 @@
   .morf-dark-section {
     color: var(--dark-section-foreground);
     background:
-      radial-gradient(
-        46rem 25rem at 92% -18%,
+      radial-gradient(46rem 25rem at 92% -18%,
         oklch(0.51 0.15 289 / 0.28),
-        transparent 68%
-      ),
-      radial-gradient(
-        42rem 26rem at 4% 118%,
+        transparent 68%),
+      radial-gradient(42rem 26rem at 4% 118%,
         oklch(0.55 0.11 166 / 0.24),
-        transparent 70%
-      ),
-      linear-gradient(
-        155deg,
+        transparent 70%),
+      linear-gradient(155deg,
         oklch(0.27 0.065 174) 0%,
         var(--dark-section) 52%,
-        oklch(0.18 0.045 174) 100%
-      );
+        oklch(0.18 0.045 174) 100%);
     box-shadow:
       inset 0 1px 0 oklch(0.88 0.07 166 / 0.18),
       inset 0 -1px 0 oklch(0.06 0.03 174 / 0.55),
@@ -303,16 +272,12 @@
   .morf-dark-icon-chip {
     color: var(--dark-section-accent);
     background:
-      radial-gradient(
-        circle at 30% 12%,
+      radial-gradient(circle at 30% 12%,
         oklch(0.9 0.08 166 / 0.28),
-        transparent 52%
-      ),
-      linear-gradient(
-        145deg,
+        transparent 52%),
+      linear-gradient(145deg,
         oklch(0.48 0.1 166 / 0.34),
-        oklch(0.32 0.1 289 / 0.26)
-      );
+        oklch(0.32 0.1 289 / 0.26));
     box-shadow:
       inset 0 1px 0 oklch(0.94 0.06 166 / 0.24),
       inset 0 -1px 0 oklch(0.08 0.04 174 / 0.38),
@@ -358,11 +323,9 @@
 
   .morf-alert-surface {
     background:
-      radial-gradient(
-        85% 150% at 0% 0%,
+      radial-gradient(85% 150% at 0% 0%,
         var(--ambient-mint-soft),
-        transparent 62%
-      ),
+        transparent 62%),
       var(--gradient-surface);
     box-shadow:
       inset 0 1px 0 var(--surface-highlight),
@@ -371,11 +334,9 @@
   }
 
   .morf-inset-track {
-    background: linear-gradient(
-      180deg,
-      var(--surface-shadow),
-      var(--surface-mid)
-    );
+    background: linear-gradient(180deg,
+        var(--surface-shadow),
+        var(--surface-mid));
     box-shadow:
       inset 0 0.14rem 0.32rem oklch(0.38 0.055 171 / 0.16),
       0 1px 0 var(--surface-highlight);
@@ -390,12 +351,10 @@
   }
 
   .morf-gloss-thumb {
-    background: radial-gradient(
-      circle at 35% 20%,
-      oklch(1 0 0),
-      var(--primary-highlight) 38%,
-      var(--primary) 100%
-    );
+    background: radial-gradient(circle at 35% 20%,
+        oklch(1 0 0),
+        var(--primary-highlight) 38%,
+        var(--primary) 100%);
     box-shadow:
       inset 0 1px 0 oklch(1 0 0 / 0.9),
       inset 0 -1px 0 oklch(0.38 0.08 171 / 0.16),
@@ -411,11 +370,9 @@
 
   .morf-inset-panel {
     background:
-      radial-gradient(
-        100% 90% at 10% 0%,
+      radial-gradient(100% 90% at 10% 0%,
         var(--surface-highlight),
-        transparent 58%
-      ),
+        #ffffff69 58%),
       linear-gradient(155deg, var(--muted), var(--surface-mid));
     box-shadow:
       inset 0 0.16rem 0.46rem oklch(0.39 0.055 171 / 0.11),
@@ -425,11 +382,9 @@
 
   .morf-icon-orb {
     background:
-      radial-gradient(
-        circle at 28% 14%,
+      radial-gradient(circle at 28% 14%,
         var(--secondary-highlight),
-        transparent 42%
-      ),
+        transparent 42%),
       linear-gradient(145deg, var(--secondary), var(--accent));
     box-shadow:
       inset 0 1px 0 oklch(1 0 0 / 0.72),
@@ -439,11 +394,9 @@
 
   .morf-dropzone {
     background:
-      radial-gradient(
-        48rem 22rem at 50% -20%,
+      radial-gradient(48rem 22rem at 50% -20%,
         var(--ambient-mint),
-        transparent 68%
-      ),
+        transparent 68%),
       var(--gradient-surface);
     box-shadow:
       inset 0 1px 0 var(--surface-highlight),

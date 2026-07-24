@@ -5,9 +5,7 @@ import SiteHeader from "@/components/layout/SiteHeader.astro";
 import FaviconPackageGuide from "@/components/sections/FaviconPackageGuide.astro";
 import FaqSection from "@/components/sections/FaqSection.astro";
 import PrivacySection from "@/components/sections/PrivacySection.astro";
-import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import ToolHero from "@/components/sections/ToolHero.astro";
 import MainLayout from "@/layouts/main.astro";
 
 const privacyItems = [
@@ -52,56 +50,32 @@ const faqItems = [
   />
 
   <main>
-    <section
-      class="mx-auto grid w-full max-w-7xl gap-10 px-4 pt-14 pb-12 sm:px-6 sm:pt-22 lg:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.75fr)] lg:items-end lg:px-8 lg:pt-28 lg:pb-18"
-    >
-      <div class="flex flex-col items-start gap-6">
-        <Badge variant="secondary">ICO · PNG · Apple · PWA</Badge>
-        <div class="flex flex-col gap-4">
-          <h1
-            class="font-heading max-w-4xl text-5xl font-medium tracking-tight text-balance sm:text-6xl lg:text-7xl"
-          >
-            Egy ikon. Minden helyre készen.
-          </h1>
-          <p
-            class="text-muted-foreground max-w-2xl text-lg leading-relaxed sm:text-xl"
-          >
-            Vágd négyzetre, ellenőrizd 16 pixelben, és töltsd le a teljes
-            favicon- vagy PWA-csomagot. A képed végig az eszközödön marad.
-          </p>
-        </div>
-        <a href="#favicon-workspace" class={buttonVariants({ size: "lg" })}
-          >Favicon készítése</a
-        >
-      </div>
-
-      <div class="grid grid-cols-2 gap-3 text-sm">
-        <Card size="sm">
-          <CardContent>
-            <p class="font-heading text-lg font-medium">Egy képből indul</p>
-            <p class="text-muted-foreground mt-1">
-              A feltöltött logót négyzetre vághatod, majd abból készül el minden kiválasztott ikon.
-            </p>
-          </CardContent>
-        </Card>
-        <Card size="sm">
-          <CardContent>
-            <p class="font-heading text-lg font-medium">Látható marad kis méretben</p>
-            <p class="text-muted-foreground mt-1">
-              Ellenőrizheted az ikonodat favicon-méretben is, még az exportálás előtt.
-            </p>
-          </CardContent>
-        </Card>
-        <Card size="sm" className="col-span-2">
-          <CardContent>
-            <p class="font-medium">Csak azt a csomagot töltsd le, amire szükséged van</p>
-            <p class="text-muted-foreground mt-1">
-              Választhatsz weboldalhoz szükséges faviconokat, telepíthető webalkalmazás-ikonokat és site.webmanifest fájlt is.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    </section>
+    <ToolHero
+      badge="ICO · PNG · Apple · PWA"
+      title="Egy ikon. Minden helyre készen."
+      description="Vágd négyzetre, ellenőrizd 16 pixelben, és töltsd le a teljes favicon- vagy PWA-csomagot. A képed végig az eszközödön marad."
+      primaryAction={{
+        href: "#favicon-workspace",
+        label: "Favicon készítése",
+      }}
+      features={[
+        {
+          title: "Egy képből indul",
+          description:
+            "A feltöltött logót négyzetre vághatod, majd abból készül el minden kiválasztott ikon.",
+        },
+        {
+          title: "Látható marad kis méretben",
+          description:
+            "Ellenőrizheted az ikonodat favicon-méretben is, még az exportálás előtt.",
+        },
+        {
+          title: "Célzott exportcsomag",
+          description:
+            "Csak a weboldalhoz vagy telepíthető webalkalmazáshoz szükséges fájlokat töltsd le.",
+        },
+      ]}
+    />
 
     <FaviconWorkspace client:load />
 
