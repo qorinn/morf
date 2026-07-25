@@ -47,7 +47,6 @@ type WorkspaceState = {
   assignJobToGroup: (jobId: string, groupId: string) => void;
   assignSelectedJobsToGroup: (groupId: string) => void;
   duplicateJob: (id: string) => void;
-  duplicateJobToNewGroup: (id: string) => void;
   createGroup: () => void;
   createGroupFromSelectedJobs: () => void;
   createSeparateGroupsFromSelectedJobs: () => number;
@@ -274,33 +273,6 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
       jobs.splice(sourceIndex + 1, 0, copy);
 
       return { jobs };
-    }),
-  duplicateJobToNewGroup: (id) =>
-    set((state) => {
-      const sourceJob = state.jobs.find((job) => job.id === id);
-      if (!sourceJob || isActiveJob(sourceJob)) return {};
-
-      const sourceGroup =
-        state.groups.find((group) => group.id === sourceJob.groupId) ??
-        state.groups[0];
-      const group = createGroup(
-        state.nextGroupNumber,
-        sourceGroup.settings,
-        sourceGroup.shouldProcess,
-      );
-      const copy = duplicateJob(
-        sourceJob,
-        state.jobs,
-        group.id,
-        group.shouldProcess,
-      );
-
-      return {
-        groups: [...state.groups, group],
-        jobs: [...state.jobs, copy],
-        activeGroupId: group.id,
-        nextGroupNumber: state.nextGroupNumber + 1,
-      };
     }),
   createGroup: () =>
     set((state) => {

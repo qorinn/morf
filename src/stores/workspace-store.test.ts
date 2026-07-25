@@ -239,22 +239,6 @@ test("a kép ugyanabba a csoportba önálló feladatként duplikálható", () =>
   assert.equal(copy.result, undefined);
 });
 
-test("a kép másolata új, azonos beállítású csoportba kerül", () => {
-  addImages(1);
-  const source = useWorkspaceStore.getState().jobs[0];
-  const sourceGroup = useWorkspaceStore.getState().groups[0];
-
-  useWorkspaceStore.getState().duplicateJobToNewGroup(source.id);
-
-  const state = useWorkspaceStore.getState();
-  const copy = state.jobs[1];
-  const newGroup = state.groups[1];
-  assert.equal(state.groups.length, 2);
-  assert.equal(copy.groupId, newGroup.id);
-  assert.deepEqual(newGroup.settings, sourceGroup.settings);
-  assert.equal(state.activeGroupId, newGroup.id);
-});
-
 test("a kijelölt képek együtt törölhetők, a többi megmarad", () => {
   addImages(3);
   const [first, second, third] = useWorkspaceStore.getState().jobs;
