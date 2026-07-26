@@ -5,6 +5,8 @@ import {
   LayerAddIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { Feedback } from "@dnd-kit/dom";
+import { useSortable } from "@dnd-kit/react/sortable";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,16 +23,20 @@ import type {
   FileJobStatus,
 } from "@/features/image-processing/types";
 import { calculateSaving, formatBytes } from "@/lib/filenames/image-filenames";
+import { cn } from "@/lib/utils";
+import { imageJobDndType } from "@/components/workspace/DndJobList";
 
 type FileJobCardProps = {
   job: FileJob;
   group: ConversionGroup;
+  sortIndex: number;
   isSelected: boolean;
   onDimensions: (id: string, width: number, height: number) => void;
   onDuplicate: (id: string) => void;
   onRename: (id: string, outputBaseName: string) => void;
   onSelectionChange: (id: string) => void;
   selectionDisabled: boolean;
+  dragDisabled: boolean;
 };
 
 const statusLabels: Record<FileJobStatus, string> = {
@@ -72,12 +78,14 @@ function isCardSelectionClick(
 export function FileJobCard({
   job,
   group,
+  sortIndex,
   isSelected,
   onDimensions,
   onDuplicate,
   onRename,
   onSelectionChange,
   selectionDisabled,
+  dragDisabled,
 }: FileJobCardProps) {
   const [previewFailed, setPreviewFailed] = useState(
     job.inputFormat === "heic",
@@ -96,161 +104,201 @@ export function FileJobCard({
     job.originalWidth && job.originalHeight
       ? `${job.originalWidth} × ${job.originalHeight} px`
       : `${job.inputFormat.toUpperCase()} · ${formatBytes(job.file.size)}`;
+  const { ref, handleRef, isDragging } = useSortable({
+    id: job.id,
+    index: sortIndex,
+    group: group.id,
+    type: imageJobDndType,
+    accept: imageJobDndType,
+    disabled: dragDisabled || isActive,
+    plugins: (defaults) => [
+      ...defaults,
+      Feedback.configure({ feedback: "clone" }),
+    ],
+    data: {
+      kind: imageJobDndType,
+      groupId: group.id,
+    },
+    transition: {
+      duration: 250,
+      easing: "cubic-bezier(0.25, 1, 0.5, 1)",
+    },
+  });
 
   return (
-    <Card
-      size="sm"
-      interactive={!selectionUnavailable}
-      selected={isSelected}
-      role="button"
-      tabIndex={selectionUnavailable ? -1 : 0}
-      aria-pressed={isSelected}
-      aria-disabled={selectionUnavailable || undefined}
-      aria-label={`${job.file.name}: ${
-        isSelected ? "kijelölés megszüntetése" : "kijelölés"
-      } csoportművelethez`}
-      className="border-foreground/20 [--card-spacing:--spacing(2)] [background:var(--card)] data-[selected=true]:[background:color-mix(in_oklab,var(--primary)_18%,var(--card))]"
-      onClick={(event) => {
-        if (isCardSelectionClick(event.target, event.currentTarget)) {
-          toggleSelection();
-        }
-      }}
-      onKeyDown={(event) => {
-        if (event.target !== event.currentTarget) return;
-        if (event.key !== "Enter" && event.key !== " ") return;
-        event.preventDefault();
-        toggleSelection();
-      }}
+    <div
+      ref={ref}
+      role="listitem"
+      data-dnd-job-id={job.id}
+      className={cn("min-w-0", isDragging && "morf-dnd-drag-source")}
     >
-      <CardContent className="flex flex-col gap-2 px-1.5">
-        <div className="grid min-w-0 grid-cols-[1.25rem_minmax(0,1fr)] gap-x-1.5">
-          <span
-            className="text-muted-foreground row-span-2 flex size-5 self-center items-center justify-center"
-            title="Áthelyezési fogantyú"
-            aria-hidden="true"
-          >
-            <HugeiconsIcon icon={DragDropVerticalIcon} strokeWidth={2} />
-          </span>
-
-          <div className="flex w-full min-w-0 items-center justify-between gap-3 pb-1">
-            <p
-              className="min-w-0 truncate text-xs leading-tight font-medium"
-              title={job.file.name}
-            >
-              {job.file.name}
-            </p>
-            <p className="text-muted-foreground shrink-0 whitespace-nowrap text-[10px] leading-tight tabular-nums">
-              {sourceDetails}
-            </p>
-          </div>
-
-          <div className="grid min-w-0 grid-cols-[2.5rem_minmax(0,1fr)_2rem] items-center gap-1">
-            <div className="bg-muted flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl">
-              {previewFailed ? (
-                <HugeiconsIcon
-                  icon={ImageNotFound01Icon}
-                  className="text-muted-foreground"
-                  strokeWidth={1.8}
-                  aria-hidden="true"
-                />
-              ) : (
-                <img
-                  src={job.previewUrl}
-                  alt=""
-                  loading="lazy"
-                  decoding="async"
-                  className="size-full object-cover"
-                  onError={() => setPreviewFailed(true)}
-                  onLoad={(event) => {
-                    const { naturalWidth, naturalHeight } = event.currentTarget;
-                    if (
-                      naturalWidth > 0 &&
-                      naturalHeight > 0 &&
-                      (naturalWidth !== job.originalWidth ||
-                        naturalHeight !== job.originalHeight)
-                    ) {
-                      onDimensions(job.id, naturalWidth, naturalHeight);
-                    }
-                  }}
-                />
-              )}
-            </div>
-
-            <InputGroup
-              className="min-w-0"
-              data-card-control
-              data-disabled={isActive || undefined}
-            >
-              <InputGroupInput
-                aria-label={`${job.file.name} új fájlneve`}
-                value={job.outputBaseName}
-                maxLength={80}
-                spellCheck={false}
-                disabled={isActive}
-                onChange={(event) => onRename(job.id, event.target.value)}
-              />
-            </InputGroup>
-
-            <Button
-              type="button"
-              size="icon-sm"
-              variant="ghost"
-              aria-label={`${job.file.name} duplikálása`}
-              disabled={selectionDisabled || isActive}
-              onClick={() => onDuplicate(job.id)}
+      <Card
+        size="sm"
+        interactive={!selectionUnavailable}
+        selected={isSelected}
+        role="button"
+        tabIndex={selectionUnavailable ? -1 : 0}
+        aria-pressed={isSelected}
+        aria-disabled={selectionUnavailable || undefined}
+        aria-label={`${job.file.name}: ${
+          isSelected ? "kijelölés megszüntetése" : "kijelölés"
+        } csoportművelethez`}
+        className="border-foreground/20 [--card-spacing:--spacing(2)] [background:var(--card)] data-[selected=true]:[background:color-mix(in_oklab,var(--primary)_18%,var(--card))]"
+        onClick={(event) => {
+          if (isCardSelectionClick(event.target, event.currentTarget)) {
+            toggleSelection();
+          }
+        }}
+        onKeyDown={(event) => {
+          if (event.target !== event.currentTarget) return;
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          toggleSelection();
+        }}
+      >
+        <CardContent className="flex flex-col gap-2 px-1.5">
+          <div className="grid min-w-0 grid-cols-[1.25rem_minmax(0,1fr)] gap-x-1.5">
+            <span
+              ref={handleRef}
+              data-dnd-handle
+              role="button"
+              tabIndex={dragDisabled || isActive ? -1 : 0}
+              aria-label={`${job.file.name} áthelyezése`}
+              aria-disabled={dragDisabled || isActive || undefined}
+              className="text-muted-foreground row-span-2 flex size-5 touch-none cursor-grab items-center justify-center self-center active:cursor-grabbing aria-disabled:cursor-not-allowed"
+              title="Áthelyezési fogantyú"
+              onClick={(event) => event.stopPropagation()}
             >
               <HugeiconsIcon
-                icon={LayerAddIcon}
+                icon={DragDropVerticalIcon}
                 strokeWidth={2}
                 aria-hidden="true"
               />
-            </Button>
+            </span>
+
+            <div className="flex w-full min-w-0 items-center justify-between gap-3 pb-1">
+              <p
+                className="min-w-0 truncate text-xs leading-tight font-medium"
+                title={job.file.name}
+              >
+                {job.file.name}
+              </p>
+              <p className="text-muted-foreground shrink-0 whitespace-nowrap text-[10px] leading-tight tabular-nums">
+                {sourceDetails}
+              </p>
+            </div>
+
+            <div className="grid min-w-0 grid-cols-[2.5rem_minmax(0,1fr)_2rem] items-center gap-1">
+              <div className="bg-muted flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl">
+                {previewFailed ? (
+                  <HugeiconsIcon
+                    icon={ImageNotFound01Icon}
+                    className="text-muted-foreground"
+                    strokeWidth={1.8}
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <img
+                    src={job.previewUrl}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className="size-full object-cover"
+                    onError={() => setPreviewFailed(true)}
+                    onLoad={(event) => {
+                      const { naturalWidth, naturalHeight } =
+                        event.currentTarget;
+                      if (
+                        naturalWidth > 0 &&
+                        naturalHeight > 0 &&
+                        (naturalWidth !== job.originalWidth ||
+                          naturalHeight !== job.originalHeight)
+                      ) {
+                        onDimensions(job.id, naturalWidth, naturalHeight);
+                      }
+                    }}
+                  />
+                )}
+              </div>
+
+              <InputGroup
+                className="min-w-0"
+                data-card-control
+                data-disabled={isActive || undefined}
+              >
+                <InputGroupInput
+                  aria-label={`${job.file.name} új fájlneve`}
+                  value={job.outputBaseName}
+                  maxLength={80}
+                  spellCheck={false}
+                  disabled={isActive}
+                  onChange={(event) => onRename(job.id, event.target.value)}
+                />
+              </InputGroup>
+
+              <Button
+                type="button"
+                size="icon-sm"
+                variant="ghost"
+                aria-label={`${job.file.name} duplikálása`}
+                disabled={selectionDisabled || isActive}
+                onClick={() => onDuplicate(job.id)}
+              >
+                <HugeiconsIcon
+                  icon={LayerAddIcon}
+                  strokeWidth={2}
+                  aria-hidden="true"
+                />
+              </Button>
+            </div>
           </div>
-        </div>
 
-        {isActive && (
-          <Progress
-            value={job.progress}
-            aria-label={`${job.file.name} feldolgozása`}
-          >
-            <ProgressLabel>{statusLabels[job.status]}</ProgressLabel>
-            <ProgressValue />
-          </Progress>
-        )}
-
-        {!isActive && job.status !== "queued" && (
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant={getBadgeVariant(job.status)}>
-              {statusLabels[job.status]}
-            </Badge>
-            {job.result && (
-              <span className="text-muted-foreground text-xs tabular-nums">
-                {formatBytes(job.file.size)} → {formatBytes(job.result.size)}
-                {saving !== undefined && saving >= 0
-                  ? ` · ${saving}% megtakarítás`
-                  : ""}
-              </span>
-            )}
-          </div>
-        )}
-
-        {job.status === "queued" &&
-          (group.settings.maxFileSizeKb !== null ||
-            group.settings.lossless) && (
-            <p className="text-muted-foreground truncate text-xs tabular-nums">
-              {group.settings.maxFileSizeKb !== null
-                ? `Célméret: ≤ ${formatBytes(group.settings.maxFileSizeKb * 1024)}`
-                : "Veszteségmentes feldolgozás"}
-            </p>
+          {isActive && (
+            <Progress
+              value={job.progress}
+              aria-label={`${job.file.name} feldolgozása`}
+            >
+              <ProgressLabel>{statusLabels[job.status]}</ProgressLabel>
+              <ProgressValue />
+            </Progress>
           )}
 
-        {job.error && (
-          <div role="alert" className="flex flex-col gap-1 text-xs">
-            <p className="text-destructive font-medium">{job.error.message}</p>
-            <p className="text-muted-foreground">{job.error.suggestion}</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          {!isActive && job.status !== "queued" && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={getBadgeVariant(job.status)}>
+                {statusLabels[job.status]}
+              </Badge>
+              {job.result && (
+                <span className="text-muted-foreground text-xs tabular-nums">
+                  {formatBytes(job.file.size)} → {formatBytes(job.result.size)}
+                  {saving !== undefined && saving >= 0
+                    ? ` · ${saving}% megtakarítás`
+                    : ""}
+                </span>
+              )}
+            </div>
+          )}
+
+          {job.status === "queued" &&
+            (group.settings.maxFileSizeKb !== null ||
+              group.settings.lossless) && (
+              <p className="text-muted-foreground truncate text-xs tabular-nums">
+                {group.settings.maxFileSizeKb !== null
+                  ? `Célméret: ≤ ${formatBytes(group.settings.maxFileSizeKb * 1024)}`
+                  : "Veszteségmentes feldolgozás"}
+              </p>
+            )}
+
+          {job.error && (
+            <div role="alert" className="flex flex-col gap-1 text-xs">
+              <p className="text-destructive font-medium">
+                {job.error.message}
+              </p>
+              <p className="text-muted-foreground">{job.error.suggestion}</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
