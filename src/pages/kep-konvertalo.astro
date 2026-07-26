@@ -29,7 +29,12 @@ const faqItems = [
   {
     question: "Konvertálhatok több képet egyszerre, különböző beállításokkal?",
     answer:
-      "Igen. A képeket konfigurációs csoportokba rendezheted, és minden csoporthoz külön kimeneti formátumot, maximális felbontást, minőséget, maximum fájlméretet vagy veszteségmentes módot állíthatsz be. Az összes bevont kép egyetlen futtatással készül el.",
+      "Igen. Minden konfigurációs csoport saját feltöltési területet és konvertálási beállításokat kap. Csoportonként eltérő felhasználási célt, kimeneti formátumot, maximális felbontást, minőséget, maximum fájlméretet vagy veszteségmentes módot választhatsz, majd egyetlen futtatással elkészítheted az összes bevont képet.",
+  },
+  {
+    question: "Hogyan rendezhetem át a képeket a csoportok között?",
+    answer:
+      "A kép kártyáját a fogantyúnál megfogva áthúzhatod ugyanazon csoport másik helyére, egy másik csoportba vagy az Új csoport kártyára. Több képet is kijelölhetsz: az alsó műveleti sávból közös meglévő vagy új csoportba helyezheted, külön csoportokra bonthatod, illetve törölheted őket.",
   },
   {
     question: "Hogyan csökkenthetem a képeket egy megadott fájlméret alá?",
@@ -65,7 +70,7 @@ const faqItems = [
 
 const seoTitle = "Online képkonvertáló: JPG, PNG, WebP, AVIF | Morf";
 const seoDescription =
-  "Online képkonvertáló több képhez: alakíts át JPG, PNG, WebP, AVIF és HEIC fájlokat külön beállításokkal, célmérettel, privát módon, regisztráció nélkül.";
+  "Konvertálj több JPG, PNG, WebP, AVIF vagy HEIC képet csoportonként eltérő formátummal, mérettel és minőséggel, privát módon, regisztráció nélkül.";
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
@@ -82,7 +87,7 @@ const structuredData = {
         "JavaScriptet, Web Workert és WebAssemblyt támogató modern böngésző",
       inLanguage: "hu",
       isAccessibleForFree: true,
-      dateModified: "2026-07-24",
+      dateModified: "2026-07-26",
       offers: {
         "@type": "Offer",
         price: "0",
@@ -90,13 +95,17 @@ const structuredData = {
       },
       featureList: [
         "Több kép kötegelt konvertálása",
-        "Különböző beállítású konfigurációs csoportok",
+        "Csoportonkénti drag-and-drop képfeltöltés",
+        "Képek rendezése csoportokon belül és csoportok között",
+        "Több kijelölt kép közös áthelyezése vagy törlése",
+        "Felhasználási cél szerinti előbeállítások",
+        "Csoportonként eltérő konvertálási beállítások",
         "JPG, PNG, WebP és AVIF kimenet",
         "HEIC és HEIF képek beolvasása",
         "Aránytartó képátméretezés",
         "Automatikus igazodás maximum fájlmérethez",
         "Veszteségmentes konvertálási mód",
-        "Egyenkénti és ZIP-mentés",
+        "Egyenkénti, mappás és ZIP-mentés",
         "Helyi, böngészőben futó képfeldolgozás",
       ],
       fileFormat: [
@@ -146,14 +155,14 @@ const structuredData = {
     <ToolHero
       badge="JPG · PNG · WebP · AVIF · HEIC"
       title="Online képkonvertáló több képhez."
-      description="Konvertálj egyszerre több JPG, PNG, WebP, AVIF vagy HEIC képet ingyenesen, regisztráció nélkül. Adj eltérő formátum-, méret-, minőség- vagy célfájlméret-beállítást minden konfigurációs csoportnak."
+      description="Rendezd a JPG, PNG, WebP, AVIF vagy HEIC képeket külön konfigurációs csoportokba, majd konvertáld őket csoportonként eltérő formátummal, mérettel és minőséggel. A képek feldolgozása teljes egészében a böngésződben történik."
       primaryAction={{ href: "#workspace", label: "Képek konvertálása" }}
       secondaryAction={{ href: "#hogyan-mukodik", label: "Hogyan működik?" }}
       features={[
         {
-          title: "Több kép, több beállítás",
+          title: "Képek közvetlenül a megfelelő csoportba",
           description:
-            "A képek közös vagy külön konfigurációs csoportokba kerülhetnek, eltérő formátummal és exportbeállításokkal.",
+            "Dobj fájlokat bármelyik csoportkártyára, vagy húzz át meglévő képeket a fogantyúval más beállítások közé.",
         },
         {
           title: "Célméret vagy veszteségmentes mód",
@@ -189,8 +198,9 @@ const structuredData = {
           <Badge variant="outline">01</Badge>
           <h3 class="font-heading text-xl font-medium">Add hozzá a képeket</h3>
           <p class="text-muted-foreground">
-            Húzd be vagy válaszd ki a JPG, PNG, WebP, AVIF és HEIC állóképeket.
-            Alapból minden kép egy közös csoportba kerül, kijelölés nélkül.
+            Húzd a képeket közvetlenül a kívánt csoportkártyára, vagy tallózd be
+            őket annak feltöltési gombjával. Az Új csoport kártyára dobott
+            fájloknak a Morf új csoportot készít.
           </p>
         </li>
         <li class="flex flex-col gap-3">
@@ -199,16 +209,17 @@ const structuredData = {
             Állítsd be a kimenetet
           </h3>
           <p class="text-muted-foreground">
-            Hozz létre konfigurációs csoportokat, állítsd be a formátumot,
-            méretet és minőséget, majd rendeld hozzájuk a képeket.
+            Kattints egy csoportra, válassz felhasználási célt, formátumot,
+            méretet és minőséget. A képeket fogantyúval vagy kijelölés után
+            tömegesen is áthelyezheted.
           </p>
         </li>
         <li class="flex flex-col gap-3">
           <Badge variant="outline">03</Badge>
           <h3 class="font-heading text-xl font-medium">Konvertálj és ments</h3>
           <p class="text-muted-foreground">
-            Egyetlen indítással minden bevont kép a saját csoportjának
-            beállításaival készül el, majd egyenként vagy ZIP-ben menthető.
+            Az alsó műveleti sávból indítsd el az összes bevont csoportot. A
+            kész képeket külön, választott mappába vagy ZIP-csomagba mentheted.
           </p>
         </li>
       </ol>

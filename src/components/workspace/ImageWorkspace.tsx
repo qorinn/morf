@@ -1,15 +1,33 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { proxy, transfer } from "comlink";
 import {
+  Add01Icon,
   Delete02Icon,
   Download04Icon,
   FileZipIcon,
   FolderDownloadIcon,
   FolderOpenIcon,
+  ImageUploadIcon,
+  MoreVerticalIcon,
   PlayIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useDropzone } from "react-dropzone";
+import {
+  DragDropProvider,
+  type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
+} from "@dnd-kit/react";
+import { move } from "@dnd-kit/helpers";
+import { useDropzone, type DropzoneState } from "react-dropzone";
 
 import {
   MascotAssistant,
@@ -23,11 +41,17 @@ import {
   Card,
   CardAction,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -38,9 +62,19 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Toaster, toast } from "@/components/ui/toast";
-import { FileUploadDropzone } from "@/components/upload/FileUploadDropzone";
+import {
+  DndJobList,
+  DndNewGroupTarget,
+  imageJobDndType,
+  newGroupTarget,
+} from "@/components/workspace/DndJobList";
 import { FileJobCard } from "@/components/workspace/FileJobCard";
 import { WorkspaceSettings } from "@/components/workspace/WorkspaceSettings";
+import {
+  createDndGroupOrdersFromItems,
+  createDndJobItems,
+  type DndJobItems,
+} from "@/components/workspace/dnd-job-order";
 import {
   conversionSettingsToRecipe,
   getConversionModeLabel,
@@ -58,12 +92,10 @@ import { createImageWorker } from "@/features/image-processing/worker-client";
 import { createOutputFileNameFromBase } from "@/lib/filenames/image-filenames";
 import { cn } from "@/lib/utils";
 import {
-  downloadFile,
   downloadFiles,
   downloadFilesAsZip,
   getSaveCapabilities,
   isFilePickerCancellation,
-  saveFileAs,
   saveFilesAsZip,
   saveFilesToChosenDirectory,
   type SaveCapabilities,
@@ -77,8 +109,46 @@ type DropError = {
   error: FileJobError;
 };
 
-const newGroupTarget = "__new-group__";
 const activeStatuses = ["loading-engine", "decoding", "processing", "encoding"];
+const acceptedImageTypes =
+  "image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.avif,.heic,.heif";
+
+type GroupDropzoneProps = {
+  groupId: string;
+  ariaLabel: string;
+  disabled: boolean;
+  onFiles: (files: File[], groupId: string) => Promise<void>;
+  children: (state: Pick<DropzoneState, "isDragActive" | "open">) => ReactNode;
+};
+
+function GroupDropzone({
+  groupId,
+  ariaLabel,
+  disabled,
+  onFiles,
+  children,
+}: GroupDropzoneProps) {
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
+    onDrop: (files) => {
+      void onFiles(files, groupId);
+    },
+    multiple: true,
+    noClick: true,
+    noKeyboard: true,
+    disabled,
+  });
+
+  return (
+    <div {...getRootProps()} className="h-full min-w-0">
+      <input
+        {...getInputProps({ accept: acceptedImageTypes })}
+        className="sr-only"
+        aria-label={ariaLabel}
+      />
+      {children({ isDragActive, open })}
+    </div>
+  );
+}
 
 function isActiveJob(job: FileJob): boolean {
   return activeStatuses.includes(job.status);
@@ -139,27 +209,31 @@ export default function ImageWorkspace() {
     (state) => state.setAllJobsProcessing,
   );
   const setActiveGroup = useWorkspaceStore((state) => state.setActiveGroup);
-  const assignJobToGroup = useWorkspaceStore((state) => state.assignJobToGroup);
   const assignSelectedJobsToGroup = useWorkspaceStore(
     (state) => state.assignSelectedJobsToGroup,
   );
+  const applyJobOrder = useWorkspaceStore((state) => state.applyJobOrder);
   const duplicateJob = useWorkspaceStore((state) => state.duplicateJob);
-  const duplicateJobToNewGroup = useWorkspaceStore(
-    (state) => state.duplicateJobToNewGroup,
-  );
   const createGroupFromSelectedJobs = useWorkspaceStore(
     (state) => state.createGroupFromSelectedJobs,
   );
+  const createGroup = useWorkspaceStore((state) => state.createGroup);
+  const createGroupForJob = useWorkspaceStore(
+    (state) => state.createGroupForJob,
+  );
+  const createGroupWithJobs = useWorkspaceStore(
+    (state) => state.createGroupWithJobs,
+  );
+  const removeGroup = useWorkspaceStore((state) => state.removeGroup);
   const createSeparateGroupsFromSelectedJobs = useWorkspaceStore(
     (state) => state.createSeparateGroupsFromSelectedJobs,
   );
+  const renameGroup = useWorkspaceStore((state) => state.renameGroup);
   const updateJob = useWorkspaceStore((state) => state.updateJob);
   const completeJob = useWorkspaceStore((state) => state.completeJob);
   const renameJob = useWorkspaceStore((state) => state.renameJob);
   const failJob = useWorkspaceStore((state) => state.failJob);
   const setJobStatus = useWorkspaceStore((state) => state.setJobStatus);
-  const retryJob = useWorkspaceStore((state) => state.retryJob);
-  const removeJob = useWorkspaceStore((state) => state.removeJob);
   const removeSelectedJobs = useWorkspaceStore(
     (state) => state.removeSelectedJobs,
   );
@@ -169,16 +243,32 @@ export default function ImageWorkspace() {
   const [isBatchActive, setIsBatchActive] = useState(false);
   const [bulkTargetGroupId, setBulkTargetGroupId] = useState("");
   const [activeSaveAction, setActiveSaveAction] = useState<string>();
+  const [fixedBarsHeight, setFixedBarsHeight] = useState(0);
+  const [dragItems, setDragItems] = useState<DndJobItems | null>(null);
   const [saveCapabilities, setSaveCapabilities] = useState<SaveCapabilities>({
     file: false,
     directory: false,
   });
+  const fixedBarsRef = useRef<HTMLDivElement>(null);
   const batchRunRef = useRef(false);
   const activeWorkers = useRef(new Map<string, Worker>());
   const cancelRejectors = useRef(new Map<string, () => void>());
   const cancelledJobs = useRef(new Set<string>());
+  const dragItemsRef = useRef<DndJobItems | null>(null);
+  const dragItemsSnapshotRef = useRef<DndJobItems | null>(null);
 
-  const onDrop = useCallback(
+  const groupIds = useMemo(() => groups.map((group) => group.id), [groups]);
+  const workspaceDndItems = useMemo(
+    () => createDndJobItems(groupIds, jobs),
+    [groupIds, jobs],
+  );
+  const jobsById = useMemo(
+    () => new Map(jobs.map((job) => [job.id, job])),
+    [jobs],
+  );
+  const displayedDndItems = dragItems ?? workspaceDndItems;
+
+  const validateFiles = useCallback(
     async (files: File[]) => {
       if (isBatchActive) return;
 
@@ -210,19 +300,108 @@ export default function ImageWorkspace() {
         }
       }
 
-      if (validJobs.length > 0) addJobs(validJobs);
       setDropErrors(errors);
+
+      return validJobs;
     },
-    [addJobs, isBatchActive],
+    [isBatchActive],
   );
 
-  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
-    onDrop,
-    multiple: true,
-    noClick: true,
-    noKeyboard: true,
-    disabled: isBatchActive,
-  });
+  const addFilesToGroup = useCallback(
+    async (files: File[], groupId: string) => {
+      const validJobs = await validateFiles(files);
+      if (validJobs && validJobs.length > 0) addJobs(validJobs, groupId);
+    },
+    [addJobs, validateFiles],
+  );
+
+  const addFilesToNewGroup = useCallback(
+    async (files: File[]) => {
+      const validJobs = await validateFiles(files);
+      if (validJobs && validJobs.length > 0) createGroupWithJobs(validJobs);
+    },
+    [createGroupWithJobs, validateFiles],
+  );
+
+  const clearJobDragPreview = useCallback(() => {
+    dragItemsRef.current = null;
+    dragItemsSnapshotRef.current = null;
+    setDragItems(null);
+  }, []);
+
+  const handleJobDragStart = useCallback(
+    (event: DragStartEvent) => {
+      if (event.operation.source?.type !== imageJobDndType) return;
+
+      const snapshot = structuredClone(workspaceDndItems);
+      dragItemsSnapshotRef.current = snapshot;
+      dragItemsRef.current = snapshot;
+      setDragItems(snapshot);
+    },
+    [workspaceDndItems],
+  );
+
+  const handleJobDragOver = useCallback(
+    (event: DragOverEvent) => {
+      if (event.operation.source?.type !== imageJobDndType) return;
+
+      setDragItems((currentItems) => {
+        const items =
+          currentItems ??
+          dragItemsRef.current ??
+          dragItemsSnapshotRef.current ??
+          workspaceDndItems;
+        const nextItems = move(items, event);
+
+        dragItemsRef.current = nextItems;
+        return nextItems;
+      });
+    },
+    [workspaceDndItems],
+  );
+
+  const handleJobDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { source, target } = event.operation;
+      const finalItems = dragItemsRef.current;
+
+      if (
+        source?.type === imageJobDndType &&
+        !event.canceled &&
+        target?.id === newGroupTarget
+      ) {
+        createGroupForJob(String(source.id));
+        clearJobDragPreview();
+        return;
+      }
+
+      if (
+        source?.type !== imageJobDndType ||
+        event.canceled ||
+        !target ||
+        !finalItems
+      ) {
+        clearJobDragPreview();
+        return;
+      }
+
+      const jobId = String(source.id);
+      const targetGroupId = groupIds.find((groupId) =>
+        finalItems[groupId]?.includes(jobId),
+      );
+      if (!targetGroupId) {
+        clearJobDragPreview();
+        return;
+      }
+
+      applyJobOrder(
+        createDndGroupOrdersFromItems(groupIds, finalItems),
+        targetGroupId,
+      );
+      clearJobDragPreview();
+    },
+    [applyJobOrder, clearJobDragPreview, createGroupForJob, groupIds],
+  );
 
   const processOneJob = useCallback(
     async (job: FileJob, settings: ImageConversionSettings) => {
@@ -377,16 +556,6 @@ export default function ImageWorkspace() {
     }
   }, [processOneJob]);
 
-  const cancelJob = useCallback(
-    (id: string) => {
-      cancelledJobs.current.add(id);
-      setJobStatus(id, "cancelled", 0);
-      activeWorkers.current.get(id)?.terminate();
-      cancelRejectors.current.get(id)?.();
-    },
-    [setJobStatus],
-  );
-
   const updateJobDimensions = useCallback(
     (id: string, width: number, height: number) => {
       updateJob(id, { originalWidth: width, originalHeight: height });
@@ -404,19 +573,6 @@ export default function ImageWorkspace() {
       });
     },
     [duplicateJob],
-  );
-
-  const duplicateOneToNewGroup = useCallback(
-    (id: string) => {
-      duplicateJobToNewGroup(id);
-      toast.add({
-        type: "success",
-        title: "Kép új csoportba duplikálva",
-        description:
-          "Az új csoport az eredeti beállításait kapta, és már szerkeszthető.",
-      });
-    },
-    [duplicateJobToNewGroup],
   );
 
   const removeSelected = useCallback(() => {
@@ -452,40 +608,6 @@ export default function ImageWorkspace() {
     [],
   );
 
-  const downloadOne = useCallback((job: FileJob) => {
-    if (!job.result) return;
-    downloadFile({
-      blob: job.result.blob,
-      fileName: createOutputFileNameFromBase(
-        job.outputBaseName,
-        job.result.format,
-      ),
-      mimeType: job.result.mimeType,
-      description: "Kép",
-    });
-  }, []);
-
-  const saveOneAs = useCallback(
-    (job: FileJob) => {
-      if (!job.result) return;
-      const result = job.result;
-      const fileName = createOutputFileNameFromBase(
-        job.outputBaseName,
-        result.format,
-      );
-
-      void runSaveAction(`file-${job.id}`, async () => {
-        await saveFileAs({
-          blob: result.blob,
-          fileName,
-          mimeType: result.mimeType,
-          description: "Kép",
-        });
-      });
-    },
-    [runSaveAction],
-  );
-
   const downloadAllFiles = useCallback(() => {
     const files = getCompletedFiles(useWorkspaceStore.getState().jobs);
     downloadFiles(files);
@@ -515,6 +637,24 @@ export default function ImageWorkspace() {
   useEffect(() => {
     setSaveCapabilities(getSaveCapabilities());
   }, []);
+
+  useEffect(() => {
+    const fixedBars = fixedBarsRef.current;
+    if (!fixedBars) {
+      setFixedBarsHeight(0);
+      return;
+    }
+
+    const updateFixedBarsHeight = () => {
+      setFixedBarsHeight(Math.ceil(fixedBars.getBoundingClientRect().height));
+    };
+    const resizeObserver = new ResizeObserver(updateFixedBarsHeight);
+
+    updateFixedBarsHeight();
+    resizeObserver.observe(fixedBars);
+
+    return () => resizeObserver.disconnect();
+  }, [jobs.length > 0]);
 
   useEffect(() => {
     if (
@@ -609,7 +749,13 @@ export default function ImageWorkspace() {
   return (
     <section
       id="workspace"
-      className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-10 sm:px-6 lg:px-8"
+      className={cn(
+        "mx-auto flex w-full max-w-[96rem] flex-col gap-6 px-4 py-10 sm:px-6 lg:px-8",
+        jobs.length > 0 &&
+          (selectedCount > 0
+            ? "pb-80 sm:pb-56 lg:pb-44"
+            : "pb-56 sm:pb-40 lg:pb-32"),
+      )}
     >
       <div className="flex flex-col gap-2">
         <Badge variant="secondary">Képfeldolgozó workspace</Badge>
@@ -644,55 +790,19 @@ export default function ImageWorkspace() {
         </Alert>
       ))}
 
-      <div
-        className={cn(
-          "grid items-start gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(20rem,0.75fr)]",
-          selectedCount > 0 && "pb-28",
-        )}
-      >
-        <div>
-          <input
-            {...getInputProps({
-              accept:
-                "image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.avif,.heic,.heif",
-            })}
-            className="sr-only"
-            aria-label="Konvertálandó képek kiválasztása"
-          />
-          <FileUploadDropzone
-            getRootProps={getRootProps}
-            isDragActive={isDragActive}
-            onBrowse={open}
-            title="Húzd ide a képeket"
-            activeTitle="Engedd el a képeket"
-            description="JPG, PNG, WebP, AVIF vagy HEIC/HEIF állóképek · nincs fájlszámkorlát"
-            buttonLabel="Képek kiválasztása"
-            disabled={isBatchActive}
-          />
-        </div>
-
-        <Card className="lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:max-h-[calc(100dvh-3rem)]">
-          <CardContent className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-            <WorkspaceSettings disabled={isBatchActive} />
-          </CardContent>
-        </Card>
-
-        {jobs.length > 0 && (
-          <div className="flex flex-col gap-5 lg:col-start-1 lg:row-start-2">
-            <Separator />
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-                <div className="flex flex-col gap-1">
-                  <h3 className="font-heading text-2xl font-medium">Fájlok</h3>
-                  <p
-                    className="text-muted-foreground text-sm"
-                    aria-live="polite"
-                  >
-                    {jobs.length} fájl · {groups.length} csoport ·{" "}
-                    {selectedCount} kijelölve · {processIncludedCount}{" "}
-                    konvertálásra · {completedCount} kész · {failedCount} hibás
-                  </p>
-                </div>
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="flex min-w-0 flex-col gap-6">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+              <div className="flex flex-col gap-1">
+                <h3 className="font-heading text-2xl font-medium">Csoportok</h3>
+                <p className="text-muted-foreground text-sm" aria-live="polite">
+                  {jobs.length} fájl · {groups.length} csoport · {selectedCount}{" "}
+                  kijelölve · {processIncludedCount} konvertálásra ·{" "}
+                  {completedCount} kész · {failedCount} hibás
+                </p>
+              </div>
+              {jobs.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   <Button
                     type="button"
@@ -704,17 +814,11 @@ export default function ImageWorkspace() {
                   </Button>
                   <Button
                     type="button"
-                    variant="destructive"
+                    variant="outline"
                     disabled={isBatchActive || selectedCount === 0}
-                    onClick={removeSelected}
+                    onClick={() => setAllJobsSelected(false)}
                   >
-                    <HugeiconsIcon
-                      icon={Delete02Icon}
-                      strokeWidth={2}
-                      data-icon="inline-start"
-                      aria-hidden="true"
-                    />
-                    Kijelöltek törlése
+                    Kijelölés törlése
                   </Button>
                   <Button
                     type="button"
@@ -725,357 +829,621 @@ export default function ImageWorkspace() {
                     Lista törlése
                   </Button>
                 </div>
+              )}
+            </div>
+
+            <DragDropProvider
+              onDragStart={handleJobDragStart}
+              onDragOver={handleJobDragOver}
+              onDragEnd={handleJobDragEnd}
+            >
+              <div className="grid items-stretch gap-4 lg:grid-cols-3">
+                {groups.map((group) => {
+                  const groupJobs = (displayedDndItems[group.id] ?? []).flatMap(
+                    (jobId) => {
+                      const job = jobsById.get(jobId);
+                      return job ? [job] : [];
+                    },
+                  );
+                  const presetName =
+                    imagePresets.find(
+                      (preset) => preset.id === group.settings.presetId,
+                    )?.recipe.name ?? "Egyedi";
+
+                  return (
+                    <GroupDropzone
+                      key={group.id}
+                      groupId={group.id}
+                      ariaLabel={`Képek hozzáadása a(z) ${group.name} csoporthoz`}
+                      disabled={isBatchActive}
+                      onFiles={addFilesToGroup}
+                    >
+                      {({ isDragActive, open }) => (
+                        <Card
+                          size="sm"
+                          interactive={!isBatchActive}
+                          selected={activeGroupId === group.id}
+                          role="button"
+                          tabIndex={isBatchActive ? -1 : 0}
+                          aria-pressed={activeGroupId === group.id}
+                          aria-disabled={isBatchActive || undefined}
+                          aria-label={`${group.name} konfigurációs csoport kiválasztása`}
+                          className={cn(
+                            "border-foreground/20 relative min-h-96 [--card-spacing:--spacing(3)] [background:var(--card)] lg:h-[32rem]",
+                            isDragActive &&
+                              "border-ring ring-2 ring-ring/20 data-[selected=true]:ring-2 data-[selected=true]:ring-ring/20",
+                          )}
+                          onClick={(event) => {
+                            if (
+                              !isBatchActive &&
+                              isGroupCardActivationClick(
+                                event.target,
+                                event.currentTarget,
+                              )
+                            ) {
+                              setActiveGroup(group.id);
+                            }
+                          }}
+                          onKeyDown={(event) => {
+                            if (
+                              event.target !== event.currentTarget ||
+                              isBatchActive ||
+                              (event.key !== "Enter" && event.key !== " ")
+                            ) {
+                              return;
+                            }
+
+                            event.preventDefault();
+                            setActiveGroup(group.id);
+                          }}
+                        >
+                          <CardHeader>
+                            <div className="flex min-w-0 flex-col gap-2">
+                              <div className="flex min-w-0 items-center gap-1">
+                                <Checkbox
+                                  id={`process-group-${group.id}`}
+                                  checked={group.shouldProcess}
+                                  disabled={isBatchActive}
+                                  aria-label={`${group.name} konvertálása`}
+                                  onCheckedChange={(checked) =>
+                                    setGroupProcessing(
+                                      group.id,
+                                      checked === true,
+                                    )
+                                  }
+                                />
+                                <Input
+                                  variant="inline"
+                                  aria-label={`${group.name} csoport nevének módosítása`}
+                                  value={group.name}
+                                  maxLength={60}
+                                  disabled={isBatchActive}
+                                  onFocus={() => setActiveGroup(group.id)}
+                                  onChange={(event) =>
+                                    renameGroup(group.id, event.target.value)
+                                  }
+                                  onBlur={(event) => {
+                                    const name = event.target.value.trim();
+                                    renameGroup(
+                                      group.id,
+                                      name || "Névtelen csoport",
+                                    );
+                                  }}
+                                />
+                              </div>
+                              <div className="flex flex-wrap gap-1.5">
+                                <Badge variant="secondary">{presetName}</Badge>
+                                <Badge variant="outline">
+                                  {group.settings.outputFormat.toUpperCase()}
+                                </Badge>
+                                <Badge variant="outline">
+                                  {group.settings.lossless
+                                    ? getConversionResolutionLabel(
+                                        group.settings,
+                                      )
+                                    : `max. ${getConversionResolutionLabel(group.settings)}`}
+                                </Badge>
+                                <Badge variant="outline">
+                                  {getConversionModeLabel(group.settings)}
+                                </Badge>
+                                <Badge variant="outline">
+                                  {groupJobs.length} kép
+                                </Badge>
+                              </div>
+                            </div>
+                            <CardAction className="flex items-center gap-1">
+                              <Button
+                                type="button"
+                                size="icon-sm"
+                                variant="ghost"
+                                aria-label={`Képek hozzáadása a(z) ${group.name} csoporthoz`}
+                                title="Képek hozzáadása"
+                                disabled={isBatchActive}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  open();
+                                }}
+                              >
+                                <HugeiconsIcon
+                                  icon={ImageUploadIcon}
+                                  strokeWidth={2}
+                                  aria-hidden="true"
+                                />
+                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger
+                                  render={
+                                    <Button
+                                      type="button"
+                                      size="icon-sm"
+                                      variant="ghost"
+                                    />
+                                  }
+                                  aria-label={`${group.name} csoport menüje`}
+                                  title="Csoportmenü"
+                                  disabled={isBatchActive}
+                                  onClick={(event) => event.stopPropagation()}
+                                >
+                                  <HugeiconsIcon
+                                    icon={MoreVerticalIcon}
+                                    strokeWidth={2}
+                                    aria-hidden="true"
+                                  />
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuGroup>
+                                    <DropdownMenuItem
+                                      variant="destructive"
+                                      onClick={() => removeGroup(group.id)}
+                                    >
+                                      <HugeiconsIcon
+                                        icon={Delete02Icon}
+                                        strokeWidth={2}
+                                        aria-hidden="true"
+                                      />
+                                      Csoport törlése
+                                    </DropdownMenuItem>
+                                  </DropdownMenuGroup>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </CardAction>
+                          </CardHeader>
+                          <Separator className="bg-foreground/20" />
+                          <CardContent className="min-h-0 flex-1 overflow-y-auto py-px">
+                            <DndJobList
+                              groupId={group.id}
+                              ariaLabel={`${group.name} képei`}
+                              disabled={isBatchActive}
+                              className={cn(
+                                groupJobs.length === 0
+                                  ? "grid place-items-center"
+                                  : "flex flex-col gap-2",
+                              )}
+                            >
+                              {groupJobs.length === 0 ? (
+                                <div
+                                  className={cn(
+                                    "morf-group-dropzone-radius flex size-full min-h-48 flex-col items-center justify-center gap-3 border border-dashed border-foreground/20 p-6 text-center",
+                                    isDragActive && "border-ring",
+                                  )}
+                                >
+                                  <p className="text-muted-foreground text-sm">
+                                    {isDragActive
+                                      ? "Engedd el a képeket"
+                                      : "Húzd ide a képeket"}
+                                  </p>
+                                  <Button
+                                    type="button"
+                                    disabled={isBatchActive}
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      open();
+                                    }}
+                                  >
+                                    <HugeiconsIcon
+                                      icon={ImageUploadIcon}
+                                      strokeWidth={2}
+                                      data-icon="inline-start"
+                                      aria-hidden="true"
+                                    />
+                                    Képek kiválasztása
+                                  </Button>
+                                  <p className="text-muted-foreground text-xs">
+                                    JPG, PNG, WebP, AVIF vagy HEIC/HEIF
+                                  </p>
+                                </div>
+                              ) : (
+                                groupJobs.map((job, jobIndex) => (
+                                  <FileJobCard
+                                    key={job.id}
+                                    job={job}
+                                    group={group}
+                                    sortIndex={jobIndex}
+                                    isSelected={selectedJobIds.includes(job.id)}
+                                    onDimensions={updateJobDimensions}
+                                    onDuplicate={duplicateOne}
+                                    onRename={renameJob}
+                                    onSelectionChange={toggleJobSelection}
+                                    selectionDisabled={isBatchActive}
+                                    dragDisabled={isBatchActive}
+                                  />
+                                ))
+                              )}
+                            </DndJobList>
+                          </CardContent>
+                          {isDragActive && groupJobs.length > 0 && (
+                            <div
+                              className="bg-card/95 pointer-events-none absolute inset-0 z-10 grid place-items-center p-4"
+                              role="status"
+                            >
+                              <div className="morf-group-dropzone-radius border-ring flex min-h-40 w-full flex-col items-center justify-center gap-3 border border-dashed p-6 text-center">
+                                <span className="border-ring text-ring flex size-12 items-center justify-center rounded-full border">
+                                  <HugeiconsIcon
+                                    icon={ImageUploadIcon}
+                                    strokeWidth={2}
+                                    aria-hidden="true"
+                                  />
+                                </span>
+                                <div className="flex flex-col gap-1">
+                                  <p className="font-heading text-base font-medium">
+                                    Engedd el a képeket
+                                  </p>
+                                  <p className="text-muted-foreground text-sm">
+                                    Ebbe a csoportba kerülnek.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </Card>
+                      )}
+                    </GroupDropzone>
+                  );
+                })}
+
+                <GroupDropzone
+                  groupId={newGroupTarget}
+                  ariaLabel="Képek kiválasztása új csoporthoz"
+                  disabled={isBatchActive}
+                  onFiles={async (files) => addFilesToNewGroup(files)}
+                >
+                  {({ isDragActive, open }) => (
+                    <DndNewGroupTarget disabled={isBatchActive}>
+                      {(isDndActive) => (
+                        <Card
+                          size="sm"
+                          interactive={!isBatchActive}
+                          role="button"
+                          tabIndex={isBatchActive ? -1 : 0}
+                          aria-disabled={isBatchActive || undefined}
+                          aria-label="Új csoport létrehozása"
+                          className={cn(
+                            "border-foreground/20 h-full min-h-96 border border-dashed [--card-spacing:--spacing(3)] [background:transparent] lg:h-[32rem]",
+                            (isDragActive || isDndActive) &&
+                              "border-ring ring-2 ring-ring/20",
+                          )}
+                          onClick={() => {
+                            if (!isBatchActive) createGroup();
+                          }}
+                          onKeyDown={(event) => {
+                            if (
+                              event.target !== event.currentTarget ||
+                              isBatchActive ||
+                              (event.key !== "Enter" && event.key !== " ")
+                            ) {
+                              return;
+                            }
+                            event.preventDefault();
+                            createGroup();
+                          }}
+                        >
+                          <CardContent className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 text-center">
+                            <span
+                              className={cn(
+                                "border-primary text-primary flex size-12 items-center justify-center rounded-full border",
+                                (isDragActive || isDndActive) &&
+                                  "border-ring text-ring",
+                              )}
+                            >
+                              <HugeiconsIcon
+                                icon={
+                                  isDragActive || isDndActive
+                                    ? ImageUploadIcon
+                                    : Add01Icon
+                                }
+                                strokeWidth={2}
+                                aria-hidden="true"
+                              />
+                            </span>
+                            <div className="flex flex-col gap-1">
+                              <p className="font-heading text-lg font-medium">
+                                {isDndActive
+                                  ? "Engedd el a képet"
+                                  : isDragActive
+                                    ? "Engedd el a képeket"
+                                    : "Új csoport"}
+                              </p>
+                              <p className="text-muted-foreground max-w-56 text-sm">
+                                {isDndActive
+                                  ? "Új csoport készül ezzel a képpel."
+                                  : isDragActive
+                                    ? "Új csoport készül ezekkel a képekkel."
+                                    : "Kattints a létrehozáshoz. Az aktív csoport beállításaiból indul."}
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              disabled={isBatchActive}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                open();
+                              }}
+                            >
+                              <HugeiconsIcon
+                                icon={ImageUploadIcon}
+                                strokeWidth={2}
+                                data-icon="inline-start"
+                                aria-hidden="true"
+                              />
+                              Képek tallózása
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </DndNewGroupTarget>
+                  )}
+                </GroupDropzone>
               </div>
+            </DragDropProvider>
+          </div>
+        </div>
 
-              <Separator />
+        <Card
+          className="xl:sticky xl:top-6 xl:max-h-[calc(100dvh-3rem-var(--workspace-fixed-bars-height))]"
+          style={
+            {
+              "--workspace-fixed-bars-height": `${fixedBarsHeight}px`,
+            } as CSSProperties
+          }
+        >
+          <CardContent className="min-h-0 flex-1 overflow-y-auto">
+            <WorkspaceSettings disabled={isBatchActive} />
+          </CardContent>
+        </Card>
+      </div>
 
-              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                <div className="flex flex-col gap-1">
-                  <h4 className="font-heading text-base font-medium">
-                    Feldolgozás
-                  </h4>
-                  <p className="text-muted-foreground text-sm">
-                    {processableCount} kép vár konvertálásra.
-                  </p>
-                </div>
+      {jobs.length > 0 && (
+        <div
+          ref={fixedBarsRef}
+          className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex flex-col gap-2"
+        >
+          {selectedCount > 0 && (
+            <Card
+              size="sm"
+              role="region"
+              aria-label="Kijelölt képek műveletei"
+              className="shadow-lg pointer-events-auto mx-4 self-center [--card-spacing:--spacing(2)] [background:var(--card)] sm:w-[min(calc(100%-2rem),64rem)]"
+            >
+              <CardContent className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <span className="shrink-0 text-sm font-medium">
+                  {selectedCount} kép kijelölve
+                </span>
+                <Field className="min-w-0 sm:w-64 sm:flex-none">
+                  <FieldLabel htmlFor="bulk-group-target" className="sr-only">
+                    Közös célcsoport
+                  </FieldLabel>
+                  <Select
+                    items={groupItems}
+                    value={bulkTargetGroupId || null}
+                    disabled={isBatchActive}
+                    onValueChange={(value) => setBulkTargetGroupId(value ?? "")}
+                  >
+                    <SelectTrigger id="bulk-group-target">
+                      <SelectValue placeholder="Áthelyezés ide…" />
+                    </SelectTrigger>
+                    <SelectContent
+                      side="top"
+                      sideOffset={8}
+                      align="start"
+                      alignItemWithTrigger={false}
+                      className="[background:var(--popover)]"
+                    >
+                      <SelectGroup>
+                        {groupItems.map((item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
                 <div className="flex flex-wrap gap-2">
                   <Button
                     type="button"
-                    variant="outline"
-                    disabled={isBatchActive}
-                    onClick={() => setAllJobsProcessing(!allGroupsIncluded)}
+                    size="sm"
+                    variant="secondary"
+                    disabled={isBatchActive || !bulkTargetGroupId}
+                    onClick={() => {
+                      if (bulkTargetGroupId === newGroupTarget) {
+                        createGroupFromSelectedJobs();
+                        toast.add({
+                          type: "success",
+                          title: "Kijelölt művelet kész",
+                          description: `${selectedCount} kép új közös csoportba került.`,
+                        });
+                      } else {
+                        const targetGroup = groups.find(
+                          (group) => group.id === bulkTargetGroupId,
+                        );
+                        assignSelectedJobsToGroup(bulkTargetGroupId);
+                        toast.add({
+                          type: "success",
+                          title: "Kijelölt művelet kész",
+                          description: `${selectedCount} kép a(z) „${targetGroup?.name ?? "kiválasztott"}” csoportba került.`,
+                        });
+                      }
+                      setBulkTargetGroupId("");
+                    }}
                   >
-                    {allGroupsIncluded
-                      ? "Összes csoport kihagyása"
-                      : "Összes csoport konvertálása"}
+                    Áthelyezés
                   </Button>
                   <Button
                     type="button"
-                    disabled={isBatchActive || processableCount === 0}
-                    onClick={startProcessing}
+                    size="sm"
+                    variant="outline"
+                    disabled={isBatchActive}
+                    onClick={() => {
+                      const createdGroupCount =
+                        createSeparateGroupsFromSelectedJobs();
+                      toast.add(
+                        createdGroupCount === 0
+                          ? {
+                              type: "info",
+                              title: "Nincs szükség átrendezésre",
+                              description:
+                                "A kijelölt képek már külön konfigurációs csoportokban vannak.",
+                            }
+                          : {
+                              type: "success",
+                              title: "Kijelölt művelet kész",
+                              description: `${createdGroupCount} új, képenként külön konfigurációs csoport készült.`,
+                            },
+                      );
+                      setBulkTargetGroupId("");
+                    }}
+                  >
+                    Minden kép külön csoportba
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="destructive"
+                    disabled={isBatchActive}
+                    onClick={removeSelected}
                   >
                     <HugeiconsIcon
-                      icon={PlayIcon}
+                      icon={Delete02Icon}
                       strokeWidth={2}
                       data-icon="inline-start"
                       aria-hidden="true"
                     />
-                    {isBatchActive
-                      ? "Feldolgozás…"
-                      : `Konvertálás indítása (${processableCount})`}
+                    Kijelöltek törlése
                   </Button>
                 </div>
-              </div>
+              </CardContent>
+            </Card>
+          )}
 
-              {completedCount > 0 && (
-                <>
-                  <Separator />
-                  <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                    <div className="flex flex-col gap-1">
-                      <h4 className="font-heading text-base font-medium">
-                        Mentés
-                      </h4>
-                      <p className="text-muted-foreground text-sm">
-                        {completedCount} elkészült kép menthető.
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        disabled={Boolean(activeSaveAction)}
-                        onClick={downloadAllFiles}
-                      >
-                        <HugeiconsIcon
-                          icon={Download04Icon}
-                          strokeWidth={2}
-                          data-icon="inline-start"
-                          aria-hidden="true"
-                        />
-                        Mentés
-                      </Button>
-                      {saveCapabilities.directory && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          disabled={Boolean(activeSaveAction)}
-                          onClick={saveAllFilesAs}
-                        >
-                          <HugeiconsIcon
-                            icon={FolderOpenIcon}
-                            strokeWidth={2}
-                            data-icon="inline-start"
-                            aria-hidden="true"
-                          />
-                          Mentés másként
-                        </Button>
-                      )}
+          <div className="morf-card-surface pointer-events-auto border-t bg-background/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            <div className="mx-auto flex w-full max-w-[96rem] flex-col gap-3 pt-3 lg:flex-row lg:items-center lg:justify-between">
+              <p
+                className="text-muted-foreground shrink-0 text-sm tabular-nums"
+                aria-live="polite"
+              >
+                {processableCount} várakozik · {completedCount} kész ·{" "}
+                {failedCount} hibás
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isBatchActive}
+                  onClick={() => setAllJobsProcessing(!allGroupsIncluded)}
+                >
+                  {allGroupsIncluded
+                    ? "Összes csoport kihagyása"
+                    : "Összes csoport konvertálása"}
+                </Button>
+                <Button
+                  type="button"
+                  disabled={isBatchActive || processableCount === 0}
+                  onClick={startProcessing}
+                >
+                  <HugeiconsIcon
+                    icon={PlayIcon}
+                    strokeWidth={2}
+                    data-icon="inline-start"
+                    aria-hidden="true"
+                  />
+                  {isBatchActive
+                    ? "Feldolgozás…"
+                    : `Konvertálás indítása (${processableCount})`}
+                </Button>
+                {completedCount > 0 && (
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={Boolean(activeSaveAction)}
+                      onClick={downloadAllFiles}
+                    >
+                      <HugeiconsIcon
+                        icon={Download04Icon}
+                        strokeWidth={2}
+                        data-icon="inline-start"
+                        aria-hidden="true"
+                      />
+                      Mentés
+                    </Button>
+                    {saveCapabilities.directory && (
                       <Button
                         type="button"
                         variant="outline"
                         disabled={Boolean(activeSaveAction)}
-                        onClick={downloadZip}
+                        onClick={saveAllFilesAs}
                       >
                         <HugeiconsIcon
-                          icon={FileZipIcon}
+                          icon={FolderOpenIcon}
                           strokeWidth={2}
                           data-icon="inline-start"
                           aria-hidden="true"
                         />
-                        {activeSaveAction === "zip-download"
-                          ? "ZIP készítése…"
-                          : "Mentés ZIP-be"}
+                        Mentés másként
                       </Button>
-                      {saveCapabilities.file && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          disabled={Boolean(activeSaveAction)}
-                          onClick={saveZipAs}
-                        >
-                          <HugeiconsIcon
-                            icon={FolderDownloadIcon}
-                            strokeWidth={2}
-                            data-icon="inline-start"
-                            aria-hidden="true"
-                          />
-                          {activeSaveAction === "zip-as"
-                            ? "ZIP készítése…"
-                            : "Mentés másként ZIP-be"}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {selectedCount > 0 && (
-              <Card
-                size="sm"
-                role="region"
-                aria-label="Kijelölt képek műveletei"
-                className="fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 mx-auto max-w-5xl [--card-spacing:--spacing(2)]"
-              >
-                <CardContent className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <span className="shrink-0 text-sm font-medium">
-                    {selectedCount} kijelölve
-                  </span>
-                  <Field className="min-w-0 flex-1">
-                    <FieldLabel htmlFor="bulk-group-target" className="sr-only">
-                      Közös célcsoport
-                    </FieldLabel>
-                    <Select
-                      items={groupItems}
-                      value={bulkTargetGroupId || null}
-                      disabled={isBatchActive}
-                      onValueChange={(value) =>
-                        setBulkTargetGroupId(value ?? "")
-                      }
-                    >
-                      <SelectTrigger id="bulk-group-target" className="w-full">
-                        <SelectValue placeholder="Közös célcsoport…" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          {groupItems.map((item) => (
-                            <SelectItem key={item.value} value={item.value}>
-                              {item.label}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                  <div className="flex flex-wrap gap-2">
+                    )}
                     <Button
                       type="button"
-                      size="sm"
-                      variant="secondary"
-                      disabled={isBatchActive || !bulkTargetGroupId}
-                      onClick={() => {
-                        if (bulkTargetGroupId === newGroupTarget) {
-                          createGroupFromSelectedJobs();
-                          toast.add({
-                            type: "success",
-                            title: "Kijelölt művelet kész",
-                            description: `${selectedCount} kép új közös csoportba került.`,
-                          });
-                        } else {
-                          const targetGroup = groups.find(
-                            (group) => group.id === bulkTargetGroupId,
-                          );
-                          assignSelectedJobsToGroup(bulkTargetGroupId);
-                          toast.add({
-                            type: "success",
-                            title: "Kijelölt művelet kész",
-                            description: `${selectedCount} kép a(z) „${targetGroup?.name ?? "kiválasztott"}” csoportba került.`,
-                          });
-                        }
-                        setBulkTargetGroupId("");
-                      }}
-                    >
-                      Közös csoport
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
                       variant="outline"
-                      disabled={isBatchActive}
-                      onClick={() => {
-                        const createdGroupCount =
-                          createSeparateGroupsFromSelectedJobs();
-                        toast.add(
-                          createdGroupCount === 0
-                            ? {
-                                type: "info",
-                                title: "Nincs szükség átrendezésre",
-                                description:
-                                  "A kijelölt képek már külön konfigurációs csoportokban vannak.",
-                              }
-                            : {
-                                type: "success",
-                                title: "Kijelölt művelet kész",
-                                description: `${createdGroupCount} új, képenként külön konfigurációs csoport készült.`,
-                              },
-                        );
-                        setBulkTargetGroupId("");
-                      }}
+                      disabled={Boolean(activeSaveAction)}
+                      onClick={downloadZip}
                     >
-                      Külön csoportok
+                      <HugeiconsIcon
+                        icon={FileZipIcon}
+                        strokeWidth={2}
+                        data-icon="inline-start"
+                        aria-hidden="true"
+                      />
+                      {activeSaveAction === "zip-download"
+                        ? "ZIP készítése…"
+                        : "Mentés ZIP-be"}
                     </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      disabled={isBatchActive}
-                      onClick={() => setAllJobsSelected(false)}
-                    >
-                      Kijelölés törlése
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            <div className="flex flex-col gap-4">
-              {groups.map((group) => {
-                const groupJobs = jobs.filter(
-                  (job) => job.groupId === group.id,
-                );
-                const presetName =
-                  imagePresets.find(
-                    (preset) => preset.id === group.settings.presetId,
-                  )?.recipe.name ?? "Egyedi";
-
-                return (
-                  <Card
-                    key={group.id}
-                    size="sm"
-                    interactive={!isBatchActive}
-                    selected={activeGroupId === group.id}
-                    role="button"
-                    tabIndex={isBatchActive ? -1 : 0}
-                    aria-pressed={activeGroupId === group.id}
-                    aria-disabled={isBatchActive || undefined}
-                    aria-label={`${group.name} konfigurációs csoport kiválasztása`}
-                    className="[--card-spacing:--spacing(3)]"
-                    onClick={(event) => {
-                      if (
-                        !isBatchActive &&
-                        isGroupCardActivationClick(
-                          event.target,
-                          event.currentTarget,
-                        )
-                      ) {
-                        setActiveGroup(group.id);
-                      }
-                    }}
-                    onKeyDown={(event) => {
-                      if (
-                        event.target !== event.currentTarget ||
-                        isBatchActive ||
-                        (event.key !== "Enter" && event.key !== " ")
-                      ) {
-                        return;
-                      }
-
-                      event.preventDefault();
-                      setActiveGroup(group.id);
-                    }}
-                  >
-                    <CardHeader>
-                      <div className="min-w-0">
-                        <CardTitle className="truncate">{group.name}</CardTitle>
-                        <CardDescription>
-                          {groupJobs.length} kép · {presetName} ·{" "}
-                          {group.settings.outputFormat.toUpperCase()} ·{" "}
-                          {getConversionModeLabel(group.settings)} ·{" "}
-                          {getConversionResolutionLabel(group.settings)} ·{" "}
-                          {group.shouldProcess
-                            ? "Konvertálásra kijelölve"
-                            : "Kihagyva"}
-                        </CardDescription>
-                      </div>
-                      <CardAction>
-                        <Field
-                          orientation="horizontal"
-                          className="w-auto gap-0"
-                          data-disabled={isBatchActive || undefined}
-                        >
-                          <FieldLabel className="min-h-11 cursor-pointer rounded-lg px-2 text-sm font-medium transition-colors hover:bg-muted focus-within:ring-2 focus-within:ring-ring/40">
-                            <Checkbox
-                              id={`process-group-${group.id}`}
-                              checked={group.shouldProcess}
-                              disabled={isBatchActive}
-                              onCheckedChange={(checked) =>
-                                setGroupProcessing(group.id, checked === true)
-                              }
-                            />
-                            Konvertálás
-                          </FieldLabel>
-                        </Field>
-                      </CardAction>
-                    </CardHeader>
-                    <CardContent>
-                      {groupJobs.length === 0 ? (
-                        <p className="text-muted-foreground text-sm">
-                          Még nincs kép ebben a csoportban.
-                        </p>
-                      ) : (
-                        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                          {groupJobs.map((job) => (
-                            <FileJobCard
-                              key={job.id}
-                              job={job}
-                              group={group}
-                              groups={groups}
-                              isSelected={selectedJobIds.includes(job.id)}
-                              canSaveAs={saveCapabilities.file}
-                              isSaving={Boolean(activeSaveAction)}
-                              onCancel={cancelJob}
-                              onDimensions={updateJobDimensions}
-                              onDownload={downloadOne}
-                              onDuplicate={duplicateOne}
-                              onDuplicateToNewGroup={duplicateOneToNewGroup}
-                              onGroupChange={assignJobToGroup}
-                              onRename={renameJob}
-                              onRetry={retryJob}
-                              onRemove={removeJob}
-                              onSaveAs={saveOneAs}
-                              onSelectionChange={toggleJobSelection}
-                              selectionDisabled={isBatchActive}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                    {saveCapabilities.file && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={Boolean(activeSaveAction)}
+                        onClick={saveZipAs}
+                      >
+                        <HugeiconsIcon
+                          icon={FolderDownloadIcon}
+                          strokeWidth={2}
+                          data-icon="inline-start"
+                          aria-hidden="true"
+                        />
+                        {activeSaveAction === "zip-as"
+                          ? "ZIP készítése…"
+                          : "Mentés másként ZIP-be"}
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
       <Toaster />
     </section>
   );

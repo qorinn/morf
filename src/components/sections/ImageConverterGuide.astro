@@ -3,14 +3,14 @@ import { Badge } from "@/components/ui/badge";
 
 const capabilities = [
   {
-    title: "Több kép, egyetlen feldolgozási sor",
+    title: "Képek közvetlenül a megfelelő csoportba",
     description:
-      "Egyszerre adhatsz hozzá több JPG, PNG, WebP, AVIF vagy HEIC/HEIF képet. Nincs mesterséges fájlszámkorlát; a gyakorlatban az eszközöd memóriája és teljesítménye szab határt.",
+      "Minden csoportkártya feltöltési területként működik: fájlokat dobhatsz rá vagy a saját gombjával tallózhatsz. Az Új csoport kártyára dobott képeknek a Morf automatikusan új csoportot készít.",
   },
   {
-    title: "Külön beállítások konfigurációs csoportokkal",
+    title: "Átlátható, csoportonkénti beállítások",
     description:
-      "Az egyik csoport készülhet WebP-ben weboldalhoz, a másik JPG-ben e-mailhez, a harmadik pedig veszteségmentes PNG-ben. Minden csoport saját formátumot, felbontást és tömörítési módot kap.",
+      "A kártyák badge-ei összefoglalják az aktív beállításokat. Kattints egy csoportra, majd válassz felhasználási célt, formátumot, felbontást, minőséget, maximum fájlméretet vagy veszteségmentes módot az oldalsávban.",
   },
   {
     title: "Automatikus igazodás a maximum fájlmérethez",
@@ -23,9 +23,9 @@ const capabilities = [
       "A veszteségmentes mód megtartja az eredeti felbontást, és a választott formátum lehetőségeihez mérten optimalizálás nélkül kódol. JPG-nél a legmagasabb elérhető minőséget használja.",
   },
   {
-    title: "Képenkénti vezérlés és gyors variációk",
+    title: "Fogantyús rendezés és tömeges műveletek",
     description:
-      "Áthelyezhetsz, átnevezhetsz, kihagyhatsz vagy duplikálhatsz képeket. A másolat maradhat ugyanabban a csoportban, vagy új csoportot kaphat eltérő exportbeállításokkal.",
+      "A kép kártyáját fogantyúval rendezheted vagy másik csoportba húzhatod, a másolat pedig ugyanabban a csoportban készül el. Több kijelölt képet együtt áthelyezhetsz, külön csoportokra bonthatsz vagy törölhetsz.",
   },
   {
     title: "Egyenkénti, mappás és ZIP-mentés",
@@ -74,24 +74,24 @@ const formatRows = [
 
 const workflowSteps = [
   {
-    title: "Töltsd be együtt a forrásképeket",
+    title: "Töltsd fel csoportonként a képeket",
     description:
-      "Húzd a teljes képcsomagot a munkafelületre, vagy válaszd ki a fájlokat a gépedről.",
+      "Dobj fájlokat egy meglévő csoportkártyára, vagy az Új csoport kártyával készíts nekik új kimenetet.",
   },
   {
-    title: "Építs exportcsoportokat",
+    title: "Állítsd be a kijelölt csoportot",
     description:
-      "Hozz létre közös vagy képenként külön csoportokat, majd rendeld hozzájuk a kívánt formátum- és méretbeállításokat.",
+      "Kattints a csoportra, válassz felhasználási célt, majd pontosítsd a formátum-, felbontás-, minőség- és fájlméret-beállításokat.",
   },
   {
-    title: "Indíts egyetlen konvertálást",
+    title: "Rendezd el a kép kártyákat",
     description:
-      "A Morf minden bevont képet a saját csoportja receptje alapján dolgoz fel, miközben képenként mutatja az állapotot.",
+      "Húzd a képeket a fogantyúval a kívánt sorrendbe vagy csoportba. Több képhez használd a kijelölés után megjelenő műveleti sávot.",
   },
   {
-    title: "Mentsd a kész változatokat",
+    title: "Konvertálj és ments",
     description:
-      "Töltsd le az eredményeket külön fájlként, választott helyre vagy összecsomagolt ZIP-ben.",
+      "Indítsd el együtt a bevont csoportokat, majd mentsd az eredményeket külön fájlként, választott mappába vagy ZIP-csomagba.",
   },
 ];
 ---
@@ -121,9 +121,9 @@ const workflowSteps = [
           >A Morf egy ingyenes, böngészőben futó képkonvertáló, képtömörítő és
           képátméretező eszköz.</strong
         >
-        Legnagyobb előnye, hogy egyszerre több képet dolgozhatsz fel, miközben külön
-        konfigurációs csoportokkal eltérő formátumot, felbontást, minőséget vagy maximum
-        fájlméretet adhatsz ugyanazon feltöltés különböző képeihez.
+        Legnagyobb előnye, hogy a képeket közvetlenül külön konfigurációs csoportokba
+        töltheted, majd csoportonként eltérő formátumot, felbontást, minőséget vagy
+        maximum fájlméretet adhatsz meg.
       </p>
       <p class="text-muted-foreground text-pretty">
         Ez különösen akkor hasznos, ha ugyanabból a képkészletből weboldalhoz,
@@ -133,7 +133,7 @@ const workflowSteps = [
         kezelhető.
       </p>
       <p class="text-muted-foreground text-sm">
-        <time datetime="2026-07-24">Frissítve: 2026. július 24.</time>
+        <time datetime="2026-07-26">Frissítve: 2026. július 26.</time>
       </p>
     </div>
   </header>
@@ -189,9 +189,10 @@ const workflowSteps = [
         </h3>
         <p class="text-muted-foreground mt-4 leading-relaxed">
           Egy egyszerű kötegelt képkonvertáló általában ugyanazt a beállítást
-          alkalmazza minden fájlra. A Morf konfigurációs csoportjai ehelyett egy
-          mini exportfolyamatot adnak: a képeket felhasználási cél szerint
-          rendezheted, majd együtt indíthatod el az eltérő konverziókat.
+          alkalmazza minden fájlra. A Morf csoportkártyái ehelyett önálló
+          kimenetek: közvetlenül rájuk tölthetsz, a képeket fogantyúval a
+          csoportok között mozgathatod, majd együtt indíthatod el az eltérő
+          konverziókat.
         </p>
       </header>
       <ol class="grid gap-x-8 gap-y-7 sm:grid-cols-2">
@@ -313,8 +314,9 @@ const workflowSteps = [
       <article class="border-border border-t py-5">
         <h4 class="font-medium">Több célra készülő exportcsomag</h4>
         <p class="text-muted-foreground mt-2 leading-relaxed">
-          Duplikálj egy képet új csoportba, majd készíts belőle külön webes,
-          közösségi és veszteségmentes változatot ugyanabban a munkamenetben.
+          Duplikálj egy képet, majd húzd a másolatot más beállítású vagy új
+          csoportba. Így ugyanabban a munkamenetben készíthetsz webes, közösségi
+          és veszteségmentes változatot.
         </p>
       </article>
     </div>

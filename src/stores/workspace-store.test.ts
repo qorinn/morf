@@ -6,7 +6,7 @@ import {
   useWorkspaceStore,
 } from "./workspace-store.ts";
 
-function addImages(count: number) {
+function addImages(count: number, groupId?: string) {
   useWorkspaceStore.getState().addJobs(
     Array.from({ length: count }, (_, index) => ({
       file: new File(["image"], `image-${index + 1}.jpg`, {
@@ -15,6 +15,7 @@ function addImages(count: number) {
       inputFormat: "jpeg" as const,
       previewUrl: `blob:preview-${index + 1}`,
     })),
+    groupId,
   );
 }
 
@@ -38,6 +39,46 @@ test("feltöltéskor minden kép az alapcsoportba kerül kijelölés nélkül", 
   );
   assert.equal(state.activeGroupId, defaultConversionGroupId);
   assert.deepEqual(state.selectedJobIds, []);
+});
+
+test("a képek közvetlenül a megadott csoportba tölthetők fel", () => {
+  useWorkspaceStore.getState().createGroup();
+  const targetGroupId = useWorkspaceStore.getState().activeGroupId;
+
+  addImages(2, targetGroupId);
+
+  const state = useWorkspaceStore.getState();
+  assert.deepEqual(
+    state.jobs.map((job) => job.groupId),
+    [targetGroupId, targetGroupId],
+  );
+  assert.equal(state.activeGroupId, targetGroupId);
+});
+
+test("a képek feltöltése új csoportot hoz létre és abba teszi a fájlokat", () => {
+  useWorkspaceStore
+    .getState()
+    .updateGroupSettings(defaultConversionGroupId, { quality: 73 });
+
+  useWorkspaceStore.getState().createGroupWithJobs([
+    {
+      file: new File(["image"], "uj-csoport.jpg", {
+        type: "image/jpeg",
+      }),
+      inputFormat: "jpeg",
+      previewUrl: "blob:uj-csoport",
+    },
+  ]);
+
+  const state = useWorkspaceStore.getState();
+  const newGroup = state.groups.at(-1);
+
+  assert.ok(newGroup);
+  assert.equal(state.groups.length, 2);
+  assert.equal(state.activeGroupId, newGroup.id);
+  assert.equal(newGroup.settings.quality, 73);
+  assert.equal(state.jobs.length, 1);
+  assert.equal(state.jobs[0].groupId, newGroup.id);
 });
 
 test("a kijelölt képek egy meglévő közös csoportba rendezhetők", () => {
@@ -73,6 +114,73 @@ test("egy kép csoportváltása nem módosítja a kijelölését", () => {
   assert.deepEqual(state.selectedJobIds, [selectedJob.id]);
   assert.equal(state.jobs[0].groupId, targetGroupId);
   assert.equal(state.jobs[1].groupId, targetGroupId);
+});
+
+test("egy kép húzással új, azonos beállítású csoportba vihető", () => {
+  addImages(2);
+  const [movedJob, retainedJob] = useWorkspaceStore.getState().jobs;
+  useWorkspaceStore
+    .getState()
+    .updateGroupSettings(defaultConversionGroupId, { quality: 61 });
+  useWorkspaceStore
+    .getState()
+    .setGroupProcessing(defaultConversionGroupId, false);
+  useWorkspaceStore.getState().toggleJobSelection(movedJob.id);
+
+  useWorkspaceStore.getState().createGroupForJob(movedJob.id);
+
+  const state = useWorkspaceStore.getState();
+  const newGroup = state.groups.find(
+    (group) => group.id === state.activeGroupId,
+  );
+
+  assert.ok(newGroup);
+  assert.equal(state.groups.length, 2);
+  assert.equal(newGroup.settings.quality, 61);
+  assert.equal(newGroup.shouldProcess, false);
+  assert.equal(
+    state.jobs.find((job) => job.id === movedJob.id)?.groupId,
+    newGroup.id,
+  );
+  assert.equal(
+    state.jobs.find((job) => job.id === retainedJob.id)?.groupId,
+    defaultConversionGroupId,
+  );
+  assert.deepEqual(state.selectedJobIds, [movedJob.id]);
+});
+
+test("a rendezett képek csoporton belül és csoportok között is áthelyezhetők", () => {
+  addImages(3);
+  useWorkspaceStore.getState().createGroup();
+  const targetGroupId = useWorkspaceStore.getState().activeGroupId;
+  useWorkspaceStore.getState().setGroupProcessing(targetGroupId, false);
+  const [first, second, third] = useWorkspaceStore.getState().jobs;
+
+  useWorkspaceStore.getState().toggleJobSelection(first.id);
+  useWorkspaceStore.getState().toggleJobSelection(second.id);
+  useWorkspaceStore.getState().applyJobOrder(
+    [
+      { groupId: defaultConversionGroupId, jobIds: [third.id] },
+      { groupId: targetGroupId, jobIds: [second.id, first.id] },
+    ],
+    targetGroupId,
+  );
+
+  const state = useWorkspaceStore.getState();
+  assert.deepEqual(
+    state.jobs.map((job) => job.id),
+    [third.id, second.id, first.id],
+  );
+  assert.deepEqual(
+    state.jobs.map((job) => job.groupId),
+    [defaultConversionGroupId, targetGroupId, targetGroupId],
+  );
+  assert.deepEqual(
+    state.jobs.map((job) => job.shouldProcess),
+    [true, false, false],
+  );
+  assert.deepEqual(state.selectedJobIds, [first.id, second.id]);
+  assert.equal(state.activeGroupId, targetGroupId);
 });
 
 test("a kijelölt képekből képenként külön, azonos beállítású csoport készül", () => {
@@ -239,20 +347,39 @@ test("a kép ugyanabba a csoportba önálló feladatként duplikálható", () =>
   assert.equal(copy.result, undefined);
 });
 
-test("a kép másolata új, azonos beállítású csoportba kerül", () => {
-  addImages(1);
-  const source = useWorkspaceStore.getState().jobs[0];
-  const sourceGroup = useWorkspaceStore.getState().groups[0];
+test("a csoport törlése a hozzá tartozó képeket és kijelöléseket is törli", () => {
+  addImages(3);
+  useWorkspaceStore.getState().createGroup();
+  const removedGroupId = useWorkspaceStore.getState().activeGroupId;
+  const [first, second, retained] = useWorkspaceStore.getState().jobs;
 
-  useWorkspaceStore.getState().duplicateJobToNewGroup(source.id);
+  useWorkspaceStore.getState().assignJobToGroup(first.id, removedGroupId);
+  useWorkspaceStore.getState().assignJobToGroup(second.id, removedGroupId);
+  useWorkspaceStore.getState().toggleJobSelection(first.id);
+  useWorkspaceStore.getState().removeGroup(removedGroupId);
 
   const state = useWorkspaceStore.getState();
-  const copy = state.jobs[1];
-  const newGroup = state.groups[1];
-  assert.equal(state.groups.length, 2);
-  assert.equal(copy.groupId, newGroup.id);
-  assert.deepEqual(newGroup.settings, sourceGroup.settings);
-  assert.equal(state.activeGroupId, newGroup.id);
+  assert.deepEqual(
+    state.groups.map((group) => group.id),
+    [defaultConversionGroupId],
+  );
+  assert.deepEqual(
+    state.jobs.map((job) => job.id),
+    [retained.id],
+  );
+  assert.equal(state.activeGroupId, defaultConversionGroupId);
+  assert.deepEqual(state.selectedJobIds, []);
+});
+
+test("az utolsó csoport törlése után egy új üres csoport marad", () => {
+  addImages(1);
+  useWorkspaceStore.getState().removeGroup(defaultConversionGroupId);
+
+  const state = useWorkspaceStore.getState();
+  assert.equal(state.groups.length, 1);
+  assert.notEqual(state.groups[0].id, defaultConversionGroupId);
+  assert.equal(state.activeGroupId, state.groups[0].id);
+  assert.equal(state.jobs.length, 0);
 });
 
 test("a kijelölt képek együtt törölhetők, a többi megmarad", () => {

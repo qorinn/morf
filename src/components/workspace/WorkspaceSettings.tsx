@@ -1,6 +1,12 @@
-import { useMemo, useState } from "react";
+import {
+  BrowserIcon,
+  Mail01Icon,
+  Settings02Icon,
+  Share08Icon,
+  ShoppingBag01Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Field,
@@ -19,10 +25,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CardDescription, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { getConversionModeLabel } from "@/features/image-processing/conversion-settings";
 import type { ImageFormat } from "@/features/image-processing/types";
 import { imagePresets, type PresetId } from "@/lib/presets/image-presets";
 import { useWorkspaceStore } from "@/stores/workspace-store";
@@ -31,7 +35,16 @@ type WorkspaceSettingsProps = {
   disabled: boolean;
 };
 
+const presetIcons = {
+  website: BrowserIcon,
+  webshop: ShoppingBag01Icon,
+  social: Share08Icon,
+  email: Mail01Icon,
+  custom: Settings02Icon,
+} satisfies Record<PresetId, typeof BrowserIcon>;
+
 const presetItems = imagePresets.map((preset) => ({
+  icon: presetIcons[preset.id],
   label: preset.recipe.name,
   value: preset.id,
 }));
@@ -50,29 +63,13 @@ function clampNumber(value: string, min: number, max: number): number {
 }
 
 export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
-  const jobs = useWorkspaceStore((state) => state.jobs);
   const groups = useWorkspaceStore((state) => state.groups);
   const activeGroupId = useWorkspaceStore((state) => state.activeGroupId);
-  const setActiveGroup = useWorkspaceStore((state) => state.setActiveGroup);
-  const createGroup = useWorkspaceStore((state) => state.createGroup);
-  const renameGroup = useWorkspaceStore((state) => state.renameGroup);
   const applyPresetToGroup = useWorkspaceStore(
     (state) => state.applyPresetToGroup,
   );
   const updateGroupSettings = useWorkspaceStore(
     (state) => state.updateGroupSettings,
-  );
-  const [groupMessage, setGroupMessage] = useState<string>();
-  const groupItems = useMemo(
-    () =>
-      groups.map((group) => {
-        const count = jobs.filter((job) => job.groupId === group.id).length;
-        return {
-          label: `${group.name || "Névtelen csoport"} · ${count} kép · ${group.settings.outputFormat.toUpperCase()} · ${getConversionModeLabel(group.settings)}`,
-          value: group.id,
-        };
-      }),
-    [groups, jobs],
   );
   const activeGroup =
     groups.find((group) => group.id === activeGroupId) ?? groups[0];
@@ -88,84 +85,10 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
   return (
     <FieldGroup>
       <div>
-        <CardTitle>Konfigurációs csoportok</CardTitle>
+        <CardTitle>{activeGroup.name}</CardTitle>
         <CardDescription>
-          Válassz vagy hozz létre egy csoportot.
+          A kijelölt csoport konvertálási beállításai.
         </CardDescription>
-      </div>
-
-      <Field data-disabled={disabled || undefined}>
-        <FieldLabel htmlFor="active-conversion-group">
-          Szerkesztett csoport
-        </FieldLabel>
-        <Select
-          items={groupItems}
-          value={activeGroup.id}
-          disabled={disabled}
-          onValueChange={(value) => {
-            if (!value) return;
-            setActiveGroup(value);
-            setGroupMessage(undefined);
-          }}
-        >
-          <SelectTrigger id="active-conversion-group" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              {groupItems.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </Field>
-
-      <Field data-disabled={disabled || undefined}>
-        <FieldLabel htmlFor={`group-name-${activeGroup.id}`}>
-          Csoport neve
-        </FieldLabel>
-        <Input
-          id={`group-name-${activeGroup.id}`}
-          value={activeGroup.name}
-          maxLength={60}
-          disabled={disabled}
-          onChange={(event) => renameGroup(activeGroup.id, event.target.value)}
-          onBlur={(event) => {
-            const name = event.target.value.trim();
-            renameGroup(activeGroup.id, name || "Névtelen csoport");
-          }}
-        />
-      </Field>
-
-      <Button
-        type="button"
-        variant="default"
-        className="w-full"
-        disabled={disabled}
-        onClick={() => {
-          createGroup();
-          setGroupMessage(
-            "Új csoport létrehozva az előző csoport beállításaival.",
-          );
-        }}
-      >
-        Új konfigurációs csoport
-      </Button>
-
-      {groupMessage && (
-        <p className="text-muted-foreground min-h-5 text-sm" aria-live="polite">
-          {groupMessage}
-        </p>
-      )}
-
-      <Separator />
-
-      <div>
-        <CardTitle>Konfigurációs beállítások</CardTitle>
-        <CardDescription>Módosítsd a csoport beállításait.</CardDescription>
       </div>
 
       <Field data-disabled={disabled || undefined}>
@@ -184,12 +107,34 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
             id={`morf-preset-${activeGroup.id}`}
             className="w-full"
           >
-            <SelectValue />
+            <SelectValue>
+              {(value) => {
+                const selectedItem = presetItems.find(
+                  (item) => item.value === value,
+                );
+
+                return selectedItem ? (
+                  <>
+                    <HugeiconsIcon
+                      icon={selectedItem.icon}
+                      strokeWidth={2}
+                      aria-hidden="true"
+                    />
+                    {selectedItem.label}
+                  </>
+                ) : null;
+              }}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
               {presetItems.map((item) => (
                 <SelectItem key={item.value} value={item.value}>
+                  <HugeiconsIcon
+                    icon={item.icon}
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  />
                   {item.label}
                 </SelectItem>
               ))}
@@ -207,7 +152,9 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
           aria-labelledby={`output-format-label-${activeGroup.id}`}
           value={[settings.outputFormat]}
           variant="outline"
+          spacing={0}
           disabled={disabled}
+          className="w-full"
           onValueChange={(values) => {
             const value = values[0] as ImageFormat | undefined;
             if (value) {
@@ -218,7 +165,11 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
           }}
         >
           {outputFormats.map((format) => (
-            <ToggleGroupItem key={format.value} value={format.value}>
+            <ToggleGroupItem
+              key={format.value}
+              value={format.value}
+              className="min-w-0 flex-1"
+            >
               {format.label}
             </ToggleGroupItem>
           ))}
@@ -242,8 +193,8 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
           </FieldLabel>
           <FieldDescription>
             {settings.outputFormat === "jpeg"
-              ? "Nem méretez át és nem optimalizál. A JPG nem támogat valódi veszteségmentes kódolást, ezért ennél a formátumnál a legmagasabb elérhető minőséget használja."
-              : "Az eredeti felbontást megtartja, és veszteségmentesen kódol. Felülírja a felbontást, a minőséget és a maximum fájlméretet."}
+              ? "A JPG nem támogat valódi veszteségmentes kódolást, ezért ennél a formátumnál a legmagasabb elérhető minőséget használja."
+              : "Az eredeti felbontást megtartja, és veszteségmentesen kódol."}
           </FieldDescription>
         </FieldContent>
       </Field>
@@ -305,10 +256,6 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
             <FieldLabel htmlFor={`max-file-size-enabled-${activeGroup.id}`}>
               Maximum fájlméret
             </FieldLabel>
-            <FieldDescription>
-              A motor a lehető legjobb minőséget keresi meg a határ alatt. Ha
-              kell, a felbontást is tovább csökkenti.
-            </FieldDescription>
           </FieldContent>
         </div>
         <div className="flex items-center gap-2">
@@ -332,10 +279,6 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
           />
           <span className="text-muted-foreground text-sm">KB</span>
         </div>
-        <FieldDescription>
-          Ha a forrás már a határ alatt van és a formátuma sem változik, a fájl
-          érintetlen marad. A maximum fájlméret a minőségértéket felülírja.
-        </FieldDescription>
       </Field>
 
       <Field data-disabled={disabled || qualityDisabled || undefined}>

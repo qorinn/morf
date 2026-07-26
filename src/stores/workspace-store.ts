@@ -21,6 +21,11 @@ export const defaultConversionGroupId = "conversion-group-default";
 
 type NewFileJob = Pick<FileJob, "file" | "inputFormat" | "previewUrl">;
 
+type JobGroupOrder = {
+  groupId: string;
+  jobIds: string[];
+};
+
 type JobPatch = Partial<
   Pick<
     FileJob,
@@ -39,16 +44,19 @@ type WorkspaceState = {
   activeGroupId: string;
   selectedJobIds: string[];
   nextGroupNumber: number;
-  addJobs: (jobs: NewFileJob[]) => void;
+  addJobs: (jobs: NewFileJob[], groupId?: string) => void;
+  createGroupWithJobs: (jobs: NewFileJob[]) => void;
   toggleJobSelection: (id: string) => void;
   setAllJobsSelected: (selected: boolean) => void;
   setGroupProcessing: (groupId: string, shouldProcess: boolean) => void;
   setAllJobsProcessing: (shouldProcess: boolean) => void;
   assignJobToGroup: (jobId: string, groupId: string) => void;
   assignSelectedJobsToGroup: (groupId: string) => void;
+  applyJobOrder: (groupOrders: JobGroupOrder[], activeGroupId?: string) => void;
   duplicateJob: (id: string) => void;
-  duplicateJobToNewGroup: (id: string) => void;
   createGroup: () => void;
+  createGroupForJob: (jobId: string) => void;
+  removeGroup: (groupId: string) => void;
   createGroupFromSelectedJobs: () => void;
   createSeparateGroupsFromSelectedJobs: () => number;
   setActiveGroup: (groupId: string) => void;
@@ -148,6 +156,21 @@ function duplicateJob(
   };
 }
 
+function createJobsForGroup(
+  jobs: NewFileJob[],
+  group: ConversionGroup,
+): FileJob[] {
+  return jobs.map((job) => ({
+    ...job,
+    id: crypto.randomUUID(),
+    outputBaseName: `${sanitizeBaseName(job.file.name)}-morf`,
+    groupId: group.id,
+    shouldProcess: group.shouldProcess,
+    status: "queued" as const,
+    progress: 0,
+  }));
+}
+
 function updateGroupConfiguration(
   state: Pick<WorkspaceState, "groups" | "jobs">,
   groupId: string,
@@ -180,25 +203,43 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   activeGroupId: initialGroup.id,
   selectedJobIds: [],
   nextGroupNumber: 2,
-  addJobs: (jobs) =>
-    set((state) => ({
-      jobs: [
-        ...state.jobs,
-        ...jobs.map((job) => ({
-          ...job,
-          id: crypto.randomUUID(),
-          outputBaseName: `${sanitizeBaseName(job.file.name)}-morf`,
-          groupId: defaultConversionGroupId,
-          shouldProcess:
-            state.groups.find((group) => group.id === defaultConversionGroupId)
-              ?.shouldProcess ?? true,
-          status: "queued" as const,
-          progress: 0,
-        })),
-      ],
-      activeGroupId: defaultConversionGroupId,
-      selectedJobIds: [],
-    })),
+  addJobs: (jobs, groupId) =>
+    set((state) => {
+      const targetGroup =
+        (groupId
+          ? state.groups.find((group) => group.id === groupId)
+          : state.groups.find(
+              (group) => group.id === defaultConversionGroupId,
+            )) ?? state.groups[0];
+      if (!targetGroup) return {};
+
+      return {
+        jobs: [...state.jobs, ...createJobsForGroup(jobs, targetGroup)],
+        activeGroupId: targetGroup.id,
+        selectedJobIds: [],
+      };
+    }),
+  createGroupWithJobs: (jobs) =>
+    set((state) => {
+      if (jobs.length === 0) return {};
+
+      const sourceGroup =
+        state.groups.find((group) => group.id === state.activeGroupId) ??
+        state.groups[0];
+      const group = createGroup(
+        state.nextGroupNumber,
+        sourceGroup.settings,
+        sourceGroup.shouldProcess,
+      );
+
+      return {
+        groups: [...state.groups, group],
+        jobs: [...state.jobs, ...createJobsForGroup(jobs, group)],
+        activeGroupId: group.id,
+        selectedJobIds: [],
+        nextGroupNumber: state.nextGroupNumber + 1,
+      };
+    }),
   toggleJobSelection: (id) =>
     set((state) => ({
       selectedJobIds: state.selectedJobIds.includes(id)
@@ -255,6 +296,53 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
         selectedJobIds: [],
       };
     }),
+  applyJobOrder: (groupOrders, activeGroupId) =>
+    set((state) => {
+      const validGroupIds = new Set(state.groups.map((group) => group.id));
+      const validJobIds = new Set(state.jobs.map((job) => job.id));
+      const orderedJobIds = new Set<string>();
+      const validOrders = groupOrders.flatMap((order) => {
+        if (!validGroupIds.has(order.groupId)) return [];
+
+        const jobIds = order.jobIds.filter((jobId) => {
+          if (!validJobIds.has(jobId) || orderedJobIds.has(jobId)) return false;
+          orderedJobIds.add(jobId);
+          return true;
+        });
+
+        return [{ groupId: order.groupId, jobIds }];
+      });
+
+      let assignedJobs = state.jobs;
+      for (const order of validOrders) {
+        const groupJobIds = new Set(order.jobIds);
+        assignedJobs = assignJobsToConversionGroup(
+          assignedJobs,
+          state.groups,
+          order.groupId,
+          (job) => groupJobIds.has(job.id),
+        );
+      }
+
+      const jobsById = new Map(assignedJobs.map((job) => [job.id, job]));
+      const jobs = [
+        ...validOrders.flatMap((order) =>
+          order.jobIds.flatMap((jobId) => {
+            const job = jobsById.get(jobId);
+            return job ? [job] : [];
+          }),
+        ),
+        ...assignedJobs.filter((job) => !orderedJobIds.has(job.id)),
+      ];
+
+      return {
+        jobs,
+        activeGroupId:
+          activeGroupId && validGroupIds.has(activeGroupId)
+            ? activeGroupId
+            : state.activeGroupId,
+      };
+    }),
   duplicateJob: (id) =>
     set((state) => {
       const sourceJob = state.jobs.find((job) => job.id === id);
@@ -275,33 +363,6 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
 
       return { jobs };
     }),
-  duplicateJobToNewGroup: (id) =>
-    set((state) => {
-      const sourceJob = state.jobs.find((job) => job.id === id);
-      if (!sourceJob || isActiveJob(sourceJob)) return {};
-
-      const sourceGroup =
-        state.groups.find((group) => group.id === sourceJob.groupId) ??
-        state.groups[0];
-      const group = createGroup(
-        state.nextGroupNumber,
-        sourceGroup.settings,
-        sourceGroup.shouldProcess,
-      );
-      const copy = duplicateJob(
-        sourceJob,
-        state.jobs,
-        group.id,
-        group.shouldProcess,
-      );
-
-      return {
-        groups: [...state.groups, group],
-        jobs: [...state.jobs, copy],
-        activeGroupId: group.id,
-        nextGroupNumber: state.nextGroupNumber + 1,
-      };
-    }),
   createGroup: () =>
     set((state) => {
       const sourceGroup =
@@ -317,6 +378,75 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
         groups: [...state.groups, group],
         activeGroupId: group.id,
         nextGroupNumber: state.nextGroupNumber + 1,
+      };
+    }),
+  createGroupForJob: (jobId) =>
+    set((state) => {
+      const sourceJob = state.jobs.find((job) => job.id === jobId);
+      if (!sourceJob || isActiveJob(sourceJob)) return {};
+
+      const sourceGroup =
+        state.groups.find((group) => group.id === sourceJob.groupId) ??
+        state.groups[0];
+      if (!sourceGroup) return {};
+
+      const group = createGroup(
+        state.nextGroupNumber,
+        sourceGroup.settings,
+        sourceGroup.shouldProcess,
+      );
+      const groups = [...state.groups, group];
+
+      return {
+        groups,
+        jobs: assignJobsToConversionGroup(
+          state.jobs,
+          groups,
+          group.id,
+          (job) => job.id === jobId,
+        ),
+        activeGroupId: group.id,
+        nextGroupNumber: state.nextGroupNumber + 1,
+      };
+    }),
+  removeGroup: (groupId) =>
+    set((state) => {
+      const groupIndex = state.groups.findIndex(
+        (group) => group.id === groupId,
+      );
+      if (groupIndex === -1) return {};
+
+      const removedJobs = state.jobs.filter((job) => job.groupId === groupId);
+      removedJobs.forEach(releaseJobUrls);
+
+      let groups = state.groups.filter((group) => group.id !== groupId);
+      let nextGroupNumber = state.nextGroupNumber;
+
+      if (groups.length === 0) {
+        groups = [
+          createGroup(
+            nextGroupNumber,
+            createConversionSettings("website"),
+            true,
+          ),
+        ];
+        nextGroupNumber += 1;
+      }
+
+      const removedJobIds = new Set(removedJobs.map((job) => job.id));
+      const activeGroupId =
+        state.activeGroupId === groupId
+          ? groups[Math.min(groupIndex, groups.length - 1)].id
+          : state.activeGroupId;
+
+      return {
+        groups,
+        jobs: state.jobs.filter((job) => job.groupId !== groupId),
+        activeGroupId,
+        selectedJobIds: state.selectedJobIds.filter(
+          (jobId) => !removedJobIds.has(jobId),
+        ),
+        nextGroupNumber,
       };
     }),
   createGroupFromSelectedJobs: () =>
