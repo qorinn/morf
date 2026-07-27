@@ -742,7 +742,7 @@ export default function ImageWorkspace() {
     return {
       title: "Kezdésre kész",
       message:
-        "Dobj be képeket, rendezd őket konfigurációs csoportokba, majd indítsd el a közös konvertálást.",
+        "Húzz be vagy tallózz képeket, rendezd őket csoportokba, állítsd be a konfigurációt, majd indítsd el a konvertálást.",
     };
   }, [completedCount, isBatchActive, representativeJob?.status]);
 

@@ -90,17 +90,17 @@ const manifestFiles = [
   class="morf-section-normal scroll-mt-8"
 >
   <div
-    class="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-20 sm:px-6 lg:px-8"
+    class="mx-auto flex w-full max-w-7xl flex-col gap-16 px-4 py-20 sm:px-6 sm:py-24 lg:gap-20 lg:px-8 lg:py-28"
   >
-    <header class="flex max-w-3xl flex-col items-start gap-3">
+    <header class="flex max-w-4xl flex-col items-start gap-5">
       <h2
         id="favicon-package-guide-title"
-        class="font-heading text-3xl font-medium tracking-tight text-balance sm:text-4xl"
+        class="font-heading text-4xl font-semibold tracking-[-0.035em] text-balance sm:text-5xl"
       >
         Pontosan melyik favicon és webapp fájlokra van szükséged?
       </h2>
       <p
-        class="text-muted-foreground max-w-2xl text-base leading-relaxed sm:text-lg"
+        class="text-muted-foreground max-w-3xl text-base leading-relaxed text-pretty sm:text-lg"
       >
         Az exportcélok szabadon kombinálhatók. Egyszerű weboldalhoz csak a
         Weboldal opció kell; telepíthető webapphoz válaszd a webappikonokat, és
@@ -109,14 +109,20 @@ const manifestFiles = [
     </header>
 
     <div
-      class="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-stretch"
+      class="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-stretch"
     >
-      <Card className="morf-dark-card text-dark-section-foreground">
+      <Card
+        className="morf-dark-card border-dark-section-border rounded-3xl text-dark-section-foreground"
+      >
         <CardHeader>
           <CardTitle className="text-dark-section-heading">
-            <h3 class="text-xl">Weboldal</h3>
+            <h3 class="font-heading text-2xl font-semibold tracking-tight">
+              Weboldal
+            </h3>
           </CardTitle>
-          <CardDescription className="text-dark-section-muted">
+          <CardDescription
+            className="text-dark-section-muted text-base leading-relaxed sm:text-lg"
+          >
             Bloghoz, céges oldalhoz, webshophoz vagy portfólióhoz. Ettől jelenik
             meg az ikon a böngészőfülön, a könyvjelzőkben és Apple eszközökön.
           </CardDescription>
@@ -130,17 +136,25 @@ const manifestFiles = [
       </Card>
 
       <div class="border-border flex flex-col border-y">
-        <article class="py-6">
-          <h3 class="text-xl">Telepíthető webalkalmazás</h3>
-          <p class="text-muted-foreground mt-2 leading-relaxed">
+        <article class="py-7">
+          <h3
+            class="font-heading text-xl font-semibold tracking-tight sm:text-2xl"
+          >
+            Telepíthető webalkalmazás
+          </h3>
+          <p class="text-muted-foreground mt-3 leading-relaxed">
             Normál és maskable ikonokat készít a kezdőképernyőre vagy az
             alkalmazásindítóba telepíthető webapphoz. A weboldalas faviconokat
             külön jelölheted be.
           </p>
         </article>
-        <article class="border-border border-t py-6">
-          <h3 class="text-xl">+ site.webmanifest</h3>
-          <p class="text-muted-foreground mt-2 leading-relaxed">
+        <article class="border-border border-t py-7">
+          <h3
+            class="font-heading text-xl font-semibold tracking-tight sm:text-2xl"
+          >
+            + site.webmanifest
+          </h3>
+          <p class="text-muted-foreground mt-3 leading-relaxed">
             A webapp nevét, ikonjait, színeit és indulási beállításait
             összekapcsoló manifestet készít. Az offline működéshez ettől
             függetlenül külön service worker szükséges.
@@ -149,17 +163,19 @@ const manifestFiles = [
       </div>
     </div>
 
-    <div class="grid gap-10 lg:grid-cols-3 lg:gap-8">
+    <div
+      class="border-border grid gap-12 border-t pt-12 sm:pt-16 lg:grid-cols-3 lg:gap-10"
+    >
       <article aria-labelledby="website-favicon-files-title">
         <div class="mb-5">
           <div>
             <h3
               id="website-favicon-files-title"
-              class="font-heading text-xl font-medium"
+              class="font-heading text-xl font-semibold tracking-tight sm:text-2xl"
             >
               A Weboldal fájljai
             </h3>
-            <p class="text-muted-foreground mt-1 text-sm leading-relaxed">
+            <p class="text-muted-foreground mt-2 text-base leading-relaxed">
               Ezek adják a böngészős favicon és az Apple Touch ikon támogatását.
             </p>
           </div>
@@ -191,11 +207,11 @@ const manifestFiles = [
           <div>
             <h3
               id="webapp-icon-files-title"
-              class="font-heading text-xl font-medium"
+              class="font-heading text-xl font-semibold tracking-tight sm:text-2xl"
             >
               A webapp ikonfájljai
             </h3>
-            <p class="text-muted-foreground mt-1 text-sm leading-relaxed">
+            <p class="text-muted-foreground mt-2 text-base leading-relaxed">
               Csak a Telepíthető webalkalmazás opció kiválasztásakor készülnek
               el.
             </p>
@@ -225,11 +241,11 @@ const manifestFiles = [
           <div>
             <h3
               id="manifest-files-title"
-              class="font-heading text-xl font-medium"
+              class="font-heading text-xl font-semibold tracking-tight sm:text-2xl"
             >
               A manifest kiegészítés
             </h3>
-            <p class="text-muted-foreground mt-1 text-sm leading-relaxed">
+            <p class="text-muted-foreground mt-2 text-base leading-relaxed">
               A + site.webmanifest opció a webapp ikonok mellé a telepítési
               metaadatokat és a HTML-hivatkozást adja.
             </p>

@@ -1,34 +1,34 @@
 ---
 const capabilities = [
   {
-    title: "Képek közvetlenül a megfelelő csoportba",
+    title: "Képek csoportba rendezése",
     description:
-      "Minden csoportkártya feltöltési területként működik: fájlokat dobhatsz rá vagy a saját gombjával tallózhatsz. Az Új csoport kártyára dobott képeknek a Morf automatikusan új csoportot készít.",
+      "Minden csoportkártyával feltölthetsz képeket: húzz rá egy fájlt, vagy tallózz a gomb megnyomásával. Szintén húzz, vagy tallózz az Új csoport kártyával, hogy a kép egyből új csoportba kerüljön.",
   },
   {
-    title: "Átlátható, csoportonkénti beállítások",
+    title: "Csoportos beállítások",
     description:
-      "A kártyák badge-ei összefoglalják az aktív beállításokat. Kattints egy csoportra, majd válassz felhasználási célt, formátumot, felbontást, minőséget, maximum fájlméretet vagy veszteségmentes módot az oldalsávban.",
+      "Kattints egy csoportra kiválasztásához, majd válassz felhasználási célt, formátumot, felbontást, minőséget, maximum fájlméretet vagy veszteségmentes módot az oldalsávban. Ez az összes képre alkalmazódik a csoportban.",
+  },
+  {
+    title: "Drag-and-drop rendezés és bulk műveletek",
+    description:
+      "A képeket a fogantyúval rendezheted vagy másik csoportba húzhatod. Egy gombnyomással pedig duplikálhatod is, nem kell újra feltöltened. Több kijelölt képet együtt is áthelyezhetsz, külön csoportokra bonthatsz vagy törölhetsz.",
   },
   {
     title: "Automatikus igazodás a maximum fájlmérethez",
     description:
-      "Adj meg egy KB-ban mért felső határt, és a Morf megkeresi a lehető legjobb, még a célméret alá férő minőséget. Ha szükséges, a felbontást is tovább csökkenti.",
+      "Adj meg egy KB-ban mért felső határt, és a Morf megkeresi a lehető legjobb, még a célméret alatti minőséget.",
   },
   {
     title: "Veszteségmentes mód az eredeti részletekhez",
     description:
-      "A veszteségmentes mód megtartja az eredeti felbontást, és a választott formátum lehetőségeihez mérten optimalizálás nélkül kódol. JPG-nél a legmagasabb elérhető minőséget használja.",
+      "A veszteségmentes mód megtartja az eredeti felbontást, és a választott formátum lehetőségeihez mérten optimalizálás nélkül kódol.",
   },
   {
-    title: "Fogantyús rendezés és tömeges műveletek",
+    title: "Mentsd egyenként vagy ZIP-be",
     description:
-      "A kép kártyáját fogantyúval rendezheted vagy másik csoportba húzhatod, a másolat pedig ugyanabban a csoportban készül el. Több kijelölt képet együtt áthelyezhetsz, külön csoportokra bonthatsz vagy törölhetsz.",
-  },
-  {
-    title: "Egyenkénti, mappás és ZIP-mentés",
-    description:
-      "A kész fájlokat külön-külön, támogatott böngészőben választott helyre, vagy egyetlen ZIP-csomagban is mentheted. Így a teljes többképes export egy munkamenetben befejezhető.",
+      "A kész fájlokat külön-külön, vagy egyetlen ZIP-csomagban is mentheted.",
   },
 ];
 
@@ -72,24 +72,18 @@ const formatRows = [
 
 const workflowSteps = [
   {
-    title: "Töltsd fel csoportonként a képeket",
-    description:
-      "Dobj fájlokat egy meglévő csoportkártyára, vagy az Új csoport kártyával készíts nekik új kimenetet.",
+    title: "Töltsd fel a képeket",
+    description: "Adj hozzá képeket és rendezd csoportba, vagy külön.",
   },
   {
-    title: "Állítsd be a kijelölt csoportot",
+    title: "Állítsd be a csoportokat",
     description:
-      "Kattints a csoportra, válassz felhasználási célt, majd pontosítsd a formátum-, felbontás-, minőség- és fájlméret-beállításokat.",
-  },
-  {
-    title: "Rendezd el a kép kártyákat",
-    description:
-      "Húzd a képeket a fogantyúval a kívánt sorrendbe vagy csoportba. Több képhez használd a kijelölés után megjelenő műveleti sávot.",
+      "Kattints egy csoportra, válassz felhasználási célt, majd pontosítsd a formátum-, felbontás-, minőség- és fájlméret-beállításokat.",
   },
   {
     title: "Konvertálj és ments",
     description:
-      "Indítsd el együtt a bevont csoportokat, majd mentsd az eredményeket külön fájlként, választott mappába vagy ZIP-csomagba.",
+      "Indítsd el a kiválasztott csoportokat, majd mentsd el az eredményeket külön fájlként, vagy ZIP-csomagban.",
   },
 ];
 ---
@@ -100,19 +94,21 @@ const workflowSteps = [
   class="morf-section-normal scroll-mt-6"
 >
   <div
-    class="mx-auto flex w-full max-w-7xl flex-col gap-14 px-4 py-20 sm:px-6 lg:px-8 lg:py-24"
+    class="mx-auto flex w-full max-w-7xl flex-col gap-20 px-4 py-20 sm:px-6 sm:py-24 lg:gap-24 lg:px-8 lg:py-28"
   >
-    <header class="flex max-w-3xl flex-col gap-6">
-      <div class="max-w-2xl">
+    <header class="flex max-w-4xl flex-col gap-7">
+      <div class="max-w-3xl">
         <h2
           id="kep-konvertalo-funkciok-title"
-          class="font-heading text-3xl font-medium tracking-tight text-balance sm:text-4xl"
+          class="font-heading text-4xl font-semibold tracking-[-0.035em] text-balance sm:text-5xl"
         >
           Több mint formátumváltás: teljes képexport egy munkafelületen
         </h2>
       </div>
-      <div class="flex flex-col gap-4 leading-relaxed">
-        <p class="text-lg text-pretty">
+      <div
+        class="flex max-w-3xl flex-col gap-5 text-base leading-relaxed sm:text-lg"
+      >
+        <p class="text-pretty">
           <strong class="text-foreground font-medium"
             >A Morf egy ingyenes, böngészőben futó képkonvertáló, képtömörítő és
             képátméretező eszköz.</strong
@@ -131,22 +127,22 @@ const workflowSteps = [
       </div>
     </header>
 
-    <div>
+    <div class="border-border border-t pt-12 sm:pt-16">
       <div class="max-w-2xl">
         <h3
-          class="font-heading text-2xl font-medium tracking-tight sm:text-3xl"
+          class="font-heading text-2xl font-semibold tracking-tight sm:text-3xl"
         >
-          Egy többképes munkafolyamat minden fontos vezérlővel
+          Mit tud a Morf képkonvertáló eszköze?
         </h3>
       </div>
-      <dl class="mt-8 grid gap-x-10 md:grid-cols-2">
+      <dl class="mt-10 grid gap-x-12 md:grid-cols-2">
         {
           capabilities.map((capability) => (
-            <div class="border-border border-t py-6">
-              <dt class="font-heading text-lg font-medium">
+            <div class="border-border border-t py-7">
+              <dt class="font-heading text-lg font-semibold sm:text-xl">
                 {capability.title}
               </dt>
-              <dd class="text-muted-foreground mt-2 max-w-prose leading-relaxed">
+              <dd class="text-muted-foreground mt-3 max-w-prose leading-relaxed">
                 {capability.description}
               </dd>
             </div>
@@ -156,8 +152,9 @@ const workflowSteps = [
     </div>
 
     <section
+      id="konvertalas-utmutato"
       aria-labelledby="csoportos-konvertalas-title"
-      class="morf-dark-card border-dark-section-border rounded-3xl border p-6 sm:p-8 lg:p-10"
+      class="morf-dark-card border-dark-section-border rounded-3xl border p-7 sm:p-10 lg:p-12 scroll-mt-20 md:scroll-mt-40"
     >
       <div
         class="grid gap-10 lg:grid-cols-[minmax(16rem,0.72fr)_minmax(0,1fr)] lg:gap-16"
@@ -165,25 +162,36 @@ const workflowSteps = [
         <header class="max-w-xl">
           <h3
             id="csoportos-konvertalas-title"
-            class="font-heading text-2xl font-medium tracking-tight text-balance sm:text-3xl"
+            class="font-heading text-2xl font-semibold tracking-tight text-balance sm:text-3xl"
           >
-            Több kép, több beállítás, egyetlen futtatás
+            Lépésről lépésre
           </h3>
-          <p class="text-dark-section-muted mt-4 leading-relaxed">
-            Egy egyszerű kötegelt képkonvertáló általában ugyanazt a beállítást
-            alkalmazza minden fájlra. A Morf csoportkártyái önálló kimenetek:
-            közvetlenül rájuk tölthetsz, a képeket a csoportok között
-            mozgathatod, majd együtt indíthatod el az eltérő konverziókat.
+          <p
+            class="text-dark-section-muted mt-5 text-base leading-relaxed sm:text-lg"
+          >
+            Egy egyszerűbb képkonvertáló általában ugyanazt a beállítást
+            alkalmazza minden fájlra. A Morf csoportjaival minden képnek külön
+            beállításokat adhatsz.
           </p>
         </header>
-        <ol class="grid gap-x-8 gap-y-7 sm:grid-cols-2">
+        <ol class="border-dark-section-border flex flex-col border-b">
           {
-            workflowSteps.map((step) => (
-              <li class="border-dark-section-border border-t pt-5">
-                <h4 class="font-medium">{step.title}</h4>
-                <p class="text-dark-section-muted mt-2 leading-relaxed">
-                  {step.description}
-                </p>
+            workflowSteps.map((step, index) => (
+              <li class="border-dark-section-border grid grid-cols-[2.5rem_minmax(0,1fr)] gap-3 border-t py-6 sm:grid-cols-[3rem_minmax(0,1fr)] sm:gap-4">
+                <span
+                  class="text-dark-section-accent font-heading pt-1 text-sm font-semibold tabular-nums"
+                  aria-hidden="true"
+                >
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <div>
+                  <h4 class="font-heading text-lg font-semibold sm:text-xl">
+                    {step.title}
+                  </h4>
+                  <p class="text-dark-section-muted mt-2 max-w-2xl leading-relaxed">
+                    {step.description}
+                  </p>
+                </div>
               </li>
             ))
           }
@@ -191,15 +199,20 @@ const workflowSteps = [
       </div>
     </section>
 
-    <section aria-labelledby="formatumok-title" class="flex flex-col gap-8">
+    <section
+      aria-labelledby="formatumok-title"
+      class="border-border flex flex-col gap-10 border-t pt-12 sm:pt-16"
+    >
       <header class="max-w-3xl">
         <h3
           id="formatumok-title"
-          class="font-heading text-2xl font-medium tracking-tight sm:text-3xl"
+          class="font-heading text-2xl font-semibold tracking-tight sm:text-3xl"
         >
           Melyik képformátumot mikor érdemes választani?
         </h3>
-        <p class="text-muted-foreground mt-4 max-w-prose leading-relaxed">
+        <p
+          class="text-muted-foreground mt-5 max-w-2xl text-base leading-relaxed text-pretty sm:text-lg"
+        >
           A megfelelő kimenet a kép tartalmától és felhasználási helyétől függ.
           A Morf a leggyakoribb webes és mobilos formátumokat egyetlen
           konvertálóban kezeli, de a HEIC és HEIF jelenleg csak bemeneti
@@ -210,7 +223,8 @@ const workflowSteps = [
       <div class="ring-border overflow-x-auto rounded-3xl ring-1">
         <table class="w-full min-w-3xl border-collapse text-left">
           <caption class="sr-only">
-            A Morf által támogatott bemeneti és kimeneti képformátumok
+            A Morf képkonvertáló által támogatott bemeneti és kimeneti
+            képformátumok
           </caption>
           <thead class="bg-muted/60">
             <tr>
@@ -244,14 +258,14 @@ const workflowSteps = [
 
     <section
       aria-labelledby="felhasznalasi-modok-title"
-      class="grid gap-10 lg:grid-cols-[minmax(16rem,0.72fr)_minmax(0,1fr)] lg:gap-16"
+      class="border-border grid gap-10 border-t pt-12 sm:pt-16 lg:grid-cols-[minmax(18rem,0.72fr)_minmax(0,1fr)] lg:gap-20"
     >
       <header class="max-w-xl">
         <h3
           id="felhasznalasi-modok-title"
-          class="font-heading text-2xl font-medium tracking-tight text-balance sm:text-3xl"
+          class="font-heading text-2xl font-semibold tracking-tight text-balance sm:text-3xl"
         >
-          Mikor hasznos egy csoportos online képkonvertáló?
+          Mikor lehet hasznos egy csoportos online képkonvertáló?
         </h3>
       </header>
       <div class="grid gap-x-8 sm:grid-cols-2">
@@ -259,8 +273,8 @@ const workflowSteps = [
           <h4 class="font-medium">Weboldal és webshop képei</h4>
           <p class="text-muted-foreground mt-2 leading-relaxed">
             Alakíts át egy teljes galériát WebP vagy AVIF formátumba, korlátozd
-            a felbontást, és csökkentsd a képek fájlméretét gyorsabb webes
-            betöltéshez.
+            a felbontást, és csökkentsd vagy limitáld a képek fájlméretét
+            gyorsabb webes betöltéshez.
           </p>
         </article>
         <article class="border-border border-t py-5">
