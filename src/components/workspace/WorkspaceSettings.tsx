@@ -322,7 +322,7 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
               ? "A maximum fájlméret alapján a motor automatikusan választ minőséget."
               : settings.outputFormat === "png"
                 ? "A PNG veszteségmentes kimenetnél ez a beállítás nem használható."
-                : `${settings.quality}% — nagyobb érték jobb minőséget és nagyobb fájlt jelent.`}
+                : `${settings.quality}% - nagyobb érték jobb minőséget és nagyobb fájlt jelent.`}
         </FieldDescription>
       </Field>
     </FieldGroup>

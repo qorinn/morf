@@ -39,7 +39,7 @@ const faqItems = [
 ---
 
 <MainLayout
-  title="Favicon és appikon generátor – Morf"
+  title="Favicon és appikon generátor - Morf"
   description="Készíts egy képből többméretes favicon.ico, PNG, Apple Touch és PWA maskable ikoncsomagot közvetlenül a böngésződben."
 >
   <SiteHeader
@@ -51,30 +51,12 @@ const faqItems = [
 
   <main>
     <ToolHero
-      badge="ICO · PNG · Apple · PWA"
       title="Egy ikon. Minden helyre készen."
-      description="Vágd négyzetre, ellenőrizd 16 pixelben, és töltsd le a teljes favicon- vagy PWA-csomagot. A képed végig az eszközödön marad."
+      description="Vágd négyzetre a képet, ellenőrizd valódi ikonméretben, majd töltsd le a kész favicon- vagy PWA-csomagot."
       primaryAction={{
         href: "#favicon-workspace",
         label: "Favicon készítése",
       }}
-      features={[
-        {
-          title: "Egy képből indul",
-          description:
-            "A feltöltött logót négyzetre vághatod, majd abból készül el minden kiválasztott ikon.",
-        },
-        {
-          title: "Látható marad kis méretben",
-          description:
-            "Ellenőrizheted az ikonodat favicon-méretben is, még az exportálás előtt.",
-        },
-        {
-          title: "Célzott exportcsomag",
-          description:
-            "Csak a weboldalhoz vagy telepíthető webalkalmazáshoz szükséges fájlokat töltsd le.",
-        },
-      ]}
     />
 
     <FaviconWorkspace client:load />

@@ -1,6 +1,4 @@
 ---
-import { Badge } from "@/components/ui/badge";
-
 const capabilities = [
   {
     title: "Képek közvetlenül a megfelelő csoportba",
@@ -99,64 +97,52 @@ const workflowSteps = [
 <section
   id="kep-konvertalo-funkciok"
   aria-labelledby="kep-konvertalo-funkciok-title"
-  class="mx-auto flex w-full max-w-7xl scroll-mt-6 flex-col gap-14 px-4 py-20 sm:px-6 lg:px-8 lg:py-24"
+  class="morf-section-normal scroll-mt-6"
 >
-  <header
-    class="grid items-start gap-8 lg:grid-cols-[minmax(16rem,0.72fr)_minmax(0,1fr)] lg:gap-16"
+  <div
+    class="mx-auto flex w-full max-w-7xl flex-col gap-14 px-4 py-20 sm:px-6 lg:px-8 lg:py-24"
   >
-    <div class="max-w-xl">
-      <p class="text-muted-foreground text-sm font-medium">
-        Online képkonvertáló több képhez
-      </p>
-      <h2
-        id="kep-konvertalo-funkciok-title"
-        class="font-heading mt-2 text-3xl font-medium tracking-tight text-balance sm:text-4xl"
-      >
-        Több mint formátumváltás: teljes képexport egy munkafelületen
-      </h2>
-    </div>
-    <div class="flex max-w-3xl flex-col gap-4 leading-relaxed">
-      <p class="text-lg text-pretty">
-        <strong class="font-medium text-foreground"
-          >A Morf egy ingyenes, böngészőben futó képkonvertáló, képtömörítő és
-          képátméretező eszköz.</strong
+    <header class="flex max-w-3xl flex-col gap-6">
+      <div class="max-w-2xl">
+        <h2
+          id="kep-konvertalo-funkciok-title"
+          class="font-heading text-3xl font-medium tracking-tight text-balance sm:text-4xl"
         >
-        Legnagyobb előnye, hogy a képeket közvetlenül külön konfigurációs csoportokba
-        töltheted, majd csoportonként eltérő formátumot, felbontást, minőséget vagy
-        maximum fájlméretet adhatsz meg.
-      </p>
-      <p class="text-muted-foreground text-pretty">
-        Ez különösen akkor hasznos, ha ugyanabból a képkészletből weboldalhoz,
-        webshophoz, közösségi médiához és e-mailhez is más-más változatot kell
-        készítened. A JPG–PNG konvertálás, a JPG–WebP vagy PNG–WebP export, az
-        AVIF-készítés és a HEIC–JPG átalakítás ugyanabban a munkafolyamatban
-        kezelhető.
-      </p>
-      <p class="text-muted-foreground text-sm">
-        <time datetime="2026-07-26">Frissítve: 2026. július 26.</time>
-      </p>
-    </div>
-  </header>
+          Több mint formátumváltás: teljes képexport egy munkafelületen
+        </h2>
+      </div>
+      <div class="flex flex-col gap-4 leading-relaxed">
+        <p class="text-lg text-pretty">
+          <strong class="text-foreground font-medium"
+            >A Morf egy ingyenes, böngészőben futó képkonvertáló, képtömörítő és
+            képátméretező eszköz.</strong
+          >
+          Legnagyobb előnye, hogy a képeket közvetlenül külön konfigurációs csoportokba
+          töltheted, majd csoportonként eltérő formátumot, felbontást, minőséget vagy
+          maximum fájlméretet adhatsz meg.
+        </p>
+        <p class="text-muted-foreground text-pretty">
+          Ez különösen akkor hasznos, ha ugyanabból a képkészletből weboldalhoz,
+          webshophoz, közösségi médiához és e-mailhez is más-más változatot kell
+          készítened. A JPG-PNG konvertálás, a JPG-WebP vagy PNG-WebP export, az
+          AVIF-készítés és a HEIC-JPG átalakítás ugyanabban a munkafolyamatban
+          kezelhető.
+        </p>
+      </div>
+    </header>
 
-  <div>
-    <div class="max-w-2xl">
-      <p class="text-muted-foreground text-sm font-medium">
-        Mit tud a Morf képkonvertáló?
-      </p>
-      <h3
-        class="font-heading mt-2 text-2xl font-medium tracking-tight sm:text-3xl"
-      >
-        Egy többképes munkafolyamat minden fontos vezérlővel
-      </h3>
-    </div>
-    <dl class="mt-8 grid gap-x-10 md:grid-cols-2">
-      {
-        capabilities.map((capability, index) => (
-          <div class="border-border flex gap-4 border-t py-6">
-            <Badge variant="outline" className="mt-0.5 shrink-0 tabular-nums">
-              {String(index + 1).padStart(2, "0")}
-            </Badge>
-            <div>
+    <div>
+      <div class="max-w-2xl">
+        <h3
+          class="font-heading text-2xl font-medium tracking-tight sm:text-3xl"
+        >
+          Egy többképes munkafolyamat minden fontos vezérlővel
+        </h3>
+      </div>
+      <dl class="mt-8 grid gap-x-10 md:grid-cols-2">
+        {
+          capabilities.map((capability) => (
+            <div class="border-border border-t py-6">
               <dt class="font-heading text-lg font-medium">
                 {capability.title}
               </dt>
@@ -164,185 +150,144 @@ const workflowSteps = [
                 {capability.description}
               </dd>
             </div>
-          </div>
-        ))
-      }
-    </dl>
-  </div>
+          ))
+        }
+      </dl>
+    </div>
 
-  <section
-    aria-labelledby="csoportos-konvertalas-title"
-    class="morf-inset-panel rounded-4xl p-6 sm:p-8 lg:p-10"
-  >
-    <div
+    <section
+      aria-labelledby="csoportos-konvertalas-title"
+      class="morf-dark-card border-dark-section-border rounded-3xl border p-6 sm:p-8 lg:p-10"
+    >
+      <div
+        class="grid gap-10 lg:grid-cols-[minmax(16rem,0.72fr)_minmax(0,1fr)] lg:gap-16"
+      >
+        <header class="max-w-xl">
+          <h3
+            id="csoportos-konvertalas-title"
+            class="font-heading text-2xl font-medium tracking-tight text-balance sm:text-3xl"
+          >
+            Több kép, több beállítás, egyetlen futtatás
+          </h3>
+          <p class="text-dark-section-muted mt-4 leading-relaxed">
+            Egy egyszerű kötegelt képkonvertáló általában ugyanazt a beállítást
+            alkalmazza minden fájlra. A Morf csoportkártyái önálló kimenetek:
+            közvetlenül rájuk tölthetsz, a képeket a csoportok között
+            mozgathatod, majd együtt indíthatod el az eltérő konverziókat.
+          </p>
+        </header>
+        <ol class="grid gap-x-8 gap-y-7 sm:grid-cols-2">
+          {
+            workflowSteps.map((step) => (
+              <li class="border-dark-section-border border-t pt-5">
+                <h4 class="font-medium">{step.title}</h4>
+                <p class="text-dark-section-muted mt-2 leading-relaxed">
+                  {step.description}
+                </p>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </section>
+
+    <section aria-labelledby="formatumok-title" class="flex flex-col gap-8">
+      <header class="max-w-3xl">
+        <h3
+          id="formatumok-title"
+          class="font-heading text-2xl font-medium tracking-tight sm:text-3xl"
+        >
+          Melyik képformátumot mikor érdemes választani?
+        </h3>
+        <p class="text-muted-foreground mt-4 max-w-prose leading-relaxed">
+          A megfelelő kimenet a kép tartalmától és felhasználási helyétől függ.
+          A Morf a leggyakoribb webes és mobilos formátumokat egyetlen
+          konvertálóban kezeli, de a HEIC és HEIF jelenleg csak bemeneti
+          formátum.
+        </p>
+      </header>
+
+      <div class="ring-border overflow-x-auto rounded-3xl ring-1">
+        <table class="w-full min-w-3xl border-collapse text-left">
+          <caption class="sr-only">
+            A Morf által támogatott bemeneti és kimeneti képformátumok
+          </caption>
+          <thead class="bg-muted/60">
+            <tr>
+              <th class="px-4 py-3 font-medium sm:px-5">Formátum</th>
+              <th class="px-4 py-3 font-medium sm:px-5">Bemenet</th>
+              <th class="px-4 py-3 font-medium sm:px-5">Kimenet</th>
+              <th class="px-4 py-3 font-medium sm:px-5">
+                Ajánlott felhasználás
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-border divide-y">
+            {
+              formatRows.map((row) => (
+                <tr>
+                  <th class="px-4 py-4 font-medium whitespace-nowrap sm:px-5">
+                    {row.format}
+                  </th>
+                  <td class="px-4 py-4 sm:px-5">{row.input}</td>
+                  <td class="px-4 py-4 sm:px-5">{row.output}</td>
+                  <td class="text-muted-foreground min-w-72 px-4 py-4 leading-relaxed sm:px-5">
+                    {row.useCase}
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section
+      aria-labelledby="felhasznalasi-modok-title"
       class="grid gap-10 lg:grid-cols-[minmax(16rem,0.72fr)_minmax(0,1fr)] lg:gap-16"
     >
       <header class="max-w-xl">
-        <p class="text-muted-foreground text-sm font-medium">
-          A valódi különbség
-        </p>
         <h3
-          id="csoportos-konvertalas-title"
-          class="font-heading mt-2 text-2xl font-medium tracking-tight text-balance sm:text-3xl"
+          id="felhasznalasi-modok-title"
+          class="font-heading text-2xl font-medium tracking-tight text-balance sm:text-3xl"
         >
-          Több kép, több beállítás, egyetlen futtatás
+          Mikor hasznos egy csoportos online képkonvertáló?
         </h3>
-        <p class="text-muted-foreground mt-4 leading-relaxed">
-          Egy egyszerű kötegelt képkonvertáló általában ugyanazt a beállítást
-          alkalmazza minden fájlra. A Morf csoportkártyái ehelyett önálló
-          kimenetek: közvetlenül rájuk tölthetsz, a képeket fogantyúval a
-          csoportok között mozgathatod, majd együtt indíthatod el az eltérő
-          konverziókat.
-        </p>
       </header>
-      <ol class="grid gap-x-8 gap-y-7 sm:grid-cols-2">
-        {
-          workflowSteps.map((step, index) => (
-            <li class="flex gap-4">
-              <span
-                class="bg-primary text-primary-foreground flex size-9 shrink-0 items-center justify-center rounded-2xl text-sm font-medium tabular-nums"
-                aria-hidden="true"
-              >
-                {index + 1}
-              </span>
-              <div>
-                <h4 class="font-medium">{step.title}</h4>
-                <p class="text-muted-foreground mt-1 leading-relaxed">
-                  {step.description}
-                </p>
-              </div>
-            </li>
-          ))
-        }
-      </ol>
-    </div>
-  </section>
-
-  <section aria-labelledby="formatumok-title" class="flex flex-col gap-8">
-    <header class="max-w-3xl">
-      <p class="text-muted-foreground text-sm font-medium">
-        JPG, PNG, WebP, AVIF és HEIC konvertálás
-      </p>
-      <h3
-        id="formatumok-title"
-        class="font-heading mt-2 text-2xl font-medium tracking-tight sm:text-3xl"
-      >
-        Melyik képformátumot mikor érdemes választani?
-      </h3>
-      <p class="text-muted-foreground mt-4 max-w-prose leading-relaxed">
-        A megfelelő kimenet a kép tartalmától és felhasználási helyétől függ. A
-        Morf a leggyakoribb webes és mobilos formátumokat egyetlen konvertálóban
-        kezeli, de a HEIC és HEIF jelenleg csak bemeneti formátum.
-      </p>
-    </header>
-
-    <div class="overflow-x-auto rounded-3xl ring-1 ring-border">
-      <table class="w-full min-w-3xl border-collapse text-left">
-        <caption class="sr-only">
-          A Morf által támogatott bemeneti és kimeneti képformátumok
-        </caption>
-        <thead class="bg-muted/60">
-          <tr>
-            <th class="px-4 py-3 font-medium sm:px-5">Formátum</th>
-            <th class="px-4 py-3 font-medium sm:px-5">Bemenet</th>
-            <th class="px-4 py-3 font-medium sm:px-5">Kimenet</th>
-            <th class="px-4 py-3 font-medium sm:px-5">
-              Ajánlott felhasználás
-            </th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-border">
-          {
-            formatRows.map((row) => (
-              <tr>
-                <th class="px-4 py-4 font-medium whitespace-nowrap sm:px-5">
-                  {row.format}
-                </th>
-                <td class="px-4 py-4 sm:px-5">{row.input}</td>
-                <td class="px-4 py-4 sm:px-5">{row.output}</td>
-                <td class="text-muted-foreground min-w-72 px-4 py-4 leading-relaxed sm:px-5">
-                  {row.useCase}
-                </td>
-              </tr>
-            ))
-          }
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <section
-    aria-labelledby="felhasznalasi-modok-title"
-    class="grid gap-10 lg:grid-cols-[minmax(16rem,0.72fr)_minmax(0,1fr)] lg:gap-16"
-  >
-    <header class="max-w-xl">
-      <p class="text-muted-foreground text-sm font-medium">
-        Tipikus felhasználási módok
-      </p>
-      <h3
-        id="felhasznalasi-modok-title"
-        class="font-heading mt-2 text-2xl font-medium tracking-tight text-balance sm:text-3xl"
-      >
-        Mikor hasznos egy csoportos online képkonvertáló?
-      </h3>
-    </header>
-    <div class="grid gap-x-8 sm:grid-cols-2">
-      <article class="border-border border-t py-5">
-        <h4 class="font-medium">Weboldal és webshop képei</h4>
-        <p class="text-muted-foreground mt-2 leading-relaxed">
-          Alakíts át egy teljes galériát WebP vagy AVIF formátumba, korlátozd a
-          felbontást, és csökkentsd a képek fájlméretét gyorsabb webes
-          betöltéshez.
-        </p>
-      </article>
-      <article class="border-border border-t py-5">
-        <h4 class="font-medium">iPhone HEIC képek megosztása</h4>
-        <p class="text-muted-foreground mt-2 leading-relaxed">
-          Konvertálj több HEIC vagy HEIF fotót egyszerre JPG-be, PNG-be, WebP-be
-          vagy AVIF-ba, hogy más eszközökön és szolgáltatásokban is könnyen
-          használhatók legyenek.
-        </p>
-      </article>
-      <article class="border-border border-t py-5">
-        <h4 class="font-medium">E-mail és dokumentum mellékletek</h4>
-        <p class="text-muted-foreground mt-2 leading-relaxed">
-          Állíts be maximum fájlméretet, és készíts kisebb, továbbítható
-          képfájlokat anélkül, hogy minden képnél külön próbálgatnád a
-          minőségértéket.
-        </p>
-      </article>
-      <article class="border-border border-t py-5">
-        <h4 class="font-medium">Több célra készülő exportcsomag</h4>
-        <p class="text-muted-foreground mt-2 leading-relaxed">
-          Duplikálj egy képet, majd húzd a másolatot más beállítású vagy új
-          csoportba. Így ugyanabban a munkamenetben készíthetsz webes, közösségi
-          és veszteségmentes változatot.
-        </p>
-      </article>
-    </div>
-  </section>
-
-  <aside
-    aria-labelledby="helyi-feldolgozas-title"
-    class="border-border grid gap-6 border-y py-8 lg:grid-cols-[minmax(16rem,0.72fr)_minmax(0,1fr)] lg:gap-16"
-  >
-    <h3
-      id="helyi-feldolgozas-title"
-      class="font-heading text-2xl font-medium tracking-tight"
-    >
-      Privát képkonvertálás feltöltés nélkül
-    </h3>
-    <div class="flex max-w-3xl flex-col gap-3">
-      <p class="leading-relaxed">
-        A kép beolvasása, EXIF-orientációjának alkalmazása, átméretezése és
-        újrakódolása a saját böngésződben, külön Web Workerben történik. A
-        forrásfájlok nem kerülnek a Morf szerverére.
-      </p>
-      <p class="text-muted-foreground leading-relaxed">
-        A kimenetből a metaadatok eltávolításra kerülnek. Ha maximum fájlméretet
-        adsz meg, de a kép már eleve a határ alatt van, és a formátuma sem
-        változik, a Morf érintetlenül hagyja a fájlt.
-      </p>
-    </div>
-  </aside>
+      <div class="grid gap-x-8 sm:grid-cols-2">
+        <article class="border-border border-t py-5">
+          <h4 class="font-medium">Weboldal és webshop képei</h4>
+          <p class="text-muted-foreground mt-2 leading-relaxed">
+            Alakíts át egy teljes galériát WebP vagy AVIF formátumba, korlátozd
+            a felbontást, és csökkentsd a képek fájlméretét gyorsabb webes
+            betöltéshez.
+          </p>
+        </article>
+        <article class="border-border border-t py-5">
+          <h4 class="font-medium">iPhone HEIC képek megosztása</h4>
+          <p class="text-muted-foreground mt-2 leading-relaxed">
+            Konvertálj több HEIC vagy HEIF fotót egyszerre JPG-be, PNG-be,
+            WebP-be vagy AVIF-ba, hogy más eszközökön és szolgáltatásokban is
+            könnyen használhatók legyenek.
+          </p>
+        </article>
+        <article class="border-border border-t py-5">
+          <h4 class="font-medium">E-mail és dokumentum mellékletek</h4>
+          <p class="text-muted-foreground mt-2 leading-relaxed">
+            Állíts be maximum fájlméretet, és készíts kisebb, továbbítható
+            képfájlokat anélkül, hogy minden képnél külön próbálgatnád a
+            minőségértéket.
+          </p>
+        </article>
+        <article class="border-border border-t py-5">
+          <h4 class="font-medium">Több célra készülő exportcsomag</h4>
+          <p class="text-muted-foreground mt-2 leading-relaxed">
+            Duplikálj egy képet, majd húzd a másolatot más beállítású vagy új
+            csoportba. Így ugyanabban a munkamenetben készíthetsz webes,
+            közösségi és veszteségmentes változatot.
+          </p>
+        </article>
+      </div>
+    </section>
+  </div>
 </section>

@@ -55,7 +55,7 @@ const messages: Record<
   "invalid-settings": {
     message: "A feldolgozási beállítások nem érvényesek.",
     suggestion:
-      "Adj meg pozitív képméretet, érvényes maximum fájlméretet és 1–100 közötti minőséget.",
+      "Adj meg pozitív képméretet, érvényes maximum fájlméretet és 1-100 közötti minőséget.",
   },
   cancelled: {
     message: "A feldolgozás megszakítva.",

@@ -1,5 +1,4 @@
 ---
-import PageBackground from "@/components/layout/PageBackground.astro";
 import "../styles/global.css";
 
 interface Props {
@@ -13,7 +12,7 @@ interface Props {
 const {
   content,
   title: titleProp,
-  description = "Morf – helyi, célalapú képfeldolgozás a böngészőben.",
+  description = "Morf - helyi, célalapú képfeldolgozás a böngészőben.",
   canonicalPath = Astro.url.pathname,
   structuredData,
 } = Astro.props;
@@ -60,12 +59,15 @@ const structuredDataJson = structuredData
     <title>{title}</title>
     {
       structuredDataJson && (
-        <script is:inline type="application/ld+json" set:html={structuredDataJson} />
+        <script
+          is:inline
+          type="application/ld+json"
+          set:html={structuredDataJson}
+        />
       )
     }
   </head>
   <body class="relative isolate min-h-screen overflow-x-clip antialiased">
-    <PageBackground />
     <slot />
   </body>
 </html>

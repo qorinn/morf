@@ -5,6 +5,7 @@ import {
   Loading03Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import morfPeeking3 from "../../assets/morf-actions/morf-peeking-3.webp"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { FileJobStatus } from "@/features/image-processing/types";
@@ -57,10 +58,16 @@ export function MascotAssistant({
     <Alert
       variant={state === "error" ? "destructive" : "default"}
       aria-live="polite"
+      className="relative"
     >
       <HugeiconsIcon icon={icon} strokeWidth={2} aria-hidden="true" />
       <AlertTitle>{title}</AlertTitle>
       <AlertDescription>{message}</AlertDescription>
+      <img
+        src={morfPeeking3.src}
+        className="absolute -right-0.75 -bottom-px max-h-45 md:max-h-50 lg:max-h-60 h-[125%] rounded-br-[22px]"
+        alt=""
+      />
     </Alert>
   );
 }

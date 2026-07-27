@@ -7,7 +7,6 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -67,14 +66,11 @@ export function FaviconPreviews({
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex flex-col gap-1.5">
-            <CardTitle>Élő előnézet</CardTitle>
-            <CardDescription>
-              Nagyított környezetek és valódi pixelméretek.
-            </CardDescription>
-          </div>
-          <Badge variant="secondary">helyi render</Badge>
+        <div className="flex flex-col gap-1.5">
+          <CardTitle>Élő előnézet</CardTitle>
+          <CardDescription>
+            Nagyított környezetek és valódi pixelméretek.
+          </CardDescription>
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
@@ -88,7 +84,7 @@ export function FaviconPreviews({
               />
               Böngészőfül
             </figcaption>
-            <div className="morf-control-surface flex items-center gap-2 rounded-2xl border border-border/60 px-3 py-2">
+            <div className="morf-control-surface border-border/60 flex items-center gap-2 rounded-2xl border px-3 py-2">
               <PreviewImage
                 src={previewUrl}
                 alt="16 pixeles böngészőfavicon"
@@ -221,7 +217,7 @@ export function FaviconPreviews({
                   alt="Kör alakú maskable ikon előnézete"
                   className="size-full"
                 />
-                <span className="pointer-events-none absolute inset-[10%] rounded-full border border-dashed border-foreground/70" />
+                <span className="border-foreground/70 pointer-events-none absolute inset-[10%] rounded-full border border-dashed" />
               </div>
               <figcaption className="text-center text-xs">
                 Kör maszk · a szaggatott vonal jelzi a biztonságos zónát
@@ -234,7 +230,7 @@ export function FaviconPreviews({
                   alt="Squircle alakú maskable ikon előnézete"
                   className="size-full"
                 />
-                <span className="pointer-events-none absolute inset-[10%] rounded-3xl border border-dashed border-foreground/70" />
+                <span className="border-foreground/70 pointer-events-none absolute inset-[10%] rounded-3xl border border-dashed" />
               </div>
               <figcaption className="text-center text-xs">
                 Squircle maszk · a maszkolás csak az előnézetre hat

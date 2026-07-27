@@ -1,12 +1,4 @@
 ---
-import {
-  CheckmarkCircle02Icon,
-  ComputerIcon,
-  File01Icon,
-  SmartPhone02Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -95,267 +87,180 @@ const manifestFiles = [
 <section
   id="favicon-package-guide"
   aria-labelledby="favicon-package-guide-title"
-  class="mx-auto flex w-full max-w-7xl scroll-mt-8 flex-col gap-10 px-4 py-20 sm:px-6 lg:px-8"
+  class="morf-section-normal scroll-mt-8"
 >
-  <header class="flex max-w-3xl flex-col items-start gap-3">
-    <Badge variant="secondary">Csomagválasztó útmutató</Badge>
-    <h2
-      id="favicon-package-guide-title"
-      class="font-heading text-3xl font-medium tracking-tight text-balance sm:text-4xl"
-    >
-      Pontosan melyik favicon és webapp fájlokra van szükséged?
-    </h2>
-    <p
-      class="text-muted-foreground max-w-2xl text-base leading-relaxed sm:text-lg"
-    >
-      Az exportcélok szabadon kombinálhatók. Egyszerű weboldalhoz csak a
-      Weboldal opció kell; telepíthető webapphoz válaszd a webappikonokat, és
-      kérésre a használatra kész site.webmanifest fájlt is.
-    </p>
-  </header>
-
-  <div class="grid gap-4 lg:grid-cols-3">
-    <Card>
-      <CardHeader>
-        <span
-          class="morf-icon-orb text-secondary-foreground mb-2 inline-flex size-11 items-center justify-center rounded-3xl"
-          aria-hidden="true"
-        >
-          <HugeiconsIcon
-            icon={ComputerIcon}
-            strokeWidth={1.8}
-            className="size-5"
-          />
-        </span>
-        <CardTitle>
-          <h3 class="text-xl">Weboldal</h3>
-        </CardTitle>
-        <CardDescription>
-          Bloghoz, céges oldalhoz, webshophoz vagy portfólióhoz. Ettől jelenik
-          meg az ikon a böngészőfülön, a könyvjelzőkben és Apple eszközökön.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p class="font-medium">
-          Jelöld be minden hagyományos weboldalhoz, bloghoz, webshophoz és
-          portfólióhoz.
-        </p>
-      </CardContent>
-    </Card>
-
-    <Card>
-      <CardHeader>
-        <span
-          class="morf-icon-orb text-secondary-foreground mb-2 inline-flex size-11 items-center justify-center rounded-3xl"
-          aria-hidden="true"
-        >
-          <HugeiconsIcon
-            icon={SmartPhone02Icon}
-            strokeWidth={1.8}
-            className="size-5"
-          />
-        </span>
-        <CardTitle>
-          <h3 class="text-xl">Telepíthető webalkalmazás</h3>
-        </CardTitle>
-        <CardDescription>
-          Normál és maskable ikonokat készít a kezdőképernyőre vagy az
-          alkalmazásindítóba telepíthető webapphoz.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p class="font-medium">
-          Ez az opció csak a webapp ikonokat adja hozzá; a weboldalas
-          faviconokat külön jelölheted be.
-        </p>
-      </CardContent>
-    </Card>
-
-    <Card>
-      <CardHeader>
-        <span
-          class="morf-icon-orb text-secondary-foreground mb-2 inline-flex size-11 items-center justify-center rounded-3xl"
-          aria-hidden="true"
-        >
-          <HugeiconsIcon
-            icon={File01Icon}
-            strokeWidth={1.8}
-            className="size-5"
-          />
-        </span>
-        <CardTitle>
-          <h3 class="text-xl">+ site.webmanifest</h3>
-        </CardTitle>
-        <CardDescription>
-          A webapp azonosítóját, indulási URL-jét, hatókörét, nevét, ikonjait,
-          színeit és megjelenését összekapcsoló manifestet készít.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p class="font-medium">
-          Jelöld be, ha még nincs saját web app manifested. Az offline
-          működéshez ettől függetlenül külön service worker szükséges.
-        </p>
-      </CardContent>
-    </Card>
-  </div>
-
-  <div class="grid gap-10 lg:grid-cols-3 lg:gap-8">
-    <article aria-labelledby="website-favicon-files-title">
-      <div class="mb-5 flex items-start gap-3">
-        <span
-          class="morf-soft-secondary text-secondary-foreground inline-flex size-10 shrink-0 items-center justify-center rounded-3xl"
-          aria-hidden="true"
-        >
-          <HugeiconsIcon
-            icon={File01Icon}
-            strokeWidth={1.8}
-            className="size-5"
-          />
-        </span>
-        <div>
-          <h3
-            id="website-favicon-files-title"
-            class="font-heading text-xl font-medium"
-          >
-            A Weboldal fájljai
-          </h3>
-          <p class="text-muted-foreground mt-1 text-sm leading-relaxed">
-            Ezek adják a böngészős favicon és az Apple Touch ikon támogatását.
-          </p>
-        </div>
-      </div>
-
-      <dl class="flex flex-col gap-3">
-        {
-          websiteFiles.map((file) => (
-            <div class="morf-inset-panel flex items-start gap-3 rounded-3xl p-4">
-              <HugeiconsIcon
-                icon={CheckmarkCircle02Icon}
-                strokeWidth={1.8}
-                className="mt-0.5 size-5 shrink-0 text-primary"
-                aria-hidden="true"
-              />
-              <div>
-                <dt class="flex flex-wrap items-center gap-2 font-medium">
-                  <code class="text-sm">{file.name}</code>
-                  {file.optional && <Badge variant="outline">Opcionális</Badge>}
-                </dt>
-                <dd class="text-muted-foreground mt-1 text-sm leading-relaxed">
-                  {file.description}
-                </dd>
-              </div>
-            </div>
-          ))
-        }
-      </dl>
-    </article>
-
-    <article aria-labelledby="webapp-icon-files-title">
-      <div class="mb-5 flex items-start gap-3">
-        <span
-          class="morf-soft-secondary text-secondary-foreground inline-flex size-10 shrink-0 items-center justify-center rounded-3xl"
-          aria-hidden="true"
-        >
-          <HugeiconsIcon
-            icon={SmartPhone02Icon}
-            strokeWidth={1.8}
-            className="size-5"
-          />
-        </span>
-        <div>
-          <h3
-            id="webapp-icon-files-title"
-            class="font-heading text-xl font-medium"
-          >
-            A webapp ikonfájljai
-          </h3>
-          <p class="text-muted-foreground mt-1 text-sm leading-relaxed">
-            Csak a Telepíthető webalkalmazás opció kiválasztásakor készülnek el.
-          </p>
-        </div>
-      </div>
-
-      <dl class="flex flex-col gap-3">
-        {
-          webAppFiles.map((file) => (
-            <div class="morf-inset-panel flex items-start gap-3 rounded-3xl p-4">
-              <HugeiconsIcon
-                icon={CheckmarkCircle02Icon}
-                strokeWidth={1.8}
-                className="mt-0.5 size-5 shrink-0 text-primary"
-                aria-hidden="true"
-              />
-              <div>
-                <dt class="font-medium">
-                  <code class="text-sm">{file.name}</code>
-                </dt>
-                <dd class="text-muted-foreground mt-1 text-sm leading-relaxed">
-                  {file.description}
-                </dd>
-              </div>
-            </div>
-          ))
-        }
-      </dl>
-    </article>
-
-    <article aria-labelledby="manifest-files-title">
-      <div class="mb-5 flex items-start gap-3">
-        <span
-          class="morf-soft-secondary text-secondary-foreground inline-flex size-10 shrink-0 items-center justify-center rounded-3xl"
-          aria-hidden="true"
-        >
-          <HugeiconsIcon
-            icon={File01Icon}
-            strokeWidth={1.8}
-            className="size-5"
-          />
-        </span>
-        <div>
-          <h3
-            id="manifest-files-title"
-            class="font-heading text-xl font-medium"
-          >
-            A manifest kiegészítés
-          </h3>
-          <p class="text-muted-foreground mt-1 text-sm leading-relaxed">
-            A + site.webmanifest opció a webapp ikonok mellé a telepítési
-            metaadatokat és a HTML-hivatkozást adja.
-          </p>
-        </div>
-      </div>
-
-      <dl class="flex flex-col gap-3">
-        {
-          manifestFiles.map((file) => (
-            <div class="morf-inset-panel flex items-start gap-3 rounded-3xl p-4">
-              <HugeiconsIcon
-                icon={CheckmarkCircle02Icon}
-                strokeWidth={1.8}
-                className="mt-0.5 size-5 shrink-0 text-primary"
-                aria-hidden="true"
-              />
-              <div>
-                <dt class="font-medium">
-                  <code class="text-sm">{file.name}</code>
-                </dt>
-                <dd class="text-muted-foreground mt-1 text-sm leading-relaxed">
-                  {file.description}
-                </dd>
-              </div>
-            </div>
-          ))
-        }
-      </dl>
-    </article>
-  </div>
-
-  <p
-    class="morf-inset-panel text-muted-foreground rounded-3xl p-4 text-sm leading-relaxed"
+  <div
+    class="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-20 sm:px-6 lg:px-8"
   >
-    A <code>README.md</code> minden exportba bekerül, és csak a kiválasztott fájlokhoz
-    tartozó telepítési lépéseket sorolja fel. Ha a Weboldal és a manifest opció is
-    aktív, egy közös <code>favicon-code.html</code> készül.
-  </p>
+    <header class="flex max-w-3xl flex-col items-start gap-3">
+      <h2
+        id="favicon-package-guide-title"
+        class="font-heading text-3xl font-medium tracking-tight text-balance sm:text-4xl"
+      >
+        Pontosan melyik favicon és webapp fájlokra van szükséged?
+      </h2>
+      <p
+        class="text-muted-foreground max-w-2xl text-base leading-relaxed sm:text-lg"
+      >
+        Az exportcélok szabadon kombinálhatók. Egyszerű weboldalhoz csak a
+        Weboldal opció kell; telepíthető webapphoz válaszd a webappikonokat, és
+        kérésre a használatra kész site.webmanifest fájlt is.
+      </p>
+    </header>
+
+    <div
+      class="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-stretch"
+    >
+      <Card className="morf-dark-card text-dark-section-foreground">
+        <CardHeader>
+          <CardTitle className="text-dark-section-heading">
+            <h3 class="text-xl">Weboldal</h3>
+          </CardTitle>
+          <CardDescription className="text-dark-section-muted">
+            Bloghoz, céges oldalhoz, webshophoz vagy portfólióhoz. Ettől jelenik
+            meg az ikon a böngészőfülön, a könyvjelzőkben és Apple eszközökön.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p class="font-medium">
+            Jelöld be minden hagyományos weboldalhoz, bloghoz, webshophoz és
+            portfólióhoz.
+          </p>
+        </CardContent>
+      </Card>
+
+      <div class="border-border flex flex-col border-y">
+        <article class="py-6">
+          <h3 class="text-xl">Telepíthető webalkalmazás</h3>
+          <p class="text-muted-foreground mt-2 leading-relaxed">
+            Normál és maskable ikonokat készít a kezdőképernyőre vagy az
+            alkalmazásindítóba telepíthető webapphoz. A weboldalas faviconokat
+            külön jelölheted be.
+          </p>
+        </article>
+        <article class="border-border border-t py-6">
+          <h3 class="text-xl">+ site.webmanifest</h3>
+          <p class="text-muted-foreground mt-2 leading-relaxed">
+            A webapp nevét, ikonjait, színeit és indulási beállításait
+            összekapcsoló manifestet készít. Az offline működéshez ettől
+            függetlenül külön service worker szükséges.
+          </p>
+        </article>
+      </div>
+    </div>
+
+    <div class="grid gap-10 lg:grid-cols-3 lg:gap-8">
+      <article aria-labelledby="website-favicon-files-title">
+        <div class="mb-5">
+          <div>
+            <h3
+              id="website-favicon-files-title"
+              class="font-heading text-xl font-medium"
+            >
+              A Weboldal fájljai
+            </h3>
+            <p class="text-muted-foreground mt-1 text-sm leading-relaxed">
+              Ezek adják a böngészős favicon és az Apple Touch ikon támogatását.
+            </p>
+          </div>
+        </div>
+
+        <dl class="border-border border-b">
+          {
+            websiteFiles.map((file) => (
+              <div class="border-border border-t py-4">
+                <div>
+                  <dt class="flex flex-wrap items-center gap-2 font-medium">
+                    <code class="text-sm">{file.name}</code>
+                    {file.optional && (
+                      <Badge variant="outline">Opcionális</Badge>
+                    )}
+                  </dt>
+                  <dd class="text-muted-foreground mt-1 text-sm leading-relaxed">
+                    {file.description}
+                  </dd>
+                </div>
+              </div>
+            ))
+          }
+        </dl>
+      </article>
+
+      <article aria-labelledby="webapp-icon-files-title">
+        <div class="mb-5">
+          <div>
+            <h3
+              id="webapp-icon-files-title"
+              class="font-heading text-xl font-medium"
+            >
+              A webapp ikonfájljai
+            </h3>
+            <p class="text-muted-foreground mt-1 text-sm leading-relaxed">
+              Csak a Telepíthető webalkalmazás opció kiválasztásakor készülnek
+              el.
+            </p>
+          </div>
+        </div>
+
+        <dl class="border-border border-b">
+          {
+            webAppFiles.map((file) => (
+              <div class="border-border border-t py-4">
+                <div>
+                  <dt class="font-medium">
+                    <code class="text-sm">{file.name}</code>
+                  </dt>
+                  <dd class="text-muted-foreground mt-1 text-sm leading-relaxed">
+                    {file.description}
+                  </dd>
+                </div>
+              </div>
+            ))
+          }
+        </dl>
+      </article>
+
+      <article aria-labelledby="manifest-files-title">
+        <div class="mb-5">
+          <div>
+            <h3
+              id="manifest-files-title"
+              class="font-heading text-xl font-medium"
+            >
+              A manifest kiegészítés
+            </h3>
+            <p class="text-muted-foreground mt-1 text-sm leading-relaxed">
+              A + site.webmanifest opció a webapp ikonok mellé a telepítési
+              metaadatokat és a HTML-hivatkozást adja.
+            </p>
+          </div>
+        </div>
+
+        <dl class="border-border border-b">
+          {
+            manifestFiles.map((file) => (
+              <div class="border-border border-t py-4">
+                <div>
+                  <dt class="font-medium">
+                    <code class="text-sm">{file.name}</code>
+                  </dt>
+                  <dd class="text-muted-foreground mt-1 text-sm leading-relaxed">
+                    {file.description}
+                  </dd>
+                </div>
+              </div>
+            ))
+          }
+        </dl>
+      </article>
+    </div>
+
+    <p
+      class="morf-inset-panel text-muted-foreground rounded-3xl p-4 text-sm leading-relaxed"
+    >
+      A <code>README.md</code> minden exportba bekerül, és csak a kiválasztott fájlokhoz
+      tartozó telepítési lépéseket sorolja fel. Ha a Weboldal és a manifest opció
+      is aktív, egy közös <code>favicon-code.html</code> készül.
+    </p>
+  </div>
 </section>

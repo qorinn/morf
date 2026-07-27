@@ -1,7 +1,6 @@
 ---
 import SiteFooter from "@/components/layout/SiteFooter.astro";
 import SiteHeader from "@/components/layout/SiteHeader.astro";
-import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
@@ -16,11 +15,9 @@ import {
   ArrowRight02Icon,
   BrowserIcon,
   Image02Icon,
-  ShieldKeyIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import morfPeeking from "../assets/morf-actions/morf-peeking.webp";
-import morfPeeking3 from "../assets/morf-actions/morf-peeking-3.webp";
+import HomeHeroGravity from "../components/home/HomeHeroGravity"
 
 const tools = [
   {
@@ -30,7 +27,7 @@ const tools = [
     href: "/kep-konvertalo",
     cta: "Képek konvertálása",
     icon: Image02Icon,
-    badge: "JPG · PNG · WebP",
+    formats: "JPG, PNG, WebP",
     features: [
       "Formátumváltás és átméretezés",
       "Több kép feldolgozása egyszerre",
@@ -44,7 +41,7 @@ const tools = [
     href: "/favicon-generator",
     cta: "Favicon készítése",
     icon: BrowserIcon,
-    badge: "ICO · PNG · Apple · PWA",
+    formats: "ICO, PNG, Apple, PWA",
     features: [
       "Vágás és előnézet valódi ikonméretben",
       "Maskable ikonokhoz külön biztonsági zóna",
@@ -55,7 +52,7 @@ const tools = [
 ---
 
 <MainLayout
-  title="Morf – Online eszközök egy helyen"
+  title="Morf - Online eszközök egy helyen"
   description="Folyamatosan bővülő böngészős eszköztár konvertáláshoz, generáláshoz és más gyakori digitális feladatokhoz."
 >
   <SiteHeader
@@ -66,47 +63,14 @@ const tools = [
   />
 
   <main>
-    <section
-      class="mx-auto flex w-full max-w-5xl flex-col items-center gap-7 px-4 pt-16 pb-14 text-center sm:px-6 sm:pt-24 lg:px-8 lg:pt-32 lg:pb-20"
-    >
-      <Badge variant="secondary">Folyamatosan bővülő eszköztár</Badge>
-      <div class="flex max-w-4xl flex-col items-center gap-5">
-        <h1
-          class="font-heading text-5xl font-medium tracking-tight text-balance sm:text-6xl lg:text-7xl"
-        >
-          Online eszközök egy helyen.
-        </h1>
-        <p
-          class="text-muted-foreground max-w-2xl text-lg leading-relaxed sm:text-xl"
-        >
-          A Morf egyszerű böngészős eszközöket gyűjt össze képekhez, fájlokhoz,
-          színekhez és online tartalmakhoz. Válassz egy feladatot, és nyisd meg
-          a hozzá tartozó eszközt.
-        </p>
-      </div>
-      <div class="relative mt-30">
-        <img
-          src={morfPeeking.src}
-          class="absolute w-auto h-30 top-0 left-1/2 right-1/2 -translate-y-full -translate-x-1/2"
-          alt=""
-        />
-        <a href="#eszkozok" class={buttonVariants({ size: "lg" })}>
-          Elérhető eszközök megtekintése
-        </a>
-      </div>
-    </section>
+    <HomeHeroGravity client:load />
 
     <section
       id="eszkozok"
       aria-labelledby="eszkozok-title"
       class="mx-auto flex w-full max-w-5xl scroll-mt-6 flex-col gap-8 px-4 py-16 sm:px-6 lg:px-8 lg:py-20"
     >
-      <header
-        class="mx-auto flex max-w-2xl flex-col items-center gap-3 text-center"
-      >
-        <p class="text-muted-foreground text-sm font-medium">
-          Jelenleg elérhető
-        </p>
+      <header class="flex max-w-2xl flex-col gap-3">
         <h2
           id="eszkozok-title"
           class="font-heading text-3xl font-medium tracking-tight sm:text-4xl"
@@ -126,7 +90,7 @@ const tools = [
               <CardHeader>
                 <div class="mb-4 flex items-start justify-between gap-4">
                   <span
-                    class="morf-soft-secondary text-secondary-foreground inline-flex size-12 items-center justify-center rounded-3xl"
+                    class="bg-secondary text-secondary-foreground inline-flex size-12 items-center justify-center rounded-3xl"
                     aria-hidden="true"
                   >
                     <HugeiconsIcon
@@ -135,7 +99,9 @@ const tools = [
                       className="size-6"
                     />
                   </span>
-                  <Badge variant="outline">{tool.badge}</Badge>
+                  <p class="text-muted-foreground text-xs font-medium">
+                    {tool.formats}
+                  </p>
                 </div>
                 <CardTitle>
                   <h3>{tool.title}</h3>
@@ -143,12 +109,9 @@ const tools = [
                 <CardDescription>{tool.description}</CardDescription>
               </CardHeader>
               <CardContent>
-                <ul class="text-muted-foreground flex flex-col gap-2 text-sm">
+                <ul class="text-muted-foreground flex flex-col border-t border-current/15 text-sm">
                   {tool.features.map((feature) => (
-                    <li class="flex items-center gap-2">
-                      <span class="bg-primary size-1.5 shrink-0 rounded-full" />
-                      {feature}
-                    </li>
+                    <li class="border-b border-current/15 py-2">{feature}</li>
                   ))}
                 </ul>
               </CardContent>
@@ -171,32 +134,17 @@ const tools = [
       </div>
     </section>
 
-    <section
-      class="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16"
-    >
+    <section class="morf-dark-section">
       <div
-        class="morf-inset-panel flex flex-col gap-4 rounded-4xl p-6 sm:flex-row sm:items-center sm:gap-5 sm:p-8 relative"
+        class="mx-auto grid w-full max-w-7xl gap-5 px-4 py-16 sm:px-6 lg:grid-cols-[minmax(16rem,0.7fr)_minmax(0,1fr)] lg:gap-16 lg:px-8 lg:py-20"
       >
-        <img
-          src={morfPeeking3.src}
-          class="absolute -right-[0.45%] bottom-px max-h-45 md:max-h-50 lg:max-h-60 h-[125%] rounded-br-[32px]"
-          alt=""
-        />
-        <span
-          class="morf-soft-secondary text-secondary-foreground inline-flex size-11 shrink-0 items-center justify-center rounded-3xl"
-          aria-hidden="true"
+        <h2
+          class="font-heading text-3xl font-medium tracking-tight text-balance"
         >
-          <HugeiconsIcon
-            icon={ShieldKeyIcon}
-            strokeWidth={1.8}
-            className="size-5"
-          />
-        </span>
-        <div class="flex flex-col gap-1 max-w-[82%] sm:max-w-[72%]">
-          <h2 class="font-heading text-xl font-medium">
-            A jelenlegi fájleszközök helyben dolgoznak
-          </h2>
-          <p class="text-muted-foreground text-pretty leading-relaxed">
+          A fájleszközök helyben dolgoznak
+        </h2>
+        <div class="max-w-2xl">
+          <p class="text-dark-section-muted leading-relaxed text-pretty">
             A képkonvertáló és a favicon generátor a feldolgozást a böngésződben
             végzi. Nincs szerveres képfeltöltés, regisztráció vagy napi
             fájllimit.

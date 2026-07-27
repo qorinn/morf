@@ -757,17 +757,6 @@ export default function ImageWorkspace() {
             : "pb-56 sm:pb-40 lg:pb-32"),
       )}
     >
-      <div className="flex flex-col gap-2">
-        <Badge variant="secondary">Képfeldolgozó workspace</Badge>
-        <h2 className="font-heading text-3xl font-medium tracking-tight sm:text-4xl">
-          Készíts használatra kész képeket
-        </h2>
-        <p className="text-muted-foreground max-w-3xl">
-          Több képet alakíthatsz át egyszerre. A dekódolás, átméretezés és
-          kódolás a böngésződben, külön workerben történik.
-        </p>
-      </div>
-
       <MascotAssistant
         state={mascotState}
         title={mascotCopy.title}
@@ -861,8 +850,9 @@ export default function ImageWorkspace() {
                       {({ isDragActive, open }) => (
                         <Card
                           size="sm"
-                          interactive={!isBatchActive}
-                          selected={activeGroupId === group.id}
+                          data-selected={
+                            activeGroupId === group.id ? "true" : undefined
+                          }
                           role="button"
                           tabIndex={isBatchActive ? -1 : 0}
                           aria-pressed={activeGroupId === group.id}
@@ -871,7 +861,7 @@ export default function ImageWorkspace() {
                           className={cn(
                             "border-foreground/20 relative min-h-96 [--card-spacing:--spacing(3)] [background:var(--card)] lg:h-[32rem]",
                             isDragActive &&
-                              "border-ring ring-2 ring-ring/20 data-[selected=true]:ring-2 data-[selected=true]:ring-ring/20",
+                              "border-ring ring-ring/20 data-[selected=true]:ring-ring/20 ring-2 data-[selected=true]:ring-2",
                           )}
                           onClick={(event) => {
                             if (
@@ -913,7 +903,7 @@ export default function ImageWorkspace() {
                                   }
                                 />
                                 <Input
-                                  variant="inline"
+                                  className="font-heading hover:border-border/60 focus-visible:bg-background border-transparent bg-transparent px-1 text-base font-medium shadow-none"
                                   aria-label={`${group.name} csoport nevének módosítása`}
                                   value={group.name}
                                   maxLength={60}
@@ -1023,7 +1013,7 @@ export default function ImageWorkspace() {
                               {groupJobs.length === 0 ? (
                                 <div
                                   className={cn(
-                                    "morf-group-dropzone-radius flex size-full min-h-48 flex-col items-center justify-center gap-3 border border-dashed border-foreground/20 p-6 text-center",
+                                    "morf-group-dropzone-radius border-foreground/20 flex size-full min-h-48 flex-col items-center justify-center gap-3 border border-dashed p-6 text-center",
                                     isDragActive && "border-ring",
                                   )}
                                 >
@@ -1112,7 +1102,6 @@ export default function ImageWorkspace() {
                       {(isDndActive) => (
                         <Card
                           size="sm"
-                          interactive={!isBatchActive}
                           role="button"
                           tabIndex={isBatchActive ? -1 : 0}
                           aria-disabled={isBatchActive || undefined}
@@ -1120,7 +1109,7 @@ export default function ImageWorkspace() {
                           className={cn(
                             "border-foreground/20 h-full min-h-96 border border-dashed [--card-spacing:--spacing(3)] [background:transparent] lg:h-[32rem]",
                             (isDragActive || isDndActive) &&
-                              "border-ring ring-2 ring-ring/20",
+                              "border-ring ring-ring/20 ring-2",
                           )}
                           onClick={() => {
                             if (!isBatchActive) createGroup();
@@ -1223,7 +1212,7 @@ export default function ImageWorkspace() {
               size="sm"
               role="region"
               aria-label="Kijelölt képek műveletei"
-              className="shadow-lg pointer-events-auto mx-4 self-center [--card-spacing:--spacing(2)] [background:var(--card)] sm:w-[min(calc(100%-2rem),64rem)]"
+              className="pointer-events-auto mx-4 self-center shadow-lg [--card-spacing:--spacing(2)] [background:var(--card)] sm:w-[min(calc(100%-2rem),64rem)]"
             >
               <CardContent className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <span className="shrink-0 text-sm font-medium">
@@ -1336,7 +1325,7 @@ export default function ImageWorkspace() {
             </Card>
           )}
 
-          <div className="morf-card-surface pointer-events-auto border-t bg-background/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="morf-card-surface bg-background/95 pointer-events-auto border-t px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <div className="mx-auto flex w-full max-w-[96rem] flex-col gap-3 pt-3 lg:flex-row lg:items-center lg:justify-between">
               <p
                 className="text-muted-foreground shrink-0 text-sm tabular-nums"

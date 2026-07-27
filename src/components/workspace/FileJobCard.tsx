@@ -134,8 +134,7 @@ export function FileJobCard({
     >
       <Card
         size="sm"
-        interactive={!selectionUnavailable}
-        selected={isSelected}
+        data-selected={isSelected ? "true" : undefined}
         role="button"
         tabIndex={selectionUnavailable ? -1 : 0}
         aria-pressed={isSelected}
@@ -165,7 +164,7 @@ export function FileJobCard({
               tabIndex={dragDisabled || isActive ? -1 : 0}
               aria-label={`${job.file.name} áthelyezése`}
               aria-disabled={dragDisabled || isActive || undefined}
-              className="text-muted-foreground row-span-2 flex size-5 touch-none cursor-grab items-center justify-center self-center active:cursor-grabbing aria-disabled:cursor-not-allowed"
+              className="text-muted-foreground row-span-2 flex size-5 cursor-grab touch-none items-center justify-center self-center active:cursor-grabbing aria-disabled:cursor-not-allowed"
               title="Áthelyezési fogantyú"
               onClick={(event) => event.stopPropagation()}
             >
@@ -183,7 +182,7 @@ export function FileJobCard({
               >
                 {job.file.name}
               </p>
-              <p className="text-muted-foreground shrink-0 whitespace-nowrap text-[10px] leading-tight tabular-nums">
+              <p className="text-muted-foreground shrink-0 text-[10px] leading-tight whitespace-nowrap tabular-nums">
                 {sourceDetails}
               </p>
             </div>
