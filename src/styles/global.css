@@ -168,7 +168,7 @@
   }
 }
 
-header {
+#siteHeader {
   background-color: var(--card);
 }
 
@@ -205,6 +205,64 @@ header {
   .morf-dark-card [data-slot="card-description"],
   .morf-dark-card .text-muted-foreground {
     color: var(--dark-section-muted);
+  }
+
+  .morf-benefit-card {
+    box-shadow:
+      inset 0 1px 0 var(--surface-highlight),
+      inset 0 -1px 0 color-mix(in oklch, var(--primary) 10%, transparent);
+  }
+
+  .morf-benefit-card-mint {
+    background:
+      radial-gradient(
+        42rem 25rem at 96% -12%,
+        color-mix(in oklch, var(--primary) 20%, transparent),
+        transparent 70%
+      ),
+      linear-gradient(
+        150deg,
+        var(--card),
+        color-mix(in oklch, var(--primary) 10%, var(--card))
+      );
+  }
+
+  .morf-benefit-card-violet {
+    background:
+      radial-gradient(
+        40rem 26rem at 98% 8%,
+        color-mix(in oklch, var(--ring) 17%, transparent),
+        transparent 72%
+      ),
+      linear-gradient(
+        145deg,
+        var(--secondary),
+        color-mix(in oklch, var(--accent) 28%, var(--card))
+      );
+  }
+
+  .morf-benefit-card-soft {
+    background:
+      radial-gradient(
+        38rem 24rem at 94% 110%,
+        color-mix(in oklch, var(--primary) 15%, transparent),
+        transparent 72%
+      ),
+      linear-gradient(150deg, var(--muted), var(--card));
+  }
+
+  .morf-benefit-card-wash {
+    background:
+      radial-gradient(
+        42rem 25rem at 98% -8%,
+        color-mix(in oklch, var(--ring) 15%, transparent),
+        transparent 72%
+      ),
+      linear-gradient(
+        150deg,
+        var(--card),
+        color-mix(in oklch, var(--accent) 34%, var(--card))
+      );
   }
 
   .morf-section-normal {

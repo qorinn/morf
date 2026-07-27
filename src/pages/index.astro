@@ -1,10 +1,8 @@
 ---
 import SiteFooter from "@/components/layout/SiteFooter.astro";
 import SiteHeader from "@/components/layout/SiteHeader.astro";
-import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
@@ -14,41 +12,54 @@ import MainLayout from "@/layouts/main.astro";
 import {
   ArrowRight02Icon,
   BrowserIcon,
+  FileZipIcon,
   Image02Icon,
+  Resize01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import HomeHeroGravity from "../components/home/HomeHeroGravity"
+import HomeHeroGravity from "../components/home/HomeHeroGravity";
+import WhyChooseMorf from "../components/home/WhyChooseMorf";
 
 const tools = [
   {
-    title: "Képkonvertáló",
-    description:
-      "Alakíts át több JPG, PNG vagy WebP képet egyszerre, és állítsd be a méretet és a minőséget egy helyen.",
+    title: "Képformátum-konvertáló",
+    description: "JPG, PNG, WebP és AVIF kimenet, HEIC és HEIF képekből is.",
     href: "/kep-konvertalo",
-    cta: "Képek konvertálása",
     icon: Image02Icon,
-    formats: "JPG, PNG, WebP",
-    features: [
-      "Formátumváltás és átméretezés",
-      "Több kép feldolgozása egyszerre",
-      "Mentés egyenként vagy ZIP-ben",
-    ],
+    category: "Képek",
+  },
+  {
+    title: "Képoptimalizáló",
+    description:
+      "JPG, PNG, WebP és AVIF képek fájlméretének csökkentése minőség- vagy célméret-beállítással.",
+    href: "/kep-konvertalo",
+    icon: FileZipIcon,
+    category: "Képek",
+  },
+  {
+    title: "Képátméretező",
+    description:
+      "JPG, PNG, WebP, AVIF és HEIC/HEIF képek átméretezése az oldalarány megtartásával.",
+    href: "/kep-konvertalo",
+    icon: Resize01Icon,
+    category: "Képek",
   },
   {
     title: "Favicon generátor",
-    description:
-      "Készíts egyetlen képből weboldalhoz és telepíthető webapphoz használható ikoncsomagot.",
+    description: "Favicon- és webappikon-csomag készítése egyetlen képből.",
     href: "/favicon-generator",
-    cta: "Favicon készítése",
     icon: BrowserIcon,
-    formats: "ICO, PNG, Apple, PWA",
-    features: [
-      "Vágás és előnézet valódi ikonméretben",
-      "Maskable ikonokhoz külön biztonsági zóna",
-      "Válaszd ki, mire van szükséged: weboldalhoz vagy webapphoz",
-    ],
+    category: "Web",
   },
-];
+] as const;
+
+const toolCategories = [
+  { name: "Képek", slug: "kepek" },
+  { name: "Web", slug: "web" },
+].map((category) => ({
+  ...category,
+  tools: tools.filter((tool) => tool.category === category.name),
+}));
 ---
 
 <MainLayout
@@ -62,95 +73,99 @@ const tools = [
     actionShortLabel="Eszközök"
   />
 
-  <main>
+  <main class="overflow-clip">
     <HomeHeroGravity client:load />
 
     <section
       id="eszkozok"
       aria-labelledby="eszkozok-title"
-      class="mx-auto flex w-full max-w-5xl scroll-mt-6 flex-col gap-8 px-4 py-16 sm:px-6 lg:px-8 lg:py-20"
+      class="mx-auto flex w-full max-w-7xl scroll-mt-6 flex-col gap-8 px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24"
     >
-      <header class="flex max-w-2xl flex-col gap-3">
+      <header class="flex max-w-3xl flex-col gap-3">
         <h2
           id="eszkozok-title"
-          class="font-heading text-3xl font-medium tracking-tight sm:text-4xl"
+          class="font-heading text-5xl font-semibold tracking-tight text-balance sm:text-6xl"
         >
-          Válassz egy eszközt
+          Mit szeretnél megcsinálni?
         </h2>
-        <p class="text-muted-foreground leading-relaxed">
-          Ezek az eszközök már használhatók. A Morf később további
-          konvertálókkal, generátorokkal és online segédletekkel bővül.
+        <p
+          class="text-muted-foreground max-w-2xl text-base leading-relaxed sm:text-lg"
+        >
+          Válassz egy kész eszközt. Az eszközök közvetlenül a böngésződben
+          végzik el a feladatot.
         </p>
       </header>
 
-      <div class="grid gap-5 md:grid-cols-2">
+      <div class="flex flex-col gap-10">
         {
-          tools.map((tool) => (
-            <Card>
-              <CardHeader>
-                <div class="mb-4 flex items-start justify-between gap-4">
-                  <span
-                    class="bg-secondary text-secondary-foreground inline-flex size-12 items-center justify-center rounded-3xl"
-                    aria-hidden="true"
-                  >
-                    <HugeiconsIcon
-                      icon={tool.icon}
-                      strokeWidth={1.8}
-                      className="size-6"
-                    />
-                  </span>
-                  <p class="text-muted-foreground text-xs font-medium">
-                    {tool.formats}
-                  </p>
-                </div>
-                <CardTitle>
-                  <h3>{tool.title}</h3>
-                </CardTitle>
-                <CardDescription>{tool.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul class="text-muted-foreground flex flex-col border-t border-current/15 text-sm">
-                  {tool.features.map((feature) => (
-                    <li class="border-b border-current/15 py-2">{feature}</li>
-                  ))}
-                </ul>
-              </CardContent>
-              <CardFooter>
-                <a
-                  href={tool.href}
-                  class={buttonVariants({ variant: "outline" })}
+          toolCategories.map((category) => (
+            <section
+              aria-labelledby={`eszkoz-kategoria-${category.slug}`}
+              class="flex flex-col gap-4"
+            >
+              <div class="flex items-center gap-4">
+                <h3
+                  id={`eszkoz-kategoria-${category.slug}`}
+                  class="font-heading shrink-0 text-base font-semibold tracking-tight"
                 >
-                  {tool.cta}
-                  <HugeiconsIcon
-                    icon={ArrowRight02Icon}
-                    strokeWidth={1.8}
-                    data-icon="inline-end"
-                  />
-                </a>
-              </CardFooter>
-            </Card>
+                  {category.name}
+                </h3>
+                <div class="bg-border h-px flex-1" aria-hidden="true" />
+              </div>
+
+              <div class="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {category.tools.map((tool) => (
+                  <div class="group relative h-full">
+                    <Card
+                      size="sm"
+                      className="h-52 justify-between rounded-3xl border bg-card shadow-none ring-0 transition-colors duration-200 group-hover:border-primary/40 group-hover:bg-muted/40"
+                    >
+                      <CardHeader className="gap-2">
+                        <HugeiconsIcon
+                          icon={tool.icon}
+                          strokeWidth={1.7}
+                          className="text-muted-foreground size-6"
+                          aria-hidden="true"
+                        />
+                        <CardTitle>
+                          <h4 class="text-xl leading-tight font-semibold tracking-tight text-balance sm:text-2xl">
+                            {tool.title}
+                          </h4>
+                        </CardTitle>
+                        <CardDescription className="max-w-sm text-sm leading-relaxed">
+                          {tool.description}
+                        </CardDescription>
+                      </CardHeader>
+
+                      <CardFooter className="justify-between text-sm font-semibold">
+                        <span>Megnyitás</span>
+                        <HugeiconsIcon
+                          icon={ArrowRight02Icon}
+                          strokeWidth={1.8}
+                          className="size-4 transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transform-none motion-reduce:transition-none"
+                          aria-hidden="true"
+                        />
+                      </CardFooter>
+                    </Card>
+
+                    <a
+                      href={tool.href}
+                      class="focus-visible:ring-ring absolute inset-0 rounded-3xl outline-none focus-visible:ring-3 focus-visible:ring-offset-3"
+                      aria-label={`${tool.title} megnyitása`}
+                    >
+                      <span class="sr-only">{tool.title} megnyitása</span>
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </section>
           ))
         }
       </div>
     </section>
 
-    <section class="morf-dark-section">
-      <div
-        class="mx-auto grid w-full max-w-7xl gap-5 px-4 py-16 sm:px-6 lg:grid-cols-[minmax(16rem,0.7fr)_minmax(0,1fr)] lg:gap-16 lg:px-8 lg:py-20"
-      >
-        <h2
-          class="font-heading text-3xl font-medium tracking-tight text-balance"
-        >
-          A fájleszközök helyben dolgoznak
-        </h2>
-        <div class="max-w-2xl">
-          <p class="text-dark-section-muted leading-relaxed text-pretty">
-            A képkonvertáló és a favicon generátor a feldolgozást a böngésződben
-            végzi. Nincs szerveres képfeltöltés, regisztráció vagy napi
-            fájllimit.
-          </p>
-        </div>
-      </div>
+    <section aria-label="Miért válaszd a Morfot?" class="pb-10 sm:pb-16">
+      <WhyChooseMorf client:load />
     </section>
   </main>
 

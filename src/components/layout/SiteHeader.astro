@@ -23,10 +23,10 @@ const navItems = [
 ] as const;
 ---
 
-<header>
+<header id="siteHeader">
   <div class="border-b bg-secondary/60 text-secondary-foreground">
     <p
-      class="mx-auto flex min-h-8 w-full max-w-7xl items-center justify-center gap-2 px-4 py-1.5 text-center text-xs leading-4 sm:px-6 lg:px-8"
+      class="mx-auto flex h-8 max-h-8 overflow-hidden w-full max-w-7xl items-center justify-center gap-2 px-4 text-center text-xs leading-4 sm:px-6 lg:px-8"
     >
       <span
         class="inline-block size-1.5 shrink-0 rounded-full bg-secondary-foreground"
@@ -40,7 +40,7 @@ const navItems = [
   </div>
 
   <nav
-    class="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-5 sm:px-6 lg:px-8"
+    class="mx-auto flex w-full max-w-7xl items-center justify-between px-4 pt-5 sm:px-6 lg:px-8"
     aria-label="Fő navigáció"
   >
     <a

@@ -1,99 +1,171 @@
-"use client"
+"use client";
 
-import morfPeeking from "../../assets/morf-actions/morf-peeking.webp";
+import {
+  BrowserIcon,
+  Image02Icon,
+  ImageCropIcon,
+  MagicWand02Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { useReducedMotion } from "motion/react";
+
+import Gravity, { MatterBody } from "@/components/fancy/physics/gravity";
 import { buttonVariants } from "@/components/ui/button";
-import Gravity, { MatterBody } from "@/components/fancy/physics/gravity"
+import morfPeeking from "../../assets/morf-actions/morf-peeking.webp";
 
 function HomeHeroGravity() {
+  const shouldReduceMotion = useReducedMotion();
+
   return (
-    <section className="morf-section-normal relative">
-      <Gravity gravity={{ x: 0, y: 1 }} className="w-full h-full">
+    <section className="morf-section-normal relative min-h-[calc(100dvh-23*4px)] overflow-hidden">
+      <Gravity
+        gravity={{ x: 0, y: 0.72 }}
+        autoStart={!shouldReduceMotion}
+        grabCursor={!shouldReduceMotion}
+        className="h-full w-full"
+      >
         <MatterBody
-          matterBodyOptions={{ friction: 0.5, restitution: 0.2 }}
-          x="30%"
-          y="10%"
+          isDraggable={false}
+          x="24%"
+          y="17%"
+          angle={-3}
+          className="z-10"
         >
-          <div className="text-xl sm:text-2xl md:text-3xl bg-[#0015ff] text-white rounded-full hover:cursor-pointer px-8 py-4">
-            react
+          <a
+            href="/kep-konvertalo"
+            className="bg-card/90 text-card-foreground focus-visible:ring-ring inline-flex items-center gap-2 rounded-4xl border px-4 py-3 text-sm font-semibold whitespace-nowrap shadow-sm transition-colors hover:bg-card focus-visible:ring-3 focus-visible:ring-offset-2 focus-visible:outline-none sm:px-5 sm:py-3.5 sm:text-base"
+          >
+            <HugeiconsIcon
+              icon={Image02Icon}
+              strokeWidth={1.8}
+              className="size-5"
+              aria-hidden="true"
+            />
+            Képkonvertáló
+          </a>
+        </MatterBody>
+
+        <MatterBody
+          isDraggable={false}
+          x="73%"
+          y="79%"
+          angle={3}
+          className="z-10"
+        >
+          <a
+            href="/favicon-generator"
+            className="bg-card/90 text-card-foreground focus-visible:ring-ring inline-flex items-center gap-2 rounded-4xl border px-4 py-3 text-sm font-semibold whitespace-nowrap shadow-sm transition-colors hover:bg-card focus-visible:ring-3 focus-visible:ring-offset-2 focus-visible:outline-none sm:px-5 sm:py-3.5 sm:text-base"
+          >
+            <HugeiconsIcon
+              icon={BrowserIcon}
+              strokeWidth={1.8}
+              className="size-5"
+              aria-hidden="true"
+            />
+            Favicon generátor
+          </a>
+        </MatterBody>
+
+        <MatterBody
+          bodyType="circle"
+          matterBodyOptions={{ friction: 0.35, restitution: 0.62 }}
+          x="83%"
+          y="18%"
+          angle={8}
+        >
+          <div
+            className="bg-accent/90 text-accent-foreground flex size-16 items-center justify-center rounded-full shadow-sm sm:size-20"
+            aria-hidden="true"
+          >
+            <HugeiconsIcon
+              icon={MagicWand02Icon}
+              strokeWidth={1.8}
+              className="size-7 sm:size-8"
+            />
           </div>
         </MatterBody>
+
         <MatterBody
-          matterBodyOptions={{ friction: 0.5, restitution: 0.2 }}
-          x="30%"
-          y="30%"
+          bodyType="rectangle"
+          matterBodyOptions={{ friction: 0.42, restitution: 0.48 }}
+          x="18%"
+          y="64%"
+          angle={-9}
         >
-          <div className="text-xl sm:text-2xl md:text-3xl bg-[#e794da] text-white rounded-full hover:cursor-grab px-8 py-4 ">
-            typescript
+          <div
+            className="bg-secondary/90 text-secondary-foreground flex h-16 w-24 items-center justify-center rounded-3xl shadow-sm sm:h-20 sm:w-28"
+            aria-hidden="true"
+          >
+            <HugeiconsIcon
+              icon={ImageCropIcon}
+              strokeWidth={1.8}
+              className="size-7 sm:size-8"
+            />
           </div>
         </MatterBody>
+
         <MatterBody
-          matterBodyOptions={{ friction: 0.5, restitution: 0.2 }}
-          x="40%"
-          y="20%"
-          angle={10}
+          bodyType="svg"
+          matterBodyOptions={{ friction: 0.38, restitution: 0.58 }}
+          sampleLength={7}
+          x="84%"
+          y="55%"
+          angle={12}
         >
-          <div className="text-xl sm:text-2xl md:text-3xl bg-[#1f464d] text-white rounded-full hover:cursor-grab px-8 py-4 ">
-            motion
-          </div>
+          <svg
+            viewBox="0 0 64 64"
+            className="text-primary size-14 sm:size-20"
+            aria-hidden="true"
+          >
+            <path
+              fill="currentColor"
+              d="M32 4 39.4 22.3 59 23.6 44 36.3 48.8 55.4 32 45 15.2 55.4 20 36.3 5 23.6 24.6 22.3Z"
+            />
+          </svg>
         </MatterBody>
+
         <MatterBody
-          matterBodyOptions={{ friction: 0.5, restitution: 0.2 }}
-          x="75%"
-          y="10%"
+          bodyType="svg"
+          matterBodyOptions={{ friction: 0.4, restitution: 0.52 }}
+          sampleLength={8}
+          x="14%"
+          y="35%"
+          angle={-6}
         >
-          <div className="text-xl sm:text-2xl md:text-3xl bg-[#ff5941] text-white rounded-full hover:cursor-grab px-8 py-4 ">
-            tailwind
-          </div>
-        </MatterBody>
-        <MatterBody
-          matterBodyOptions={{ friction: 0.5, restitution: 0.2 }}
-          x="80%"
-          y="20%"
-        >
-          <div className="text-xl sm:text-2xl md:text-3xl bg-[#f97316] text-white rounded-full hover:cursor-grab px-8 py-4 ">
-            drei
-          </div>
-        </MatterBody>
-        <MatterBody
-          matterBodyOptions={{ friction: 0.5, restitution: 0.2 }}
-          x="50%"
-          y="10%"
-        >
-          <div className="text-xl sm:text-2xl md:text-3xl bg-[#ffd726] text-white rounded-full hover:cursor-grab px-8 py-4 ">
-            matter-js
-          </div>
+          <svg
+            viewBox="0 0 56 64"
+            className="text-ring h-16 w-14 sm:h-20 sm:w-16"
+            aria-hidden="true"
+          >
+            <path fill="currentColor" d="M31 3 7 35h17l-3 26 28-37H31Z" />
+          </svg>
         </MatterBody>
       </Gravity>
-      <div
-        className="mx-auto flex w-full flex-col items-center gap-7 px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24"
-      >
-        <div className="mx-auto flex max-w-2xl flex-col items-center gap-3 text-center">
-          <h1
-            className="font-heading text-5xl font-medium tracking-tight text-balance sm:text-6xl lg:text-7xl"
-          >
+
+      <div className="pointer-events-none relative z-20 mx-auto flex min-h-[42rem] w-full flex-col items-center justify-center gap-7 px-4 py-20 sm:min-h-[44rem] sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-4xl flex-col items-center gap-4 text-center">
+          <h1 className="font-heading text-[clamp(3.5rem,7.2vw,6.5rem)] leading-[0.92] font-semibold tracking-[-0.055em] text-balance">
             Online eszközök egy helyen.
           </h1>
-          <p
-            className="text-muted-foreground max-w-2xl text-lg leading-relaxed sm:text-xl"
-          >
-            A Morf egyszerű böngészős eszközöket gyűjt össze képekhez,
-            fájlokhoz, színekhez és online tartalmakhoz. Válassz egy feladatot,
-            és nyisd meg a hozzá tartozó eszközt.
+          <p className="text-muted-foreground max-w-2xl text-lg leading-relaxed sm:text-xl">
+            A Morf célja, hogy a gyakori digitális feladatokhoz egyszerű,
+            ingyenes és privát böngészős eszközöket kínáljon.
           </p>
         </div>
-        <div className="relative mt-30">
+
+        <div className="pointer-events-auto relative mt-30">
           <img
             src={morfPeeking.src}
-            className="absolute w-auto h-30 top-0 left-1/2 right-1/2 -translate-y-full -translate-x-1/2"
+            className="absolute top-0 right-1/2 left-1/2 h-30 w-auto -translate-x-1/2 -translate-y-full"
             alt=""
           />
           <a href="#eszkozok" className={buttonVariants({ size: "lg" })}>
-            Elérhető eszközök megtekintése
+            Eszközök megnyitása
           </a>
         </div>
       </div>
     </section>
-  )
+  );
 }
 
-export default HomeHeroGravity
+export default HomeHeroGravity;

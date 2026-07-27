@@ -11,8 +11,8 @@ import {
 } from "react"
 import { calculatePosition } from "@/utils/calculate-position"
 import { parsePathToVertices } from "@/utils/svg-path-to-vertices"
-import pkg from 'lodash';
-const { debounce } = pkg;
+import pkg from "lodash"
+const { debounce } = pkg
 import Matter from "matter-js"
 const {
   Bodies,
@@ -25,7 +25,7 @@ const {
   Render,
   Runner,
   World,
-} = Matter;
+} = Matter
 import decomp from "poly-decomp"
 
 import { cn } from "@/lib/utils"
@@ -49,7 +49,7 @@ type PhysicsBody = {
 
 type MatterBodyProps = {
   children: ReactNode
-  matterBodyOptions?: Matter.IBodyDefinition
+  matterBodyOptions?: Matter.IChamferableBodyDefinition
   isDraggable?: boolean
   bodyType?: "rectangle" | "circle" | "svg"
   sampleLength?: number
@@ -69,7 +69,7 @@ const GravityContext = createContext<{
   registerElement: (
     id: string,
     element: HTMLElement,
-    props: MatterBodyProps
+    props: MatterBodyProps,
   ) => void
   unregisterElement: (id: string) => void
 } | null>(null)
@@ -118,7 +118,7 @@ export const MatterBody = ({
       className={cn(
         "absolute",
         className,
-        isDraggable && "pointer-events-none"
+        isDraggable && "pointer-events-none",
       )}
     >
       {children}
@@ -139,7 +139,7 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
       className,
       ...props
     },
-    ref
+    ref,
   ) => {
     const canvas = useRef<HTMLDivElement>(null)
     const engine = useRef(Engine.create())
@@ -214,7 +214,7 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
           bodiesMap.current.set(id, { element, body, props })
         }
       },
-      [debug]
+      [debug],
     )
 
     // Unregister Matter.js body from the physics world
@@ -232,8 +232,9 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
         const { x, y } = body.position
         const rotation = body.angle * (180 / Math.PI)
 
-        element.style.transform = `translate(${x - element.offsetWidth / 2
-          }px, ${y - element.offsetHeight / 2}px) rotate(${rotation}deg)`
+        element.style.transform = `translate(${
+          x - element.offsetWidth / 2
+        }px, ${y - element.offsetHeight / 2}px) rotate(${rotation}deg)`
       })
 
       frameId.current = requestAnimationFrame(updateElements)
@@ -267,7 +268,7 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
       }
       render.current.canvas.removeEventListener(
         "wheel",
-        mouseWithWheelHandler.mousewheel
+        mouseWithWheelHandler.mousewheel,
       )
 
       mouseConstraint.current = MouseConstraint.create(engine.current, {
@@ -312,12 +313,12 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
 
       const topWall = addTopWall
         ? Bodies.rectangle(width / 2, -10, width, 20, {
-          isStatic: true,
-          friction: 1,
-          render: {
-            visible: debug,
-          },
-        })
+            isStatic: true,
+            friction: 1,
+            render: {
+              visible: debug,
+            },
+          })
         : null
 
       if (topWall) {
@@ -327,11 +328,11 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
       const touchingMouse = () =>
         Query.point(
           engine.current.world.bodies,
-          mouseConstraint.current?.mouse.position || { x: 0, y: 0 }
+          mouseConstraint.current?.mouse.position || { x: 0, y: 0 },
         ).length > 0
 
       if (grabCursor) {
-        Events.on(engine.current, "beforeUpdate", (event) => {
+        Events.on(engine.current, "beforeUpdate", () => {
           if (canvas.current) {
             if (!mouseDown.current && !touchingMouse()) {
               canvas.current.style.cursor = "default"
@@ -343,7 +344,7 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
           }
         })
 
-        canvas.current.addEventListener("mousedown", (event) => {
+        canvas.current.addEventListener("mousedown", () => {
           mouseDown.current = true
 
           if (canvas.current) {
@@ -354,7 +355,7 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
             }
           }
         })
-        canvas.current.addEventListener("mouseup", (event) => {
+        canvas.current.addEventListener("mouseup", () => {
           mouseDown.current = false
 
           if (canvas.current) {
@@ -459,12 +460,12 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
         const x = calculatePosition(
           props.x,
           canvasSize.width,
-          element.offsetWidth
+          element.offsetWidth,
         )
         const y = calculatePosition(
           props.y,
           canvasSize.height,
-          element.offsetHeight
+          element.offsetHeight,
         )
         body.position.x = x
         body.position.y = y
@@ -480,7 +481,7 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
         stop: stopEngine,
         reset,
       }),
-      [startEngine, stopEngine]
+      [startEngine, stopEngine],
     )
 
     useEffect(() => {
@@ -511,7 +512,7 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
         </div>
       </GravityContext.Provider>
     )
-  }
+  },
 )
 
 Gravity.displayName = "Gravity"
