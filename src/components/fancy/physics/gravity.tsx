@@ -30,6 +30,8 @@ import decomp from "poly-decomp"
 
 import { cn } from "@/lib/utils"
 
+Common.setDecomp(decomp)
+
 type GravityProps = {
   children: ReactNode
   debug?: boolean
@@ -45,6 +47,7 @@ type PhysicsBody = {
   element: HTMLElement
   body: Matter.Body
   props: MatterBodyProps
+  initialPosition: Matter.Vector
 }
 
 type MatterBodyProps = {
@@ -69,7 +72,7 @@ const GravityContext = createContext<{
   registerElement: (
     id: string,
     element: HTMLElement,
-    props: MatterBodyProps,
+    props: MatterBodyProps
   ) => void
   unregisterElement: (id: string) => void
 } | null>(null)
@@ -115,10 +118,15 @@ export const MatterBody = ({
   return (
     <div
       ref={elementRef}
+      style={{
+        left: typeof x === "number" ? `${x}px` : x,
+        top: typeof y === "number" ? `${y}px` : y,
+        transform: `translate(-50%, -50%) rotate(${angle}deg)`,
+      }}
       className={cn(
         "absolute",
         className,
-        isDraggable && "pointer-events-none",
+        isDraggable && "pointer-events-none"
       )}
     >
       {children}
@@ -139,7 +147,7 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
       className,
       ...props
     },
-    ref,
+    ref
   ) => {
     const canvas = useRef<HTMLDivElement>(null)
     const engine = useRef(Engine.create())
@@ -211,10 +219,15 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
 
         if (body) {
           World.add(engine.current.world, [body])
-          bodiesMap.current.set(id, { element, body, props })
+          bodiesMap.current.set(id, {
+            element,
+            body,
+            props,
+            initialPosition: { x, y },
+          })
         }
       },
-      [debug],
+      [debug]
     )
 
     // Unregister Matter.js body from the physics world
@@ -228,13 +241,13 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
 
     // Keep react elements in sync with the physics world
     const updateElements = useCallback(() => {
-      bodiesMap.current.forEach(({ element, body }) => {
+      bodiesMap.current.forEach(({ element, body, initialPosition }) => {
         const { x, y } = body.position
         const rotation = body.angle * (180 / Math.PI)
+        const offsetX = x - initialPosition.x
+        const offsetY = y - initialPosition.y
 
-        element.style.transform = `translate(${
-          x - element.offsetWidth / 2
-        }px, ${y - element.offsetHeight / 2}px) rotate(${rotation}deg)`
+        element.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) rotate(${rotation}deg)`
       })
 
       frameId.current = requestAnimationFrame(updateElements)
@@ -245,8 +258,6 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
 
       const height = canvas.current.offsetHeight
       const width = canvas.current.offsetWidth
-
-      Common.setDecomp(decomp)
 
       engine.current.gravity.x = gravity.x
       engine.current.gravity.y = gravity.y
@@ -268,7 +279,7 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
       }
       render.current.canvas.removeEventListener(
         "wheel",
-        mouseWithWheelHandler.mousewheel,
+        mouseWithWheelHandler.mousewheel
       )
 
       mouseConstraint.current = MouseConstraint.create(engine.current, {
@@ -328,7 +339,7 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
       const touchingMouse = () =>
         Query.point(
           engine.current.world.bodies,
-          mouseConstraint.current?.mouse.position || { x: 0, y: 0 },
+          mouseConstraint.current?.mouse.position || { x: 0, y: 0 }
         ).length > 0
 
       if (grabCursor) {
@@ -460,12 +471,12 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
         const x = calculatePosition(
           props.x,
           canvasSize.width,
-          element.offsetWidth,
+          element.offsetWidth
         )
         const y = calculatePosition(
           props.y,
           canvasSize.height,
-          element.offsetHeight,
+          element.offsetHeight
         )
         body.position.x = x
         body.position.y = y
@@ -481,7 +492,7 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
         stop: stopEngine,
         reset,
       }),
-      [startEngine, stopEngine],
+      [startEngine, stopEngine]
     )
 
     useEffect(() => {
@@ -505,14 +516,17 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
       <GravityContext.Provider value={{ registerElement, unregisterElement }}>
         <div
           ref={canvas}
-          className={cn(className, "absolute top-0 left-0 w-full h-full")}
+          className={cn(
+            className,
+            "morf-gravity-fade-in absolute top-0 left-0 w-full h-full"
+          )}
           {...props}
         >
           {children}
         </div>
       </GravityContext.Provider>
     )
-  },
+  }
 )
 
 Gravity.displayName = "Gravity"
