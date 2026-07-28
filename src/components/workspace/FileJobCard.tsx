@@ -142,7 +142,7 @@ export function FileJobCard({
         aria-label={`${job.file.name}: ${
           isSelected ? "kijelölés megszüntetése" : "kijelölés"
         } csoportművelethez`}
-        className="border-foreground/20 [--card-spacing:--spacing(2)] [background:var(--card)] data-[selected=true]:[background:color-mix(in_oklab,var(--primary)_18%,var(--card))]"
+        className="border-foreground/20 border bg-card ring-0 [--card-spacing:--spacing(2)] data-[selected=true]:border-ring data-[selected=true]:bg-primary/5 data-[selected=true]:ring-2 data-[selected=true]:ring-ring/20"
         onClick={(event) => {
           if (isCardSelectionClick(event.target, event.currentTarget)) {
             toggleSelection();

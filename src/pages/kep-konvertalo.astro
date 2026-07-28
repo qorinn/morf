@@ -9,9 +9,9 @@ import ToolHero from "@/components/sections/ToolHero.astro";
 import MainLayout from "@/layouts/main.astro";
 
 const privacyItems = [
-  "A kép dekódolása, az EXIF-orientáció alkalmazása, az átméretezés és a kiválasztott formátumba kódolás külön Web Workerben fut a saját böngésződben.",
-  "A preview-khoz ideiglenes Blob URL-ek készülnek. Ezeket Morf felszabadítja, amikor eltávolítod a fájlt vagy elhagyod az oldalt.",
-  "Nincs regisztráció, napi limit, fájlhoz kapcsolt analitika vagy szerveres képfeltöltés az aktív munkafelületen.",
+  "A konvertálás, az átméretezés és az optimalizálás a saját böngésződben történik.",
+  "Az előnézetek csak addig maradnak meg, amíg az oldalon dolgozol.",
+  "Nem kell regisztrálnod, a Morf pedig nem tölti fel vagy tárolja a fájljaidat.",
 ];
 
 const faqItems = [
@@ -166,8 +166,8 @@ const structuredData = {
     <ImageConverterGuide />
 
     <PrivacySection
-      title="A konvertálás a böngésződben történik"
-      description="A kiválasztott képek nem kerülnek a Morf szerverére: a beolvasás, az átméretezés és az új fájl elkészítése is a saját eszközödön fut."
+      title="A képeid nálad maradnak"
+      description="A Morf a böngésződben dolgozza fel a képeket. Nem kell feltöltened őket, és nem kerülnek a Morf szerverére."
       items={privacyItems}
     />
 

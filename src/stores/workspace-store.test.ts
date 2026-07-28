@@ -23,6 +23,14 @@ test.beforeEach(() => {
   useWorkspaceStore.getState().clearJobs();
 });
 
+test("az alapcsoport az Általános veszteségmentes presettel indul", () => {
+  const [group] = useWorkspaceStore.getState().groups;
+
+  assert.equal(group.settings.presetId, "general");
+  assert.equal(group.settings.outputFormat, "webp");
+  assert.equal(group.settings.lossless, true);
+});
+
 test("feltöltéskor minden kép az alapcsoportba kerül kijelölés nélkül", () => {
   useWorkspaceStore.getState().createGroup();
   addImages(3);

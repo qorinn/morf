@@ -9,9 +9,9 @@ import ToolHero from "@/components/sections/ToolHero.astro";
 import MainLayout from "@/layouts/main.astro";
 
 const privacyItems = [
-  "A forráskép ellenőrzése, szerkesztése és minden exportfájl generálása a saját böngésződben történik.",
-  "Az SVG-kből eltávolítjuk a futtatható kódot, eseménykezelőket és külső erőforrásokat, mielőtt előnézet vagy export készülne.",
-  "Az átméretezés, a PNG-kódolás, az ICO összeállítása és a ZIP létrehozása külön Web Workerben fut.",
+  "A vágás, az előnézet és minden ikon elkészítése a saját böngésződben történik.",
+  "Ha SVG-t töltesz fel, a Morf biztonságosan megtisztítja, mielőtt használja.",
+  "A PNG-, ICO- és ZIP-fájlok közvetlenül a saját eszközödön készülnek el.",
 ];
 
 const faqItems = [
@@ -64,9 +64,8 @@ const faqItems = [
     <FaviconPackageGuide />
 
     <PrivacySection
-      eyebrow="Privacy by design"
-      title="A logód nem kerül feltöltésre"
-      description="Morf a teljes ikoncsomagot helyben állítja össze, a szerver csak magát az alkalmazást szolgálja ki."
+      title="A logód nálad marad"
+      description="A Morf a böngésződben készíti el az ikonokat és a letölthető csomagot. A forrásképet nem tölti fel."
       items={privacyItems}
     />
 

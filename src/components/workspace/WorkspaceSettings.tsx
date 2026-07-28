@@ -4,6 +4,7 @@ import {
   Settings02Icon,
   Share08Icon,
   ShoppingBag01Icon,
+  SlidersHorizontalIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
@@ -29,6 +30,7 @@ import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { ImageFormat } from "@/features/image-processing/types";
 import { imagePresets, type PresetId } from "@/lib/presets/image-presets";
+import { cn } from "@/lib/utils";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 
 type WorkspaceSettingsProps = {
@@ -36,6 +38,7 @@ type WorkspaceSettingsProps = {
 };
 
 const presetIcons = {
+  general: SlidersHorizontalIcon,
   website: BrowserIcon,
   webshop: ShoppingBag01Icon,
   social: Share08Icon,
@@ -176,155 +179,180 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
         </ToggleGroup>
       </Field>
 
-      <Field orientation="horizontal" data-disabled={disabled || undefined}>
-        <Checkbox
-          id={`lossless-${activeGroup.id}`}
-          checked={settings.lossless}
-          disabled={disabled}
-          onCheckedChange={(checked) =>
-            updateGroupSettings(activeGroup.id, {
-              lossless: checked === true,
-            })
-          }
-        />
-        <FieldContent>
-          <FieldLabel htmlFor={`lossless-${activeGroup.id}`}>
-            Veszteségmentes mód
-          </FieldLabel>
-          <FieldDescription>
-            {settings.outputFormat === "jpeg"
-              ? "A JPG nem támogat valódi veszteségmentes kódolást, ezért ennél a formátumnál a legmagasabb elérhető minőséget használja."
-              : "Az eredeti felbontást megtartja, és veszteségmentesen kódol."}
-          </FieldDescription>
-        </FieldContent>
-      </Field>
-
-      <FieldGroup className="grid gap-4 sm:grid-cols-2">
-        <Field data-disabled={disabled || settings.lossless || undefined}>
-          <FieldLabel htmlFor={`max-width-${activeGroup.id}`}>
-            Max. szélesség
-          </FieldLabel>
-          <Input
-            id={`max-width-${activeGroup.id}`}
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={12000}
-            value={settings.maxWidth}
-            disabled={disabled || settings.lossless}
-            onChange={(event) =>
-              updateGroupSettings(activeGroup.id, {
-                maxWidth: clampNumber(event.target.value, 1, 12_000),
-              })
-            }
-          />
-        </Field>
-        <Field data-disabled={disabled || settings.lossless || undefined}>
-          <FieldLabel htmlFor={`max-height-${activeGroup.id}`}>
-            Max. magasság
-          </FieldLabel>
-          <Input
-            id={`max-height-${activeGroup.id}`}
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={12000}
-            value={settings.maxHeight}
-            disabled={disabled || settings.lossless}
-            onChange={(event) =>
-              updateGroupSettings(activeGroup.id, {
-                maxHeight: clampNumber(event.target.value, 1, 12_000),
-              })
-            }
-          />
-        </Field>
-      </FieldGroup>
-
-      <Field data-disabled={disabled || settings.lossless || undefined}>
-        <div className="flex items-start gap-3">
+      <div
+        className={cn(
+          "overflow-hidden rounded-3xl border transition-colors duration-200",
+          settings.lossless ? "border-primary/35" : "border-border",
+        )}
+      >
+        <Field
+          orientation="horizontal"
+          data-disabled={disabled || undefined}
+          className={cn(
+            "px-4 py-4 transition-colors duration-200",
+            settings.lossless && "bg-primary/5",
+          )}
+        >
           <Checkbox
-            id={`max-file-size-enabled-${activeGroup.id}`}
-            checked={settings.maxFileSizeKb !== null}
-            disabled={disabled || settings.lossless}
+            id={`lossless-${activeGroup.id}`}
+            checked={settings.lossless}
+            disabled={disabled}
+            aria-controls={`dependent-settings-${activeGroup.id}`}
             onCheckedChange={(checked) =>
               updateGroupSettings(activeGroup.id, {
-                maxFileSizeKb: checked === true ? 500 : null,
+                lossless: checked === true,
               })
             }
           />
           <FieldContent>
-            <FieldLabel htmlFor={`max-file-size-enabled-${activeGroup.id}`}>
-              Maximum fájlméret
+            <FieldLabel htmlFor={`lossless-${activeGroup.id}`}>
+              Veszteségmentes mód
             </FieldLabel>
+            <FieldDescription>
+              {settings.outputFormat === "jpeg"
+                ? "A JPG nem támogat valódi veszteségmentes kódolást, ezért ennél a formátumnál a legmagasabb elérhető minőséget használja."
+                : "Az eredeti felbontást megtartja, és veszteségmentesen kódol."}
+            </FieldDescription>
           </FieldContent>
-        </div>
-        <div className="flex items-center gap-2">
-          <Input
-            id={`max-file-size-${activeGroup.id}`}
-            className="w-32 tabular-nums"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={102400}
-            value={settings.maxFileSizeKb ?? 500}
-            disabled={
-              disabled || settings.lossless || settings.maxFileSizeKb === null
-            }
-            aria-label="Maximum fájlméret kilobájtban"
-            onChange={(event) =>
-              updateGroupSettings(activeGroup.id, {
-                maxFileSizeKb: clampNumber(event.target.value, 1, 102_400),
-              })
-            }
-          />
-          <span className="text-muted-foreground text-sm">KB</span>
-        </div>
-      </Field>
+        </Field>
 
-      <Field data-disabled={disabled || qualityDisabled || undefined}>
-        <FieldLabel htmlFor={`quality-number-${activeGroup.id}`}>
-          Minőség
-        </FieldLabel>
-        <div className="flex items-center gap-4">
-          <Slider
-            aria-label={`${activeGroup.name} kimeneti minősége`}
-            min={1}
-            max={100}
-            step={1}
-            value={settings.quality}
-            disabled={disabled || qualityDisabled}
-            onValueChange={(value) =>
-              updateGroupSettings(activeGroup.id, {
-                quality: Array.isArray(value) ? value[0] : value,
-              })
-            }
-          />
-          <Input
-            id={`quality-number-${activeGroup.id}`}
-            className="w-20"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={100}
-            value={settings.quality}
-            disabled={disabled || qualityDisabled}
-            onChange={(event) =>
-              updateGroupSettings(activeGroup.id, {
-                quality: clampNumber(event.target.value, 1, 100),
-              })
-            }
-          />
+        <div
+          id={`dependent-settings-${activeGroup.id}`}
+          aria-disabled={disabled || settings.lossless}
+          className={cn(
+            "border-border border-t p-4 transition-colors duration-200",
+            settings.lossless && "bg-muted/40",
+          )}
+        >
+          <FieldGroup className="gap-5">
+            <FieldGroup className="grid gap-4 sm:grid-cols-2">
+              <Field data-disabled={disabled || settings.lossless || undefined}>
+                <FieldLabel htmlFor={`max-width-${activeGroup.id}`}>
+                  Max. szélesség
+                </FieldLabel>
+                <Input
+                  id={`max-width-${activeGroup.id}`}
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={12000}
+                  value={settings.maxWidth}
+                  disabled={disabled || settings.lossless}
+                  onChange={(event) =>
+                    updateGroupSettings(activeGroup.id, {
+                      maxWidth: clampNumber(event.target.value, 1, 12_000),
+                    })
+                  }
+                />
+              </Field>
+              <Field data-disabled={disabled || settings.lossless || undefined}>
+                <FieldLabel htmlFor={`max-height-${activeGroup.id}`}>
+                  Max. magasság
+                </FieldLabel>
+                <Input
+                  id={`max-height-${activeGroup.id}`}
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={12000}
+                  value={settings.maxHeight}
+                  disabled={disabled || settings.lossless}
+                  onChange={(event) =>
+                    updateGroupSettings(activeGroup.id, {
+                      maxHeight: clampNumber(event.target.value, 1, 12_000),
+                    })
+                  }
+                />
+              </Field>
+            </FieldGroup>
+
+            <Field data-disabled={disabled || settings.lossless || undefined}>
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id={`max-file-size-enabled-${activeGroup.id}`}
+                  checked={settings.maxFileSizeKb !== null}
+                  disabled={disabled || settings.lossless}
+                  onCheckedChange={(checked) =>
+                    updateGroupSettings(activeGroup.id, {
+                      maxFileSizeKb: checked === true ? 500 : null,
+                    })
+                  }
+                />
+                <FieldContent>
+                  <FieldLabel
+                    htmlFor={`max-file-size-enabled-${activeGroup.id}`}
+                  >
+                    Maximum fájlméret
+                  </FieldLabel>
+                </FieldContent>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input
+                  id={`max-file-size-${activeGroup.id}`}
+                  className="w-32 tabular-nums"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={102400}
+                  value={settings.maxFileSizeKb ?? 500}
+                  disabled={
+                    disabled ||
+                    settings.lossless ||
+                    settings.maxFileSizeKb === null
+                  }
+                  aria-label="Maximum fájlméret kilobájtban"
+                  onChange={(event) =>
+                    updateGroupSettings(activeGroup.id, {
+                      maxFileSizeKb: clampNumber(
+                        event.target.value,
+                        1,
+                        102_400,
+                      ),
+                    })
+                  }
+                />
+                <span className="text-muted-foreground text-sm">KB</span>
+              </div>
+            </Field>
+
+            <Field data-disabled={disabled || qualityDisabled || undefined}>
+              <FieldLabel htmlFor={`quality-number-${activeGroup.id}`}>
+                Minőség
+              </FieldLabel>
+              <div className="flex items-center gap-4">
+                <Slider
+                  aria-label={`${activeGroup.name} kimeneti minősége`}
+                  min={1}
+                  max={100}
+                  step={1}
+                  value={settings.quality}
+                  disabled={disabled || qualityDisabled}
+                  onValueChange={(value) =>
+                    updateGroupSettings(activeGroup.id, {
+                      quality: Array.isArray(value) ? value[0] : value,
+                    })
+                  }
+                />
+                <Input
+                  id={`quality-number-${activeGroup.id}`}
+                  className="w-20"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={100}
+                  value={settings.quality}
+                  disabled={disabled || qualityDisabled}
+                  onChange={(event) =>
+                    updateGroupSettings(activeGroup.id, {
+                      quality: clampNumber(event.target.value, 1, 100),
+                    })
+                  }
+                />
+              </div>
+            </Field>
+          </FieldGroup>
         </div>
-        <FieldDescription>
-          {settings.lossless
-            ? "A veszteségmentes mód felülírja ezt a beállítást."
-            : settings.maxFileSizeKb !== null
-              ? "A maximum fájlméret alapján a motor automatikusan választ minőséget."
-              : settings.outputFormat === "png"
-                ? "A PNG veszteségmentes kimenetnél ez a beállítás nem használható."
-                : `${settings.quality}% - nagyobb érték jobb minőséget és nagyobb fájlt jelent.`}
-        </FieldDescription>
-      </Field>
+      </div>
     </FieldGroup>
   );
 }
