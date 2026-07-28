@@ -144,7 +144,7 @@ function HomeHeroGravity() {
 
       <div className="pointer-events-none relative z-20 mx-auto flex min-h-[42rem] w-full flex-col items-center justify-center gap-7 px-4 py-20 sm:min-h-[44rem] sm:px-6 lg:px-8">
         <div className="mx-auto flex flex-col items-center gap-4 text-center">
-          <h1 className="from-foreground from-25% via-foreground/90 via-60% to-foreground/25 font-heading -mb-[0.12em] bg-linear-to-b bg-clip-text pb-[0.12em] text-[clamp(3.5rem,7.2vw,6.5rem)] leading-[0.9] font-semibold tracking-[-0.055em] text-transparent text-balance">
+          <h1 className="from-foreground from-25% via-foreground/80 via-60% to-foreground/55 font-heading -mb-[0.12em] bg-linear-to-b bg-clip-text pb-[0.12em] text-[clamp(3.5rem,7.2vw,6.5rem)] leading-[0.9] font-semibold tracking-[-0.055em] text-transparent text-balance">
             <span className="block">Eszközök a digitális</span>
             <span className="block">mindennapokhoz.</span>
           </h1>
