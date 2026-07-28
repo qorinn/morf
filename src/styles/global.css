@@ -176,6 +176,21 @@
 }
 
 @layer components {
+  @keyframes morf-gravity-fade-in {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  .morf-gravity-fade-in {
+    opacity: 0;
+    animation: morf-gravity-fade-in 600ms 200ms ease-out forwards;
+  }
+
   .morf-card-surface {
     background: var(--card);
     box-shadow: none;
@@ -428,6 +443,11 @@
 
     [data-slot="progress-indicator"] {
       transition-duration: 0.01ms;
+    }
+
+    .morf-gravity-fade-in {
+      opacity: 1;
+      animation: none;
     }
   }
 }

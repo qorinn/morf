@@ -1,15 +1,5 @@
 import SVGPathCommander from "svg-path-commander"
 
-function pointsMatch(
-  first: { x: number; y: number },
-  second: { x: number; y: number }
-) {
-  return (
-    Math.abs(first.x - second.x) < 0.001 &&
-    Math.abs(first.y - second.y) < 0.001
-  )
-}
-
 // Function to convert SVG path `d` to vertices
 export function parsePathToVertices(path: string, sampleLength = 15) {
   // Convert path to absolute commands
@@ -35,23 +25,11 @@ export function parsePathToVertices(path: string, sampleLength = 15) {
     length += sampleLength
   }
 
-  // Ensure open paths include their endpoint. Closed SVG paths end where they
-  // started; repeating that point makes poly-decomp treat some shapes as
-  // self-intersecting and Matter.js cannot create a body from them.
-  if (
-    points.length > 1 &&
-    pointsMatch(points[points.length - 1], points[0])
-  ) {
-    points.pop()
-    lastPoint = points[points.length - 1] ?? null
-  }
-
+  // Ensure we get the last point
   const finalPoint = commander.getPointAtLength(totalLength)
-  const firstPoint = points[0]
   if (
     lastPoint &&
-    !pointsMatch(finalPoint, lastPoint) &&
-    (!firstPoint || !pointsMatch(finalPoint, firstPoint))
+    (finalPoint.x !== lastPoint.x || finalPoint.y !== lastPoint.y)
   ) {
     points.push({ x: finalPoint.x, y: finalPoint.y })
   }

@@ -274,6 +274,14 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
       })
 
       const mouse = Mouse.create(render.current.canvas)
+      const mouseWithWheelHandler = mouse as Matter.Mouse & {
+        mousewheel: EventListener
+      }
+      render.current.canvas.removeEventListener(
+        "wheel",
+        mouseWithWheelHandler.mousewheel
+      )
+
       mouseConstraint.current = MouseConstraint.create(engine.current, {
         mouse: mouse,
         constraint: {
@@ -508,7 +516,10 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
       <GravityContext.Provider value={{ registerElement, unregisterElement }}>
         <div
           ref={canvas}
-          className={cn(className, "absolute top-0 left-0 w-full h-full")}
+          className={cn(
+            className,
+            "morf-gravity-fade-in absolute top-0 left-0 w-full h-full"
+          )}
           {...props}
         >
           {children}
