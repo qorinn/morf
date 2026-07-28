@@ -1,5 +1,5 @@
 ---
-import { Shield02Icon, ShieldKeyIcon } from "@hugeicons/core-free-icons";
+import { ShieldKeyIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 interface Props {
@@ -13,7 +13,7 @@ interface Props {
 const {
   items,
   title,
-  eyebrow = "Privacy by design",
+  eyebrow = "Adatvédelem",
   description,
   id = "adatvedelem",
 } = Astro.props;
@@ -27,46 +27,39 @@ const titleId = `${id}-title`;
 >
   <HugeiconsIcon
     icon={ShieldKeyIcon}
-    strokeWidth={0.65}
-    className="text-dark-section-accent pointer-events-none absolute top-1/2 left-[6%] size-72 -translate-y-1/2 opacity-[0.05] sm:right-[4%] sm:size-96 lg:right-[10%] lg:size-112"
+    strokeWidth={0.7}
+    className="text-dark-section-accent pointer-events-none absolute top-1/2 -right-32 size-96 -translate-y-1/2 rotate-[-7deg] opacity-[0.06] sm:-right-20 sm:size-[30rem] lg:right-[2%] lg:size-[36rem]"
     aria-hidden="true"
   />
 
   <div
-    class="relative mx-auto grid w-full max-w-7xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1fr)] lg:gap-16 lg:px-8"
+    class="relative mx-auto grid w-full max-w-7xl gap-12 px-4 py-20 sm:px-6 sm:py-24 lg:grid-cols-[minmax(20rem,0.86fr)_minmax(0,1fr)] lg:gap-20 lg:px-8 lg:py-28"
   >
-    <header class="max-w-xl">
+    <header class="max-w-2xl">
       <p class="text-dark-section-accent text-sm font-medium">{eyebrow}</p>
       <h2
         id={titleId}
-        class="text-dark-section-heading font-heading mt-2 text-3xl font-medium tracking-tight text-balance sm:text-4xl"
+        class="text-dark-section-heading font-heading mt-3 text-4xl font-semibold tracking-[-0.035em] text-balance sm:text-5xl"
       >
         {title}
       </h2>
       {
         description && (
-          <p class="text-dark-section-muted mt-4 max-w-lg leading-relaxed">
+          <p class="text-dark-section-muted mt-5 max-w-xl text-base leading-relaxed text-pretty sm:text-lg">
             {description}
           </p>
         )
       }
     </header>
 
-    <ul class="flex flex-col gap-5" role="list">
+    <ul
+      class="border-dark-section-border divide-dark-section-border flex flex-col divide-y border-y"
+      role="list"
+    >
       {
         items.map((item) => (
-          <li class="text-dark-section-muted flex items-start gap-3 leading-relaxed">
-            <span
-              class="morf-dark-icon-chip mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-2xl"
-              aria-hidden="true"
-            >
-              <HugeiconsIcon
-                icon={Shield02Icon}
-                strokeWidth={1.8}
-                className="size-4"
-              />
-            </span>
-            <span>{item}</span>
+          <li class="text-dark-section-muted py-5 text-base leading-relaxed sm:py-6 sm:text-lg">
+            <span class="block max-w-2xl text-pretty">{item}</span>
           </li>
         ))
       }

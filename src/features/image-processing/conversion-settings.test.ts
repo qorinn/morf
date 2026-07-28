@@ -64,6 +64,20 @@ test("a presetből önálló konvertálási beállítás készül", () => {
   });
 });
 
+test("az Általános preset veszteségmentes alapbeállítást készít", () => {
+  const settings = createConversionSettings("general");
+
+  assert.deepEqual(settings, {
+    presetId: "general",
+    outputFormat: "webp",
+    maxWidth: 1920,
+    maxHeight: 1920,
+    quality: 100,
+    maxFileSizeKb: null,
+    lossless: true,
+  });
+});
+
 test("a csoport beállításából érvényes feldolgozási recept készül", () => {
   const recipe = conversionSettingsToRecipe({
     presetId: "custom",

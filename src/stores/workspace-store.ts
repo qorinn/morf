@@ -94,7 +94,7 @@ function createDefaultGroup(): ConversionGroup {
     id: defaultConversionGroupId,
     name: "1. csoport",
     shouldProcess: true,
-    settings: createConversionSettings("website"),
+    settings: createConversionSettings("general"),
   };
 }
 
@@ -426,7 +426,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
         groups = [
           createGroup(
             nextGroupNumber,
-            createConversionSettings("website"),
+            createConversionSettings("general"),
             true,
           ),
         ];

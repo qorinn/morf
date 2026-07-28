@@ -3,6 +3,15 @@ import test from "node:test";
 
 import { imagePresets, imageRecipeSchema } from "./image-presets.ts";
 
+test("az Általános az első és veszteségmentes alapértelmezett preset", () => {
+  const general = imagePresets[0];
+
+  assert.equal(general.id, "general");
+  assert.equal(general.recipe.name, "Általános");
+  assert.equal(general.recipe.outputFormat, "webp");
+  assert.equal(general.recipe.lossless, true);
+});
+
 test("minden beépített preset megfelel a verziózott sémának", () => {
   for (const preset of imagePresets) {
     assert.equal(imageRecipeSchema.safeParse(preset.recipe).success, true);

@@ -85,7 +85,7 @@ const displayItems: Array<{
 }> = [
   {
     value: "standalone",
-    label: "Önálló alkalmazás — ajánlott",
+    label: "Önálló alkalmazás - ajánlott",
     description:
       "Saját alkalmazásablakban nyílik meg, böngésző címsor és navigáció nélkül.",
   },
@@ -175,7 +175,7 @@ export function FaviconExportPanel({
           </div>
           <HugeiconsIcon
             icon={PackageProcessIcon}
-            className="size-5 text-primary"
+            className="text-primary size-5"
             strokeWidth={2}
           />
         </div>
@@ -189,7 +189,7 @@ export function FaviconExportPanel({
               szükséges fájlok kerülnek a ZIP-be.
             </FieldDescription>
             <FieldGroup data-slot="checkbox-group" className="gap-3">
-              <FieldLabel className="morf-inset-panel cursor-pointer rounded-3xl border-border/70 transition-colors has-data-checked:border-primary/40 has-data-checked:bg-primary/5">
+              <FieldLabel className="border-border bg-card has-data-checked:border-primary/40 has-data-checked:bg-primary/5 cursor-pointer rounded-3xl border transition-colors">
                 <Field orientation="horizontal">
                   <Checkbox
                     checked={hasWebsite}
@@ -199,7 +199,7 @@ export function FaviconExportPanel({
                   />
                   <HugeiconsIcon
                     icon={ComputerIcon}
-                    className="mt-0.5 size-5 shrink-0 text-primary"
+                    className="text-primary mt-0.5 size-5 shrink-0"
                     strokeWidth={2}
                     aria-hidden="true"
                   />
@@ -213,7 +213,7 @@ export function FaviconExportPanel({
                 </Field>
               </FieldLabel>
 
-              <FieldLabel className="morf-inset-panel cursor-pointer rounded-3xl border-border/70 transition-colors has-data-checked:border-primary/40 has-data-checked:bg-primary/5">
+              <FieldLabel className="border-border bg-card has-data-checked:border-primary/40 has-data-checked:bg-primary/5 cursor-pointer rounded-3xl border transition-colors">
                 <Field orientation="horizontal">
                   <Checkbox
                     checked={hasWebApp}
@@ -223,7 +223,7 @@ export function FaviconExportPanel({
                   />
                   <HugeiconsIcon
                     icon={SmartPhone02Icon}
-                    className="mt-0.5 size-5 shrink-0 text-secondary-foreground"
+                    className="text-secondary-foreground mt-0.5 size-5 shrink-0"
                     strokeWidth={2}
                     aria-hidden="true"
                   />
@@ -240,7 +240,7 @@ export function FaviconExportPanel({
 
               <FieldLabel
                 data-disabled={!hasWebApp || undefined}
-                className="ml-5 cursor-pointer rounded-3xl border border-dashed border-border/80 bg-background/45 transition-colors has-data-checked:border-secondary/50 has-data-checked:bg-secondary/5 data-[disabled=true]:cursor-not-allowed data-[disabled=true]:opacity-60 sm:ml-8"
+                className="border-border/80 bg-background/45 has-data-checked:border-secondary/50 has-data-checked:bg-secondary/5 ml-5 cursor-pointer rounded-3xl border border-dashed transition-colors data-[disabled=true]:cursor-not-allowed data-[disabled=true]:opacity-60 sm:ml-8"
               >
                 <Field orientation="horizontal">
                   <Checkbox
@@ -455,7 +455,7 @@ export function FaviconExportPanel({
                     <Tooltip>
                       <TooltipTrigger
                         aria-label="A megjelenítési módok magyarázata"
-                        className="text-muted-foreground hover:text-foreground inline-flex size-6 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                        className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 inline-flex size-6 items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none"
                       >
                         <HugeiconsIcon
                           icon={CircleQuestionMarkIcon}

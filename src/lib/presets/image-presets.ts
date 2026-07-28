@@ -18,6 +18,7 @@ export const imageRecipeSchema = z.object({
 export type ImageRecipe = z.infer<typeof imageRecipeSchema>;
 
 export const presetIds = [
+  "general",
   "website",
   "webshop",
   "social",
@@ -34,6 +35,20 @@ export type ImagePreset = {
 };
 
 const rawPresets: ImagePreset[] = [
+  {
+    id: "general",
+    description: "Eredeti felbontású, veszteségmentes WebP kimenet.",
+    recipe: {
+      schemaVersion: 1,
+      name: "Általános",
+      outputFormat: "webp",
+      resize: { maxWidth: 1920, maxHeight: 1920, keepAspectRatio: true },
+      quality: 100,
+      maxFileSizeBytes: null,
+      lossless: true,
+      stripMetadata: true,
+    },
+  },
   {
     id: "website",
     description: "WebP kimenet, webes megjelenítéshez igazított méret.",

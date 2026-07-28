@@ -1,41 +1,20 @@
-import * as React from "react";
-import { Input as InputPrimitive } from "@base-ui/react/input";
-import { cva, type VariantProps } from "class-variance-authority";
+import * as React from "react"
+import { Input as InputPrimitive } from "@base-ui/react/input"
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"
 
-const inputVariants = cva(
-  "placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/25 aria-invalid:border-destructive aria-invalid:ring-destructive/20 h-9 w-full min-w-0 rounded-3xl border py-1 text-base transition-[color,box-shadow,background-color,border-color] outline-none focus-visible:ring-3 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-3 md:text-sm",
-  {
-    variants: {
-      variant: {
-        default:
-          "morf-control-surface border-border/60 px-3 file:text-foreground file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium",
-        inline:
-          "border-transparent bg-transparent px-1 font-heading text-base font-medium shadow-none hover:border-border/60 focus-visible:bg-background",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-    },
-  },
-);
-
-function Input({
-  className,
-  type,
-  variant = "default",
-  ...props
-}: React.ComponentProps<"input"> & VariantProps<typeof inputVariants>) {
+function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
     <InputPrimitive
       type={type}
       data-slot="input"
-      data-variant={variant}
-      className={cn(inputVariants({ variant }), className)}
+      className={cn(
+        "h-9 w-full min-w-0 rounded-3xl border border-transparent bg-input/50 px-3 py-1 text-base transition-[color,box-shadow,background-color] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
+        className
+      )}
       {...props}
     />
-  );
+  )
 }
 
-export { Input, inputVariants };
+export { Input }

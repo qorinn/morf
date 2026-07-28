@@ -5,14 +5,13 @@ import SiteHeader from "@/components/layout/SiteHeader.astro";
 import FaqSection from "@/components/sections/FaqSection.astro";
 import ImageConverterGuide from "@/components/sections/ImageConverterGuide.astro";
 import PrivacySection from "@/components/sections/PrivacySection.astro";
-import { Badge } from "@/components/ui/badge";
 import ToolHero from "@/components/sections/ToolHero.astro";
 import MainLayout from "@/layouts/main.astro";
 
 const privacyItems = [
-  "A kép dekódolása, az EXIF-orientáció alkalmazása, az átméretezés és a kiválasztott formátumba kódolás külön Web Workerben fut a saját böngésződben.",
-  "A preview-khoz ideiglenes Blob URL-ek készülnek. Ezeket Morf felszabadítja, amikor eltávolítod a fájlt vagy elhagyod az oldalt.",
-  "Nincs regisztráció, napi limit, fájlhoz kapcsolt analitika vagy szerveres képfeltöltés az aktív munkafelületen.",
+  "A konvertálás, az átméretezés és az optimalizálás a saját böngésződben történik.",
+  "Az előnézetek csak addig maradnak meg, amíg az oldalon dolgozol.",
+  "Nem kell regisztrálnod, a Morf pedig nem tölti fel vagy tárolja a fájljaidat.",
 ];
 
 const faqItems = [
@@ -153,81 +152,22 @@ const structuredData = {
 
   <main>
     <ToolHero
-      badge="JPG · PNG · WebP · AVIF · HEIC"
-      title="Online képkonvertáló több képhez."
-      description="Rendezd a JPG, PNG, WebP, AVIF vagy HEIC képeket külön konfigurációs csoportokba, majd konvertáld őket csoportonként eltérő formátummal, mérettel és minőséggel. A képek feldolgozása teljes egészében a böngésződben történik."
+      title="Multifunkciós képkonvertáló"
+      description="Konvertálj, méretezz át és optimalizálj több képet egyszerre. A csoportokhoz külön beállításokat adhatsz, a teljes feldolgozás pedig a böngésződben marad."
       primaryAction={{ href: "#workspace", label: "Képek konvertálása" }}
-      secondaryAction={{ href: "#hogyan-mukodik", label: "Hogyan működik?" }}
-      features={[
-        {
-          title: "Képek közvetlenül a megfelelő csoportba",
-          description:
-            "Dobj fájlokat bármelyik csoportkártyára, vagy húzz át meglévő képeket a fogantyúval más beállítások közé.",
-        },
-        {
-          title: "Célméret vagy veszteségmentes mód",
-          description:
-            "Kérj adott fájlméret alatti eredményt, vagy őrizd meg az eredeti felbontást veszteségmentes kódolással.",
-        },
-        {
-          title: "Privát feldolgozás és rugalmas mentés",
-          description:
-            "A képek a böngésződben maradnak, az eredmények pedig egyenként, kiválasztott helyre vagy ZIP-be menthetők.",
-        },
-      ]}
+      secondaryAction={{
+        href: "#konvertalas-utmutato",
+        label: "Hogyan működik?",
+      }}
     />
 
     <ImageWorkspace client:load />
 
     <ImageConverterGuide />
 
-    <section
-      id="hogyan-mukodik"
-      class="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-20 sm:px-6 lg:px-8"
-    >
-      <div class="max-w-2xl">
-        <p class="text-muted-foreground text-sm font-medium">Három lépés</p>
-        <h2
-          class="font-heading mt-2 text-3xl font-medium tracking-tight sm:text-4xl"
-        >
-          Három lépés a kész képekig
-        </h2>
-      </div>
-      <ol class="grid gap-8 md:grid-cols-3">
-        <li class="flex flex-col gap-3">
-          <Badge variant="outline">01</Badge>
-          <h3 class="font-heading text-xl font-medium">Add hozzá a képeket</h3>
-          <p class="text-muted-foreground">
-            Húzd a képeket közvetlenül a kívánt csoportkártyára, vagy tallózd be
-            őket annak feltöltési gombjával. Az Új csoport kártyára dobott
-            fájloknak a Morf új csoportot készít.
-          </p>
-        </li>
-        <li class="flex flex-col gap-3">
-          <Badge variant="outline">02</Badge>
-          <h3 class="font-heading text-xl font-medium">
-            Állítsd be a kimenetet
-          </h3>
-          <p class="text-muted-foreground">
-            Kattints egy csoportra, válassz felhasználási célt, formátumot,
-            méretet és minőséget. A képeket fogantyúval vagy kijelölés után
-            tömegesen is áthelyezheted.
-          </p>
-        </li>
-        <li class="flex flex-col gap-3">
-          <Badge variant="outline">03</Badge>
-          <h3 class="font-heading text-xl font-medium">Konvertálj és ments</h3>
-          <p class="text-muted-foreground">
-            Az alsó műveleti sávból indítsd el az összes bevont csoportot. A
-            kész képeket külön, választott mappába vagy ZIP-csomagba mentheted.
-          </p>
-        </li>
-      </ol>
-    </section>
-
     <PrivacySection
-      title="A konvertálás a böngésződben történik"
-      description="A kiválasztott képek nem kerülnek a Morf szerverére: a beolvasás, az átméretezés és az új fájl elkészítése is a saját eszközödön fut."
+      title="A képeid nálad maradnak"
+      description="A Morf a böngésződben dolgozza fel a képeket. Nem kell feltöltened őket, és nem kerülnek a Morf szerverére."
       items={privacyItems}
     />
 

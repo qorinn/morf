@@ -19,7 +19,6 @@ import { FaviconPreviews } from "@/components/favicon/FaviconPreviews";
 import { FaviconSettings } from "@/components/favicon/FaviconSettings";
 import { FileUploadDropzone } from "@/components/upload/FileUploadDropzone";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -478,7 +477,6 @@ export default function FaviconWorkspace() {
         aria-label="Favicon forráskép kiválasztása"
       />
       <div className="flex flex-col gap-2">
-        <Badge variant="secondary">Favicon workflow</Badge>
         <h2 className="font-heading text-3xl font-medium tracking-tight sm:text-4xl">
           Egy képből teljes ikoncsomag
         </h2>
@@ -504,57 +502,54 @@ export default function FaviconWorkspace() {
         />
       ) : (
         <>
-          <Card size="sm">
-            <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="morf-icon-orb flex size-11 shrink-0 items-center justify-center rounded-2xl text-secondary-foreground">
-                  <HugeiconsIcon
-                    icon={FileImageIcon}
-                    className="size-5"
-                    strokeWidth={2}
-                  />
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{source.file.name}</p>
-                  <p className="text-muted-foreground text-xs">
-                    {source.width} × {source.height} px ·{" "}
-                    {formatBytes(source.file.size)} ·{" "}
-                    {source.kind.toUpperCase()}
-                  </p>
-                </div>
+          <div className="border-border flex flex-col gap-4 border-y py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="morf-icon-orb text-secondary-foreground flex size-11 shrink-0 items-center justify-center rounded-2xl">
+                <HugeiconsIcon
+                  icon={FileImageIcon}
+                  className="size-5"
+                  strokeWidth={2}
+                />
+              </span>
+              <div className="min-w-0">
+                <p className="truncate font-medium">{source.file.name}</p>
+                <p className="text-muted-foreground text-xs">
+                  {source.width} × {source.height} px,{" "}
+                  {formatBytes(source.file.size)}, {source.kind.toUpperCase()}
+                </p>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={generating}
-                  onClick={open}
-                >
-                  <HugeiconsIcon
-                    icon={ImageUploadIcon}
-                    data-icon="inline-start"
-                    strokeWidth={2}
-                  />
-                  Másik kép
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  disabled={generating}
-                  onClick={removeSource}
-                >
-                  <HugeiconsIcon
-                    icon={Delete02Icon}
-                    data-icon="inline-start"
-                    strokeWidth={2}
-                  />
-                  Eltávolítás
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={generating}
+                onClick={open}
+              >
+                <HugeiconsIcon
+                  icon={ImageUploadIcon}
+                  data-icon="inline-start"
+                  strokeWidth={2}
+                />
+                Másik kép
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={generating}
+                onClick={removeSource}
+              >
+                <HugeiconsIcon
+                  icon={Delete02Icon}
+                  data-icon="inline-start"
+                  strokeWidth={2}
+                />
+                Eltávolítás
+              </Button>
+            </div>
+          </div>
 
           {warnings.length > 0 && (
             <Alert>

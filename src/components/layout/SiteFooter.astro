@@ -3,7 +3,15 @@
 >
   <div class="flex flex-col gap-1">
     <p>© {new Date().getFullYear()} Morf</p>
-    <p>Készítette: Paládi Webfejlesztés / Paládi Bálint</p>
+    <p>
+      Készítette:{" "}
+      <a
+        class="hover:text-foreground rounded-sm underline-offset-4 transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+        href="https://www.paladi-web.hu/"
+        rel="noreferrer"
+        target="_blank">Paládi Webfejlesztés</a
+      >
+    </p>
   </div>
 
   <nav class="flex flex-wrap gap-x-5 gap-y-2" aria-label="Lábléc navigáció">
@@ -13,6 +21,10 @@
     >
     <a class="hover:text-foreground transition-colors" href="/favicon-generator"
       >Favicon generátor</a
+    >
+    <a
+      class="hover:text-foreground transition-colors"
+      href="/adatvedelmi-tajekoztato">Adatvédelem</a
     >
   </nav>
 </footer>

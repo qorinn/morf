@@ -1,5 +1,4 @@
 ---
-import PageBackground from "@/components/layout/PageBackground.astro";
 import "../styles/global.css";
 
 interface Props {
@@ -8,14 +7,16 @@ interface Props {
   content?: { title?: string };
   canonicalPath?: string;
   structuredData?: Record<string, unknown>;
+  robots?: string;
 }
 
 const {
   content,
   title: titleProp,
-  description = "Morf – helyi, célalapú képfeldolgozás a böngészőben.",
+  description = "Morf - helyi, célalapú képfeldolgozás a böngészőben.",
   canonicalPath = Astro.url.pathname,
   structuredData,
+  robots = "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
 } = Astro.props;
 const title = titleProp ?? content?.title ?? "Morf";
 const canonicalUrl = Astro.site
@@ -33,11 +34,9 @@ const structuredDataJson = structuredData
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" />
     <link rel="canonical" href={canonicalUrl} />
+    {Astro.site && <link rel="sitemap" href="/sitemap-index.xml" />}
     <meta name="description" content={description} />
-    <meta
-      name="robots"
-      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
-    />
+    <meta name="robots" content={robots} />
     <meta name="author" content="Paládi Bálint" />
     <meta name="application-name" content="Morf" />
     <meta property="og:type" content="website" />
@@ -60,12 +59,15 @@ const structuredDataJson = structuredData
     <title>{title}</title>
     {
       structuredDataJson && (
-        <script is:inline type="application/ld+json" set:html={structuredDataJson} />
+        <script
+          is:inline
+          type="application/ld+json"
+          set:html={structuredDataJson}
+        />
       )
     }
   </head>
   <body class="relative isolate min-h-screen overflow-x-clip antialiased">
-    <PageBackground />
     <slot />
   </body>
 </html>

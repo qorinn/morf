@@ -13,8 +13,8 @@
   --card-foreground: oklch(0.235 0.035 174);
   --popover: oklch(0.995 0.004 169);
   --popover-foreground: oklch(0.235 0.035 174);
-  --primary: oklch(0.79 0.115 166);
-  --primary-foreground: oklch(0.205 0.045 174);
+  --primary: oklch(0.48 0.1 171);
+  --primary-foreground: oklch(0.985 0.008 169);
   --secondary: oklch(0.948 0.035 292);
   --secondary-foreground: oklch(0.31 0.09 289);
   --muted: oklch(0.958 0.014 174);
@@ -41,20 +41,10 @@
   --sidebar-border: oklch(0.89 0.025 169);
   --sidebar-ring: oklch(0.62 0.18 289);
 
-  --primary-highlight: oklch(0.9 0.085 166);
-  --primary-shadow: oklch(0.68 0.13 166);
-  --primary-deep: oklch(0.57 0.105 171);
   --surface-highlight: oklch(1 0 0 / 0.92);
-  --surface-mid: oklch(0.982 0.012 169);
+  --surface-subtle: rgb(240, 244, 242);
   --surface-shadow: oklch(0.935 0.03 169);
   --shadow-tint: oklch(0.42 0.07 172 / 0.14);
-  --shadow-tint-soft: oklch(0.42 0.06 172 / 0.08);
-  --ambient-mint: oklch(0.86 0.09 166 / 0.28);
-  --ambient-mint-soft: oklch(0.9 0.06 166 / 0.18);
-  --secondary-highlight: oklch(0.975 0.025 292);
-  --secondary-shadow: oklch(0.875 0.095 292);
-  --secondary-shadow-tint: oklch(0.43 0.13 289 / 0.13);
-  --ambient-violet: oklch(0.82 0.12 292 / 0.16);
   --dark-section: oklch(0.225 0.055 174);
   --dark-section-foreground: oklch(0.94 0.014 169);
   --dark-section-heading: oklch(0.925 0.04 292);
@@ -62,73 +52,9 @@
   --dark-section-accent: oklch(0.81 0.105 166);
   --dark-section-border: oklch(0.62 0.08 169 / 0.28);
 
-  --gradient-primary:
-    radial-gradient(
-      110% 120% at 18% 0%,
-      var(--primary-highlight) 0%,
-      transparent 48%
-    ),
-    linear-gradient(145deg, var(--primary) 18%, var(--primary-shadow) 100%);
-  --gradient-primary-hover:
-    radial-gradient(
-      120% 130% at 12% -8%,
-      oklch(0.94 0.07 166) 0%,
-      transparent 48%
-    ),
-    linear-gradient(
-      145deg,
-      var(--primary-highlight) 8%,
-      var(--primary-shadow) 100%
-    );
-  --gradient-surface:
-    radial-gradient(
-      100% 85% at 8% 0%,
-      var(--surface-highlight) 0%,
-      #ffffff69 58%
-    ),
-    linear-gradient(
-      155deg,
-      var(--card) 20%,
-      var(--surface-mid) 64%,
-      var(--surface-shadow) 125%
-    );
-  --gradient-control: linear-gradient(
-    180deg,
-    var(--surface-highlight) 0%,
-    var(--surface-mid) 52%,
-    var(--surface-shadow) 135%
-  );
-  --gradient-soft-secondary:
-    radial-gradient(
-      120% 130% at 14% -20%,
-      var(--secondary-highlight) 0%,
-      transparent 48%
-    ),
-    linear-gradient(
-      145deg,
-      var(--secondary) 12%,
-      var(--accent) 68%,
-      var(--secondary-shadow) 125%
-    );
-  --shadow-primary:
-    inset 0 1px 0 oklch(1 0 0 / 0.62),
-    inset 0 -1px 0 oklch(0.38 0.09 171 / 0.2),
-    0 0.35rem 0.85rem oklch(0.5 0.105 168 / 0.2),
-    0 0.1rem 0.2rem oklch(0.35 0.06 171 / 0.16);
-  --shadow-primary-hover:
-    inset 0 1px 0 oklch(1 0 0 / 0.75),
-    inset 0 -1px 0 oklch(0.38 0.09 171 / 0.22),
-    0 0.65rem 1.35rem oklch(0.5 0.105 168 / 0.25),
-    0 0.12rem 0.25rem oklch(0.35 0.06 171 / 0.14);
   --shadow-surface:
     inset 0 1px 0 var(--surface-highlight),
-    inset 0 -1px 0 oklch(0.53 0.07 169 / 0.08),
-    0 1.1rem 3rem var(--shadow-tint-soft),
-    0 0.18rem 0.5rem oklch(0.36 0.045 174 / 0.06);
-  --shadow-control:
-    inset 0 1px 0 oklch(1 0 0 / 0.86),
-    inset 0 0.12rem 0.3rem oklch(0.42 0.055 171 / 0.08),
-    0 1px 0 oklch(1 0 0 / 0.8);
+    inset 0 -1px 0 oklch(0.53 0.07 169 / 0.08);
 }
 
 .dark {
@@ -164,20 +90,10 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.72 0.16 289);
 
-  --primary-highlight: oklch(0.82 0.105 166);
-  --primary-shadow: oklch(0.61 0.11 169);
-  --primary-deep: oklch(0.5 0.095 171);
   --surface-highlight: oklch(1 0 0 / 0.09);
-  --surface-mid: oklch(0.25 0.035 174);
+  --surface-subtle: oklch(0.19 0.006 235);
   --surface-shadow: oklch(0.205 0.034 174);
   --shadow-tint: oklch(0.05 0.02 174 / 0.35);
-  --shadow-tint-soft: oklch(0.05 0.02 174 / 0.22);
-  --ambient-mint: oklch(0.66 0.11 166 / 0.13);
-  --ambient-mint-soft: oklch(0.66 0.08 166 / 0.08);
-  --secondary-highlight: oklch(0.48 0.11 289);
-  --secondary-shadow: oklch(0.25 0.085 289);
-  --secondary-shadow-tint: oklch(0.08 0.04 289 / 0.32);
-  --ambient-violet: oklch(0.62 0.15 289 / 0.1);
   --dark-section: oklch(0.15 0.04 174);
   --dark-section-foreground: oklch(0.95 0.014 169);
   --dark-section-heading: oklch(0.92 0.045 292);
@@ -220,6 +136,7 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+  --color-surface-subtle: var(--surface-subtle);
   --color-dark-section: var(--dark-section);
   --color-dark-section-foreground: var(--dark-section-foreground);
   --color-dark-section-heading: var(--dark-section-heading);
@@ -242,13 +159,6 @@
 
   body {
     @apply bg-background text-foreground min-h-screen;
-    background-image:
-      linear-gradient(oklch(0.45 0.04 172 / 0.018) 1px, transparent 1px),
-      linear-gradient(90deg, oklch(0.45 0.04 172 / 0.018) 1px, transparent 1px);
-    background-attachment: fixed;
-    background-size:
-      3rem 3rem,
-      3rem 3rem;
   }
 
   button:not(:disabled),
@@ -261,10 +171,106 @@
   }
 }
 
+#siteHeader {
+  background-color: var(--card);
+}
+
 @layer components {
   .morf-card-surface {
-    background: var(--gradient-surface);
-    box-shadow: var(--shadow-surface);
+    background: var(--card);
+    box-shadow: none;
+  }
+
+  .morf-dark-card {
+    color: var(--dark-section-foreground);
+    background:
+      radial-gradient(
+        46rem 25rem at 92% -18%,
+        oklch(0.51 0.15 289 / 0.28),
+        transparent 68%
+      ),
+      radial-gradient(
+        42rem 26rem at 4% 118%,
+        oklch(0.55 0.11 166 / 0.24),
+        transparent 70%
+      ),
+      linear-gradient(
+        155deg,
+        oklch(0.27 0.065 174) 0%,
+        var(--dark-section) 52%,
+        oklch(0.18 0.045 174) 100%
+      );
+    box-shadow:
+      inset 0 1px 0 oklch(0.88 0.07 166 / 0.13),
+      inset 0 -1px 0 oklch(0.06 0.03 174 / 0.4);
+  }
+
+  .morf-dark-card [data-slot="card-description"],
+  .morf-dark-card .text-muted-foreground {
+    color: var(--dark-section-muted);
+  }
+
+  .morf-benefit-card {
+    box-shadow:
+      inset 0 1px 0 var(--surface-highlight),
+      inset 0 -1px 0 color-mix(in oklch, var(--primary) 10%, transparent);
+  }
+
+  .morf-benefit-card-mint {
+    background:
+      radial-gradient(
+        42rem 25rem at 96% -12%,
+        color-mix(in oklch, var(--primary) 20%, transparent),
+        transparent 70%
+      ),
+      linear-gradient(
+        150deg,
+        var(--card),
+        color-mix(in oklch, var(--primary) 10%, var(--card))
+      );
+  }
+
+  .morf-benefit-card-violet {
+    background:
+      radial-gradient(
+        40rem 26rem at 98% 8%,
+        color-mix(in oklch, var(--ring) 17%, transparent),
+        transparent 72%
+      ),
+      linear-gradient(
+        145deg,
+        var(--secondary),
+        color-mix(in oklch, var(--accent) 28%, var(--card))
+      );
+  }
+
+  .morf-benefit-card-soft {
+    background:
+      radial-gradient(
+        38rem 24rem at 94% 110%,
+        color-mix(in oklch, var(--primary) 15%, transparent),
+        transparent 72%
+      ),
+      linear-gradient(150deg, var(--muted), var(--card));
+  }
+
+  .morf-benefit-card-wash {
+    background:
+      radial-gradient(
+        42rem 25rem at 98% -8%,
+        color-mix(in oklch, var(--ring) 15%, transparent),
+        transparent 72%
+      ),
+      linear-gradient(
+        150deg,
+        var(--card),
+        color-mix(in oklch, var(--accent) 34%, var(--card))
+      );
+  }
+
+  .morf-section-normal {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
   }
 
   .morf-dnd-drag-source > [data-slot="card"] {
@@ -348,103 +354,24 @@
   }
 
   .morf-control-surface {
-    background: var(--gradient-control);
-    box-shadow: var(--shadow-control);
-  }
-
-  .morf-button-primary {
-    background: var(--gradient-primary);
-    box-shadow: var(--shadow-primary);
-  }
-
-  .morf-button-primary:hover {
-    background: var(--gradient-primary-hover);
-    box-shadow: var(--shadow-primary-hover);
-  }
-
-  .morf-button-primary:active {
-    box-shadow:
-      inset 0 0.18rem 0.42rem oklch(0.36 0.08 171 / 0.24),
-      inset 0 1px 0 oklch(1 0 0 / 0.32),
-      0 0.12rem 0.28rem oklch(0.35 0.06 171 / 0.14);
-  }
-
-  .morf-soft-secondary {
-    background: var(--gradient-soft-secondary);
-    box-shadow:
-      inset 0 1px 0 var(--surface-highlight),
-      inset 0 -1px 0 oklch(0.38 0.13 289 / 0.13),
-      0 0.2rem 0.6rem var(--secondary-shadow-tint);
+    background: var(--card);
+    box-shadow: none;
   }
 
   .morf-popover-surface {
-    background: var(--gradient-surface);
-    box-shadow:
-      inset 0 1px 0 var(--surface-highlight),
-      0 1rem 2.5rem var(--shadow-tint);
+    background: var(--popover);
+    box-shadow: 0 1rem 2.5rem var(--shadow-tint);
   }
 
   .morf-alert-surface {
-    background:
-      radial-gradient(
-        85% 150% at 0% 0%,
-        var(--ambient-mint-soft),
-        transparent 62%
-      ),
-      var(--gradient-surface);
+    background: var(--card);
     box-shadow:
       inset 0 1px 0 var(--surface-highlight),
-      inset 0 0 0 1px oklch(0.56 0.085 169 / 0.1),
-      0 0.6rem 1.6rem var(--shadow-tint-soft);
-  }
-
-  .morf-inset-track {
-    background: linear-gradient(
-      180deg,
-      var(--surface-shadow),
-      var(--surface-mid)
-    );
-    box-shadow:
-      inset 0 0.14rem 0.32rem oklch(0.38 0.055 171 / 0.16),
-      0 1px 0 var(--surface-highlight);
-  }
-
-  .morf-gloss-indicator {
-    background: var(--gradient-primary);
-    box-shadow:
-      inset 0 1px 0 oklch(1 0 0 / 0.55),
-      inset 0 -1px 0 oklch(0.35 0.08 171 / 0.2),
-      0 0 0.65rem oklch(0.66 0.12 166 / 0.28);
-  }
-
-  .morf-gloss-thumb {
-    background: radial-gradient(
-      circle at 35% 20%,
-      oklch(1 0 0),
-      var(--primary-highlight) 38%,
-      var(--primary) 100%
-    );
-    box-shadow:
-      inset 0 1px 0 oklch(1 0 0 / 0.9),
-      inset 0 -1px 0 oklch(0.38 0.08 171 / 0.16),
-      0 0.22rem 0.55rem var(--shadow-tint);
-  }
-
-  .morf-toggle-active[aria-pressed="true"],
-  .morf-toggle-active[data-state="on"] {
-    color: var(--primary-foreground);
-    background: var(--gradient-primary);
-    box-shadow: var(--shadow-primary);
+      inset 0 0 0 1px oklch(0.56 0.085 169 / 0.1);
   }
 
   .morf-inset-panel {
-    background:
-      radial-gradient(
-        100% 90% at 10% 0%,
-        var(--surface-highlight),
-        #ffffff69 58%
-      ),
-      linear-gradient(155deg, var(--muted), var(--surface-mid));
+    background: var(--muted);
     box-shadow:
       inset 0 0.16rem 0.46rem oklch(0.39 0.055 171 / 0.11),
       inset 0 -1px 0 var(--surface-highlight),
@@ -452,27 +379,12 @@
   }
 
   .morf-icon-orb {
-    background:
-      radial-gradient(
-        circle at 28% 14%,
-        var(--secondary-highlight),
-        transparent 42%
-      ),
-      linear-gradient(145deg, var(--secondary), var(--accent));
-    box-shadow:
-      inset 0 1px 0 oklch(1 0 0 / 0.72),
-      inset 0 -1px 0 oklch(0.38 0.13 289 / 0.16),
-      0 0.5rem 1.2rem var(--secondary-shadow-tint);
+    background: var(--secondary);
+    box-shadow: none;
   }
 
   .morf-dropzone {
-    background:
-      radial-gradient(
-        48rem 22rem at 50% -20%,
-        var(--ambient-mint),
-        transparent 68%
-      ),
-      var(--gradient-surface);
+    background: var(--card);
     box-shadow:
       inset 0 1px 0 var(--surface-highlight),
       inset 0 0 0.75rem oklch(0.48 0.07 171 / 0.045);
@@ -514,8 +426,6 @@
       scroll-behavior: auto;
     }
 
-    .morf-button-primary,
-    .morf-control-surface,
     [data-slot="progress-indicator"] {
       transition-duration: 0.01ms;
     }

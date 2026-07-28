@@ -1,0 +1,200 @@
+---
+import SiteFooter from "@/components/layout/SiteFooter.astro";
+import SiteHeader from "@/components/layout/SiteHeader.astro";
+import MainLayout from "@/layouts/main.astro";
+
+const updatedAt = "2026. július 28.";
+---
+
+<MainLayout
+  title="Adatvédelmi tájékoztató - Morf"
+  description="A Morf adatvédelmi tájékoztatója a helyi fájlfeldolgozásról, a technikai adatokról és a jogaidról."
+  canonicalPath="/adatvedelmi-tajekoztato"
+>
+  <SiteHeader active="privacy" />
+
+  <main>
+    <article class="morf-section-normal">
+      <header
+        class="mx-auto w-full max-w-5xl px-4 pt-20 pb-14 sm:px-6 sm:pt-24 sm:pb-16 lg:px-8 lg:pt-28"
+      >
+        <p class="text-primary text-sm font-medium">Adatvédelem</p>
+        <h1
+          class="font-heading mt-3 max-w-4xl text-4xl font-semibold tracking-[-0.04em] text-balance sm:text-5xl lg:text-6xl"
+        >
+          Adatvédelmi tájékoztató
+        </h1>
+        <p
+          class="text-muted-foreground mt-6 max-w-3xl text-lg leading-relaxed text-pretty sm:text-xl"
+        >
+          A Morf úgy készült, hogy a fájljaid feldolgozásához ne kelljen
+          feltöltened őket egy szerverre. Ezen az oldalon egyszerűen
+          összefoglaljuk, mi történik az adataiddal a használat során.
+        </p>
+        <p class="text-muted-foreground mt-5 text-sm">
+          Utolsó frissítés: {updatedAt}
+        </p>
+      </header>
+
+      <div
+        class="mx-auto w-full max-w-5xl px-4 pb-20 sm:px-6 sm:pb-24 lg:px-8 lg:pb-28"
+      >
+        <div
+          class="border-border bg-muted/45 mb-14 rounded-2xl border px-5 py-5 sm:px-6"
+        >
+          <p class="max-w-3xl text-base leading-relaxed sm:text-lg">
+            <strong class="font-semibold">Röviden:</strong> a kiválasztott képek a
+            saját eszközödön maradnak. A Morf jelenleg nem használ látogatottságmérést,
+            marketing sütiket, felhasználói fiókot vagy hirdetési profilalkotást.
+          </p>
+        </div>
+
+        <div class="divide-border divide-y border-y">
+          <section
+            class="grid gap-5 py-10 md:grid-cols-[15rem_minmax(0,1fr)] md:gap-12"
+          >
+            <h2 class="font-heading text-2xl font-semibold tracking-tight">
+              Ki kezeli az adatokat?
+            </h2>
+            <div class="text-muted-foreground space-y-4 leading-relaxed">
+              <p>
+                A Morf üzemeltetője a <strong
+                  class="text-foreground font-medium"
+                  >Paládi Webfejlesztés</strong
+                >.
+              </p>
+              <p>
+                Adatvédelmi kérdéssel vagy kéréssel a{" "}
+                <a
+                  class="text-foreground font-medium underline underline-offset-4"
+                  href="mailto:hello@paladi-web.hu">hello@paladi-web.hu</a
+                >
+                {" "}címen léphetsz kapcsolatba velünk.
+              </p>
+            </div>
+          </section>
+
+          <section
+            class="grid gap-5 py-10 md:grid-cols-[15rem_minmax(0,1fr)] md:gap-12"
+          >
+            <h2 class="font-heading text-2xl font-semibold tracking-tight">
+              A fájljaid feldolgozása
+            </h2>
+            <div class="text-muted-foreground space-y-4 leading-relaxed">
+              <p>
+                Amikor képet választasz ki, a konvertálás, átméretezés,
+                optimalizálás, előnézet és fájlkészítés a böngésződben történik.
+                A Morf nem tölti fel a kiválasztott fájlokat a szerverére.
+              </p>
+              <p>
+                Az ideiglenes előnézetek csak a böngésző aktuális munkamenetében
+                léteznek. Az oldal bezárásakor vagy újratöltésekor eltűnnek,
+                hacsak a kész fájlokat te magad nem mented el.
+              </p>
+            </div>
+          </section>
+
+          <section
+            class="grid gap-5 py-10 md:grid-cols-[15rem_minmax(0,1fr)] md:gap-12"
+          >
+            <h2 class="font-heading text-2xl font-semibold tracking-tight">
+              Technikai adatok
+            </h2>
+            <div class="text-muted-foreground space-y-4 leading-relaxed">
+              <p>
+                Mint minden weboldalnál, a tárhelyszolgáltató a kiszolgálás és a
+                biztonság érdekében technikai naplóadatokat kezelhet. Ilyen
+                lehet például az IP-cím, a megnyitott oldal címe, a látogatás
+                időpontja, a böngésző típusa és az esetleges hibák adata.
+              </p>
+              <p>
+                Ezek kezelésének célja az oldal megbízható és biztonságos
+                működtetése. Ennek jogalapja az üzemeltető jogos érdeke. A
+                naplóadatokat nem használjuk hirdetésre vagy látogatói profil
+                készítésére.
+              </p>
+            </div>
+          </section>
+
+          <section
+            class="grid gap-5 py-10 md:grid-cols-[15rem_minmax(0,1fr)] md:gap-12"
+          >
+            <h2 class="font-heading text-2xl font-semibold tracking-tight">
+              Sütik és mérőkódok
+            </h2>
+            <div class="text-muted-foreground space-y-4 leading-relaxed">
+              <p>
+                A Morf jelenlegi verziója nem használ analitikai vagy marketing
+                sütiket, és nem futtat látogatottságmérő vagy hirdetési kódot.
+              </p>
+              <p>
+                Ha ez később megváltozik, előbb frissítjük ezt a tájékoztatót,
+                és ahol szükséges, a hozzájárulásodat is kérjük.
+              </p>
+            </div>
+          </section>
+
+          <section
+            class="grid gap-5 py-10 md:grid-cols-[15rem_minmax(0,1fr)] md:gap-12"
+          >
+            <h2 class="font-heading text-2xl font-semibold tracking-tight">
+              Külső oldalak
+            </h2>
+            <div class="text-muted-foreground space-y-4 leading-relaxed">
+              <p>
+                Az oldalon külső webhelyekre mutató linkek is lehetnek. Ezek
+                megnyitása után már az adott webhely saját adatvédelmi szabályai
+                érvényesek.
+              </p>
+            </div>
+          </section>
+
+          <section
+            class="grid gap-5 py-10 md:grid-cols-[15rem_minmax(0,1fr)] md:gap-12"
+          >
+            <h2 class="font-heading text-2xl font-semibold tracking-tight">
+              A jogaid
+            </h2>
+            <div class="text-muted-foreground space-y-4 leading-relaxed">
+              <p>
+                Kérhetsz tájékoztatást a rólad kezelt személyes adatokról,
+                valamint kérheted azok helyesbítését, törlését vagy kezelésük
+                korlátozását. Tiltakozhatsz a jogos érdeken alapuló adatkezelés
+                ellen, és az adott helyzettől függően az adathordozhatóság joga
+                is megillethet.
+              </p>
+              <p>
+                Ha úgy gondolod, hogy az adatkezelés nem megfelelő, panaszt
+                tehetsz a{" "}
+                <a
+                  class="text-foreground font-medium underline underline-offset-4"
+                  href="https://www.naih.hu/"
+                  rel="noreferrer"
+                  target="_blank"
+                  >Nemzeti Adatvédelmi és Információszabadság Hatóságnál (NAIH)</a
+                >,{" "}vagy bírósághoz fordulhatsz.
+              </p>
+            </div>
+          </section>
+
+          <section
+            class="grid gap-5 py-10 md:grid-cols-[15rem_minmax(0,1fr)] md:gap-12"
+          >
+            <h2 class="font-heading text-2xl font-semibold tracking-tight">
+              A tájékoztató változásai
+            </h2>
+            <div class="text-muted-foreground space-y-4 leading-relaxed">
+              <p>
+                Ha a Morf működése vagy az adatkezelés módja változik, ezt az
+                oldalt is frissítjük. A legújabb változat dátumát mindig az
+                oldal tetején találod.
+              </p>
+            </div>
+          </section>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <SiteFooter />
+</MainLayout>

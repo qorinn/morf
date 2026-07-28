@@ -4,7 +4,7 @@ import minimalLogo from "@/assets/brand/morf-logo-minimal.svg";
 import { buttonVariants } from "@/components/ui/button";
 
 interface Props {
-  active?: "home" | "converter" | "favicon";
+  active?: "home" | "converter" | "favicon" | "privacy" | null;
   actionHref?: string;
   actionLabel?: string;
   actionShortLabel?: string;
@@ -23,10 +23,10 @@ const navItems = [
 ] as const;
 ---
 
-<header>
+<header id="siteHeader">
   <div class="border-b bg-secondary/60 text-secondary-foreground">
     <p
-      class="mx-auto flex min-h-8 w-full max-w-7xl items-center justify-center gap-2 px-4 py-1.5 text-center text-xs leading-4 sm:px-6 lg:px-8"
+      class="mx-auto flex h-8 max-h-8 overflow-hidden w-full max-w-7xl items-center justify-center gap-2 px-4 text-center text-xs leading-4 sm:px-6 lg:px-8"
     >
       <span
         class="inline-block size-1.5 shrink-0 rounded-full bg-secondary-foreground"
@@ -40,7 +40,7 @@ const navItems = [
   </div>
 
   <nav
-    class="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-5 sm:px-6 lg:px-8"
+    class="mx-auto flex w-full max-w-7xl items-center justify-between px-4 pt-5 sm:px-6 lg:px-8"
     aria-label="Fő navigáció"
   >
     <a
@@ -73,7 +73,7 @@ const navItems = [
               href={item.href}
               aria-current={active === item.key ? "page" : undefined}
               class={buttonVariants({
-                variant: active === item.key ? "secondary" : "ghost",
+                variant: active === item.key ? "outline" : "ghost",
                 size: "sm",
               })}
             >
@@ -87,7 +87,7 @@ const navItems = [
         actionHref && actionLabel && (
           <a
             href={actionHref}
-            class={buttonVariants({ variant: "outline", size: "sm" })}
+            class={buttonVariants({ variant: "ghost", size: "sm" })}
           >
             <span class="sm:hidden">{actionShortLabel}</span>
             <span class="hidden sm:inline">{actionLabel}</span>
