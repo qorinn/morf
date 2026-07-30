@@ -191,6 +191,10 @@
     animation: morf-gravity-fade-in 600ms 200ms ease-out forwards;
   }
 
+  .morf-page-heading {
+    font-size: clamp(2.75rem, 12vw, 3.25rem);
+  }
+
   .morf-card-surface {
     background: var(--card);
     box-shadow: none;
