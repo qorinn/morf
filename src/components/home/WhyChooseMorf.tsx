@@ -26,7 +26,7 @@ const benefits = [
     title: "Nincs napi limit",
     description: [
       "Nem kapsz napi fájlszámlálót, és nem kell megvárnod, hogy újra használhasd az eszközt.",
-      "Annyi fájllal dolgozhatsz, amennyit a telefonod vagy a számítógéped biztonságosan elbír.",
+      "Annyi fájllal dolgozhatsz, amennyit a telefonod vagy a számítógéped biztonságosan tud kezelni.",
     ],
     icon: Infinity01Icon,
     surfaceClassName:
@@ -38,7 +38,7 @@ const benefits = [
     title: "Folyamatosan bővülő eszköztár",
     description: [
       "A Morf nem egyetlen feladatra készül. Új, hétköznapi böngészős eszközökkel bővül.",
-      "A cél mindig ugyanaz: nyisd meg, végezd el a feladatot, és töltsd le az eredményt.",
+      "A cél mindig ugyanaz: nyisd meg, végezd el a feladatot, és voilà.",
     ],
     icon: ToolCaseIcon,
     surfaceClassName:
@@ -61,8 +61,8 @@ const benefits = [
   {
     title: "A fájljaid privátak",
     description: [
-      "A képeid feldolgozása a saját böngésződben történik. A fájlok nem kerülnek a Morf szerverére.",
-      "A munkád helyben marad, a kész eredményt pedig közvetlenül te töltöd le.",
+      "A fájljaid feldolgozása a saját böngésződben történik és nem kerülnek a Morf szerverére.",
+      "A munka helyben végződik és a letöltések is biztonságosak.",
     ],
     icon: FileLockedIcon,
     surfaceClassName: "morf-dark-card text-dark-section-foreground",
@@ -73,7 +73,7 @@ const benefits = [
     title: "Telepítés nélkül",
     description: [
       "Nem kell programot telepítened vagy fiókot létrehoznod.",
-      "Nyisd meg a megfelelő eszközt egy modern böngészőben, és már kezdheted is.",
+      "Nyisd meg a választott eszközt egy modern böngészőben, és már kezdheted is.",
     ],
     icon: LaptopRemoveIcon,
     surfaceClassName:

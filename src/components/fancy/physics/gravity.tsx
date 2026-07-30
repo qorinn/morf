@@ -123,10 +123,11 @@ export const MatterBody = ({
         top: typeof y === "number" ? `${y}px` : y,
         transform: `translate(-50%, -50%) rotate(${angle}deg)`,
       }}
+      data-matter-draggable={isDraggable ? "true" : undefined}
       className={cn(
         "absolute",
         className,
-        isDraggable && "pointer-events-none"
+        isDraggable && "touch-none select-none"
       )}
     >
       {children}
@@ -157,6 +158,8 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
     const frameId = useRef<number>(undefined)
     const mouseConstraint = useRef<Matter.MouseConstraint>(undefined)
     const mouseDown = useRef(false)
+    const lastCanvasWidth = useRef(0)
+    const removeInputListeners = useRef<(() => void) | undefined>(undefined)
     const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 })
 
     const isRunning = useRef(false)
@@ -258,6 +261,7 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
 
       const height = canvas.current.offsetHeight
       const width = canvas.current.offsetWidth
+      lastCanvasWidth.current = width
 
       engine.current.gravity.x = gravity.x
       engine.current.gravity.y = gravity.y
@@ -273,14 +277,110 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
         },
       })
 
-      const mouse = Mouse.create(render.current.canvas)
-      const mouseWithWheelHandler = mouse as Matter.Mouse & {
+      const inputElement = canvas.current
+      const mouse = Mouse.create(inputElement)
+      const mouseWithEventHandlers = mouse as Matter.Mouse & {
         mousewheel: EventListener
+        mousemove: EventListener
+        mousedown: EventListener
+        mouseup: EventListener
       }
-      render.current.canvas.removeEventListener(
-        "wheel",
-        mouseWithWheelHandler.mousewheel
+      const renderCanvas = render.current.canvas
+
+      inputElement.removeEventListener(
+        "mousemove",
+        mouseWithEventHandlers.mousemove
       )
+      inputElement.removeEventListener(
+        "mousedown",
+        mouseWithEventHandlers.mousedown
+      )
+      inputElement.removeEventListener("mouseup", mouseWithEventHandlers.mouseup)
+      inputElement.removeEventListener(
+        "wheel",
+        mouseWithEventHandlers.mousewheel
+      )
+      inputElement.removeEventListener(
+        "touchmove",
+        mouseWithEventHandlers.mousemove
+      )
+      inputElement.removeEventListener(
+        "touchstart",
+        mouseWithEventHandlers.mousedown
+      )
+      inputElement.removeEventListener(
+        "touchend",
+        mouseWithEventHandlers.mouseup
+      )
+
+      let isMouseDragging = false
+      let isTouchDragging = false
+
+      const startedOnDraggableBody = (target: EventTarget | null) =>
+        target instanceof Element &&
+        Boolean(target.closest('[data-matter-draggable="true"]'))
+
+      const handleMouseMove: EventListener = (event) => {
+        mouseWithEventHandlers.mousemove(event)
+      }
+      const handleMouseDown: EventListener = (event) => {
+        if (!startedOnDraggableBody(event.target)) return
+        isMouseDragging = true
+        mouseWithEventHandlers.mousedown(event)
+      }
+      const handleMouseUp: EventListener = (event) => {
+        if (!isMouseDragging) return
+        isMouseDragging = false
+        mouseWithEventHandlers.mouseup(event)
+      }
+      const handleTouchStart: EventListener = (event) => {
+        if (!startedOnDraggableBody(event.target)) return
+        isTouchDragging = true
+        mouseWithEventHandlers.mousedown(event)
+      }
+      const handleTouchMove: EventListener = (event) => {
+        if (!isTouchDragging) return
+        mouseWithEventHandlers.mousemove(event)
+      }
+      const handleTouchEnd: EventListener = (event) => {
+        if (!isTouchDragging) return
+        isTouchDragging = false
+        mouseWithEventHandlers.mouseup(event)
+      }
+
+      inputElement.addEventListener("mousemove", handleMouseMove, {
+        passive: true,
+      })
+      inputElement.addEventListener("mousedown", handleMouseDown, {
+        passive: true,
+      })
+      inputElement.addEventListener("mouseup", handleMouseUp, {
+        passive: true,
+      })
+      inputElement.addEventListener("touchstart", handleTouchStart, {
+        passive: false,
+      })
+      inputElement.addEventListener("touchmove", handleTouchMove, {
+        passive: false,
+      })
+      inputElement.addEventListener("touchend", handleTouchEnd, {
+        passive: false,
+      })
+      inputElement.addEventListener("touchcancel", handleTouchEnd, {
+        passive: false,
+      })
+
+      removeInputListeners.current = () => {
+        inputElement.removeEventListener("mousemove", handleMouseMove)
+        inputElement.removeEventListener("mousedown", handleMouseDown)
+        inputElement.removeEventListener("mouseup", handleMouseUp)
+        inputElement.removeEventListener("touchstart", handleTouchStart)
+        inputElement.removeEventListener("touchmove", handleTouchMove)
+        inputElement.removeEventListener("touchend", handleTouchEnd)
+        inputElement.removeEventListener("touchcancel", handleTouchEnd)
+      }
+
+      renderCanvas.style.pointerEvents = "none"
 
       mouseConstraint.current = MouseConstraint.create(engine.current, {
         mouse: mouse,
@@ -338,7 +438,9 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
 
       const touchingMouse = () =>
         Query.point(
-          engine.current.world.bodies,
+          Array.from(bodiesMap.current.values())
+            .filter(({ props }) => props.isDraggable)
+            .map(({ body }) => body),
           mouseConstraint.current?.mouse.position || { x: 0, y: 0 }
         ).length > 0
 
@@ -405,6 +507,8 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
       }
 
       if (render.current) {
+        removeInputListeners.current?.()
+        removeInputListeners.current = undefined
         Mouse.clearSourceEvents(render.current.mouse)
         Render.stop(render.current)
         render.current.canvas.remove()
@@ -427,6 +531,10 @@ const Gravity = forwardRef<GravityRef, GravityProps>(
 
       const newWidth = canvas.current.offsetWidth
       const newHeight = canvas.current.offsetHeight
+
+      // Mobile browser chrome changes the viewport height while scrolling.
+      // Only reset the physics world when the layout width actually changes.
+      if (Math.abs(newWidth - lastCanvasWidth.current) < 1) return
 
       setCanvasSize({ width: newWidth, height: newHeight })
 

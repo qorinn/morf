@@ -52,10 +52,14 @@ const faqItems = [
   <main>
     <ToolHero
       title="Egy ikon. Minden helyre készen."
-      description="Vágd négyzetre a képet, ellenőrizd valódi ikonméretben, majd töltsd le a kész favicon- vagy PWA-csomagot."
+      description="Töltsd fel a saját ikonodat, majd szerkeszd tetszés szerint. Válaszd ki mire van szükséged és töltsd le."
       primaryAction={{
         href: "#favicon-workspace",
         label: "Favicon készítése",
+      }}
+      secondaryAction={{
+        href: "#favicon-csomag-tajekoztato",
+        label: "Hogyan működik?",
       }}
     />
 
@@ -70,7 +74,7 @@ const faqItems = [
     />
 
     <FaqSection
-      title="Favicon kérdések, röviden"
+      title="Gyakori kérdések"
       description="A forrásképről, az ICO-ról, az SVG-ről és a PWA maskable ikonokról."
       items={faqItems}
     />

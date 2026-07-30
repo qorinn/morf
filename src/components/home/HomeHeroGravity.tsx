@@ -17,7 +17,7 @@ function HomeHeroGravity() {
   const shouldReduceMotion = useReducedMotion();
 
   return (
-    <section className="morf-section-normal relative min-h-[calc(100dvh-23*4px)] overflow-hidden">
+    <section className="morf-section-normal relative h-[max(42rem,calc(100svh-5.75rem))] overflow-hidden sm:h-[max(44rem,calc(100svh-5.75rem))]">
       <Gravity
         gravity={{ x: 0, y: 0.72 }}
         autoStart={!shouldReduceMotion}
@@ -141,9 +141,9 @@ function HomeHeroGravity() {
         </MatterBody>
       </Gravity>
 
-      <div className="pointer-events-none relative z-20 mx-auto flex min-h-[42rem] w-full flex-col items-center justify-center gap-7 px-4 py-20 sm:min-h-[44rem] sm:px-6 lg:px-8">
+      <div className="pointer-events-none relative z-20 mx-auto flex h-full w-full flex-col items-center justify-center gap-7 px-4 py-20 sm:px-6 lg:px-8">
         <div className="mx-auto flex flex-col items-center gap-4 text-center">
-          <h1 className="from-foreground from-25% via-foreground/80 via-60% to-foreground/55 font-heading -mx-[0.05em] -mb-[0.12em] bg-linear-to-b bg-clip-text px-[0.05em] pb-[0.12em] text-[clamp(3.5rem,7.2vw,6.5rem)] leading-[0.95] font-semibold tracking-[-0.055em] text-transparent text-balance">
+          <h1 className="morf-page-heading from-foreground from-25% via-foreground/80 via-60% to-foreground/55 font-heading -mx-[0.05em] -mb-[0.12em] bg-linear-to-b bg-clip-text px-[0.05em] pb-[0.12em] leading-[0.95] font-semibold tracking-[-0.055em] text-transparent text-balance sm:text-[clamp(3.5rem,7.2vw,6.5rem)]">
             <span className="block">Eszközök a digitális</span>
             <span className="block">mindennapokhoz.</span>
           </h1>
