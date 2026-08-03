@@ -69,7 +69,7 @@ import {
   newGroupTarget,
 } from "@/components/workspace/DndJobList";
 import { FileJobCard } from "@/components/workspace/FileJobCard";
-import { FrameSetBatchWorkspace } from "@/components/workspace/FrameSetBatchWorkspace";
+import { LazyImageCollectionItem } from "@/components/workspace/LazyImageCollectionItem";
 import { WorkspaceSettings } from "@/components/workspace/WorkspaceSettings";
 import {
   createDndGroupOrdersFromItems,
@@ -90,6 +90,23 @@ import type {
 } from "@/features/image-processing/types";
 import { validateImageFile } from "@/features/image-processing/validation";
 import { createImageWorker } from "@/features/image-processing/worker-client";
+import {
+  canSaveLazyOutputToDirectory,
+  downloadLazyOutputAsZipParts,
+  saveLazyOutputToDirectory,
+} from "@/features/lazy-image-collections/downloads";
+import { removeLazyOutput } from "@/features/lazy-image-collections/output-storage";
+import { processLazyImageCollection } from "@/features/lazy-image-collections/process";
+import {
+  canImportLazyDirectory,
+  createDirectoryCollection,
+  createFrameSetCollection,
+  pickLazyImageDirectory,
+} from "@/features/lazy-image-collections/sources";
+import {
+  lazyCollectionSettingsKey,
+  type LazyImageCollection,
+} from "@/features/lazy-image-collections/types";
 import { createOutputFileNameFromBase } from "@/lib/filenames/image-filenames";
 import { cn } from "@/lib/utils";
 import {
@@ -191,7 +208,13 @@ function getCompletedFiles(jobs: FileJob[]): SaveableFile[] {
   });
 }
 
-function StandardImageWorkspace() {
+type StandardImageWorkspaceProps = {
+  initialFrameSetId?: string;
+};
+
+function StandardImageWorkspace({
+  initialFrameSetId,
+}: StandardImageWorkspaceProps) {
   const jobs = useWorkspaceStore((state) => state.jobs);
   const groups = useWorkspaceStore((state) => state.groups);
   const activeGroupId = useWorkspaceStore((state) => state.activeGroupId);
@@ -250,6 +273,14 @@ function StandardImageWorkspace() {
     file: false,
     directory: false,
   });
+  const [lazyCollections, setLazyCollections] = useState<LazyImageCollection[]>(
+    [],
+  );
+  const [canImportDirectory, setCanImportDirectory] = useState(false);
+  const [activeLazySaveId, setActiveLazySaveId] = useState<string>();
+  const [lazySaveProgress, setLazySaveProgress] = useState<
+    Record<string, number>
+  >({});
   const fixedBarsRef = useRef<HTMLDivElement>(null);
   const batchRunRef = useRef(false);
   const activeWorkers = useRef(new Map<string, Worker>());
@@ -257,6 +288,129 @@ function StandardImageWorkspace() {
   const cancelledJobs = useRef(new Set<string>());
   const dragItemsRef = useRef<DndJobItems | null>(null);
   const dragItemsSnapshotRef = useRef<DndJobItems | null>(null);
+  const lazyCollectionsRef = useRef<LazyImageCollection[]>([]);
+  const lazyControllers = useRef(new Map<string, AbortController>());
+  const importedFrameSetRef = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    lazyCollectionsRef.current = lazyCollections;
+  }, [lazyCollections]);
+
+  const getOrCreateCollectionGroup = useCallback(
+    (name: string) => {
+      const state = useWorkspaceStore.getState();
+      const reusableGroup = state.groups.find(
+        (group) =>
+          !state.jobs.some((job) => job.groupId === group.id) &&
+          !lazyCollectionsRef.current.some(
+            (collection) => collection.groupId === group.id,
+          ),
+      );
+
+      if (reusableGroup) {
+        renameGroup(reusableGroup.id, name);
+        setActiveGroup(reusableGroup.id);
+        return reusableGroup.id;
+      }
+
+      createGroup();
+      const groupId = useWorkspaceStore.getState().activeGroupId;
+      renameGroup(groupId, name);
+      return groupId;
+    },
+    [createGroup, renameGroup, setActiveGroup],
+  );
+
+  const importDirectoryCollection = useCallback(async () => {
+    if (isBatchActive) return;
+    setWorkspaceError(undefined);
+    try {
+      const directory = await pickLazyImageDirectory();
+      const draft = await createDirectoryCollection(directory, "");
+      const groupId = getOrCreateCollectionGroup(directory.name);
+      const collection = { ...draft, groupId };
+      setLazyCollections((current) => [...current, collection]);
+      setActiveGroup(groupId);
+      toast.add({
+        type: "success",
+        title: "Mappa képcsoportként importálva",
+        description: `${collection.itemCount} kép került a(z) „${directory.name}” csoportba.`,
+      });
+    } catch (error) {
+      if (!isFilePickerCancellation(error)) {
+        setWorkspaceError(
+          error instanceof Error
+            ? error.message
+            : "A mappa importálása nem sikerült.",
+        );
+      }
+    }
+  }, [getOrCreateCollectionGroup, isBatchActive, setActiveGroup]);
+
+  useEffect(() => {
+    setCanImportDirectory(canImportLazyDirectory());
+  }, []);
+
+  useEffect(() => {
+    if (
+      !initialFrameSetId ||
+      importedFrameSetRef.current === initialFrameSetId
+    ) {
+      return;
+    }
+    let cancelled = false;
+
+    void createFrameSetCollection(initialFrameSetId, "")
+      .then((draft) => {
+        if (cancelled) return;
+        importedFrameSetRef.current = initialFrameSetId;
+        const groupId = getOrCreateCollectionGroup("Videó frame-ek");
+        setLazyCollections((current) => [...current, { ...draft, groupId }]);
+        setActiveGroup(groupId);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setWorkspaceError(
+            error instanceof Error
+              ? error.message
+              : "A helyi frame-készlet már nem érhető el.",
+          );
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [getOrCreateCollectionGroup, initialFrameSetId, setActiveGroup]);
+
+  useEffect(() => {
+    setLazyCollections((current) =>
+      current.map((collection) => {
+        if (collection.status !== "completed" || !collection.settingsKey) {
+          return collection;
+        }
+        const group = groups.find(
+          (candidate) => candidate.id === collection.groupId,
+        );
+        if (
+          !group ||
+          lazyCollectionSettingsKey(group.settings) === collection.settingsKey
+        ) {
+          return collection;
+        }
+        return {
+          ...collection,
+          status: "queued",
+          progress: 0,
+          completedCount: 0,
+          outputBytes: 0,
+          outputManifest: undefined,
+          errorMessage: undefined,
+          settingsKey: undefined,
+        };
+      }),
+    );
+  }, [groups]);
 
   const groupIds = useMemo(() => groups.map((group) => group.id), [groups]);
   const workspaceDndItems = useMemo(
@@ -491,6 +645,101 @@ function StandardImageWorkspace() {
     [completeJob, failJob, setJobStatus, updateJob],
   );
 
+  const processOneLazyCollection = useCallback(
+    async (
+      collection: LazyImageCollection,
+      settings: ImageConversionSettings,
+    ): Promise<number> => {
+      const controller = new AbortController();
+      lazyControllers.current.set(collection.id, controller);
+      setLazyCollections((current) =>
+        current.map((candidate) =>
+          candidate.id === collection.id
+            ? {
+                ...candidate,
+                status: "loading-engine",
+                progress: 1,
+                completedCount: 0,
+                outputBytes: 0,
+                outputManifest: undefined,
+                errorMessage: undefined,
+              }
+            : candidate,
+        ),
+      );
+
+      try {
+        const manifest = await processLazyImageCollection(
+          collection,
+          settings,
+          controller.signal,
+          (progress) => {
+            const totalProgress =
+              progress.totalCount > 0
+                ? ((progress.completedCount + progress.activeProgress / 100) /
+                    progress.totalCount) *
+                  100
+                : 0;
+            setLazyCollections((current) =>
+              current.map((candidate) =>
+                candidate.id === collection.id
+                  ? {
+                      ...candidate,
+                      status: progress.status,
+                      progress: totalProgress,
+                      completedCount: progress.completedCount,
+                      outputBytes: progress.outputBytes,
+                    }
+                  : candidate,
+              ),
+            );
+          },
+        );
+        setLazyCollections((current) =>
+          current.map((candidate) =>
+            candidate.id === collection.id
+              ? {
+                  ...candidate,
+                  status: "completed",
+                  progress: 100,
+                  completedCount: manifest.completedCount,
+                  outputBytes: manifest.totalBytes,
+                  outputManifest: manifest,
+                  settingsKey: lazyCollectionSettingsKey(settings),
+                  errorMessage: undefined,
+                }
+              : candidate,
+          ),
+        );
+        return manifest.completedCount;
+      } catch (error) {
+        const cancelled =
+          controller.signal.aborted ||
+          (error instanceof DOMException && error.name === "AbortError");
+        setLazyCollections((current) =>
+          current.map((candidate) =>
+            candidate.id === collection.id
+              ? {
+                  ...candidate,
+                  status: cancelled ? "cancelled" : "error",
+                  progress: 0,
+                  errorMessage: cancelled
+                    ? undefined
+                    : error instanceof Error
+                      ? error.message
+                      : String(error),
+                }
+              : candidate,
+          ),
+        );
+        return 0;
+      } finally {
+        lazyControllers.current.delete(collection.id);
+      }
+    },
+    [],
+  );
+
   const startProcessing = useCallback(async () => {
     if (batchRunRef.current) return;
     if (typeof Worker === "undefined" || typeof WebAssembly === "undefined") {
@@ -511,8 +760,17 @@ function StandardImageWorkspace() {
         ? [{ job, settings: { ...group.settings } }]
         : [];
     });
+    const queuedCollections = lazyCollections.flatMap((collection) => {
+      if (collection.status !== "queued") return [];
+      const group = state.groups.find(
+        (candidate) => candidate.id === collection.groupId,
+      );
+      return group?.shouldProcess
+        ? [{ collection, settings: { ...group.settings } }]
+        : [];
+    });
 
-    if (queuedJobs.length === 0) return;
+    if (queuedJobs.length === 0 && queuedCollections.length === 0) return;
 
     batchRunRef.current = true;
     setIsBatchActive(true);
@@ -528,12 +786,22 @@ function StandardImageWorkspace() {
     };
 
     try {
-      await Promise.all(
-        Array.from(
-          { length: Math.min(getConcurrency(), queuedJobs.length) },
-          runNext,
-        ),
-      );
+      if (queuedJobs.length > 0) {
+        await Promise.all(
+          Array.from(
+            { length: Math.min(getConcurrency(), queuedJobs.length) },
+            runNext,
+          ),
+        );
+      }
+
+      let completedLazyCount = 0;
+      for (const queuedCollection of queuedCollections) {
+        completedLazyCount += await processOneLazyCollection(
+          queuedCollection.collection,
+          queuedCollection.settings,
+        );
+      }
 
       const completedJobCount = queuedJobs.filter(({ job }) =>
         useWorkspaceStore
@@ -544,18 +812,18 @@ function StandardImageWorkspace() {
           ),
       ).length;
 
-      if (completedJobCount > 0) {
+      if (completedJobCount + completedLazyCount > 0) {
         toast.add({
           type: "success",
           title: "Elkészültek a fájlok",
-          description: `${completedJobCount} kép letölthető.`,
+          description: `${completedJobCount + completedLazyCount} kép elkészült.`,
         });
       }
     } finally {
       batchRunRef.current = false;
       setIsBatchActive(false);
     }
-  }, [processOneJob]);
+  }, [lazyCollections, processOneJob, processOneLazyCollection]);
 
   const updateJobDimensions = useCallback(
     (id: string, width: number, height: number) => {
@@ -586,6 +854,96 @@ function StandardImageWorkspace() {
       description: `${removedCount} kép eltávolítva a listából.`,
     });
   }, [removeSelectedJobs]);
+
+  const cancelLazyCollection = useCallback((collectionId: string) => {
+    lazyControllers.current.get(collectionId)?.abort();
+  }, []);
+
+  const retryLazyCollection = useCallback((collectionId: string) => {
+    setLazyCollections((current) =>
+      current.map((collection) =>
+        collection.id === collectionId
+          ? {
+              ...collection,
+              status: "queued",
+              progress: 0,
+              completedCount: 0,
+              outputBytes: 0,
+              outputManifest: undefined,
+              errorMessage: undefined,
+              settingsKey: undefined,
+            }
+          : collection,
+      ),
+    );
+  }, []);
+
+  const removeWorkspaceGroup = useCallback(
+    (groupId: string) => {
+      const collections = lazyCollectionsRef.current.filter(
+        (collection) => collection.groupId === groupId,
+      );
+      for (const collection of collections) {
+        lazyControllers.current.get(collection.id)?.abort();
+        void removeLazyOutput(collection.id).catch(() => undefined);
+      }
+      setLazyCollections((current) =>
+        current.filter((collection) => collection.groupId !== groupId),
+      );
+      removeGroup(groupId);
+    },
+    [removeGroup],
+  );
+
+  const saveLazyCollection = useCallback(
+    async (collection: LazyImageCollection, mode: "directory" | "zip") => {
+      if (!collection.outputManifest) return;
+      setActiveLazySaveId(collection.id);
+      setLazySaveProgress((current) => ({
+        ...current,
+        [collection.id]: 0,
+      }));
+      setWorkspaceError(undefined);
+      try {
+        if (mode === "directory") {
+          await saveLazyOutputToDirectory(
+            collection.outputManifest,
+            (completed) =>
+              setLazySaveProgress((current) => ({
+                ...current,
+                [collection.id]: completed,
+              })),
+          );
+        } else {
+          await downloadLazyOutputAsZipParts(
+            collection.outputManifest,
+            `${collection.name.replace(/\.[^.]+$/u, "")}-morf`,
+            (completed) =>
+              setLazySaveProgress((current) => ({
+                ...current,
+                [collection.id]: completed,
+              })),
+          );
+        }
+        toast.add({
+          type: "success",
+          title: "A képcsoport mentése elkészült",
+          description: `${collection.completedCount} kép menthető.`,
+        });
+      } catch (error) {
+        if (!isFilePickerCancellation(error)) {
+          setWorkspaceError(
+            error instanceof Error
+              ? error.message
+              : "A képcsoport mentése nem sikerült.",
+          );
+        }
+      } finally {
+        setActiveLazySaveId(undefined);
+      }
+    },
+    [],
+  );
 
   const runSaveAction = useCallback(
     async (action: string, operation: () => Promise<void>) => {
@@ -655,7 +1013,7 @@ function StandardImageWorkspace() {
     resizeObserver.observe(fixedBars);
 
     return () => resizeObserver.disconnect();
-  }, [jobs.length > 0]);
+  }, [jobs.length, lazyCollections.length]);
 
   useEffect(() => {
     if (
@@ -681,29 +1039,70 @@ function StandardImageWorkspace() {
   useEffect(
     () => () => {
       activeWorkers.current.forEach((worker) => worker.terminate());
+      lazyControllers.current.forEach((controller) => controller.abort());
       useWorkspaceStore.getState().clearJobs();
     },
     [],
   );
 
-  const completedCount = jobs.filter(
+  const completedFileJobCount = jobs.filter(
     (job) => job.status === "completed",
   ).length;
-  const failedCount = jobs.filter((job) => job.status === "error").length;
+  const completedLazyCount = lazyCollections.reduce(
+    (total, collection) =>
+      total +
+      (collection.status === "completed" ? collection.completedCount : 0),
+    0,
+  );
+  const completedCount = completedFileJobCount + completedLazyCount;
+  const failedCount =
+    jobs.filter((job) => job.status === "error").length +
+    lazyCollections.filter((collection) => collection.status === "error")
+      .length;
   const selectedCount = selectedJobIds.filter((id) =>
     jobs.some((job) => job.id === id),
   ).length;
-  const processIncludedCount = jobs.filter(
-    (job) =>
-      job.shouldProcess &&
-      groups.some((group) => group.id === job.groupId && group.shouldProcess),
-  ).length;
-  const processableCount = jobs.filter(
-    (job) =>
-      job.shouldProcess &&
-      job.status === "queued" &&
-      groups.some((group) => group.id === job.groupId && group.shouldProcess),
-  ).length;
+  const processIncludedCount =
+    jobs.filter(
+      (job) =>
+        job.shouldProcess &&
+        groups.some((group) => group.id === job.groupId && group.shouldProcess),
+    ).length +
+    lazyCollections.reduce(
+      (total, collection) =>
+        total +
+        (groups.some(
+          (group) => group.id === collection.groupId && group.shouldProcess,
+        )
+          ? collection.itemCount
+          : 0),
+      0,
+    );
+  const processableCount =
+    jobs.filter(
+      (job) =>
+        job.shouldProcess &&
+        job.status === "queued" &&
+        groups.some((group) => group.id === job.groupId && group.shouldProcess),
+    ).length +
+    lazyCollections.reduce(
+      (total, collection) =>
+        total +
+        (collection.status === "queued" &&
+        groups.some(
+          (group) => group.id === collection.groupId && group.shouldProcess,
+        )
+          ? collection.itemCount
+          : 0),
+      0,
+    );
+  const totalInputCount =
+    jobs.length +
+    lazyCollections.reduce(
+      (total, collection) => total + collection.itemCount,
+      0,
+    );
+  const hasInputs = totalInputCount > 0;
   const allGroupsIncluded =
     groups.every((group) => group.shouldProcess) && groups.length > 0;
   const groupItems = [
@@ -718,7 +1117,16 @@ function StandardImageWorkspace() {
     jobs.find((job) => job.status === "error") ??
     [...jobs].reverse().find((job) => job.status === "completed") ??
     jobs[0];
-  const mascotState = getMascotState(representativeJob?.status);
+  const representativeCollection =
+    lazyCollections.find((collection) =>
+      activeStatuses.includes(collection.status),
+    ) ??
+    lazyCollections.find((collection) => collection.status === "error") ??
+    lazyCollections.find((collection) => collection.status === "completed") ??
+    lazyCollections[0];
+  const representativeStatus =
+    representativeJob?.status ?? representativeCollection?.status;
+  const mascotState = getMascotState(representativeStatus);
   const mascotCopy = useMemo(() => {
     if (isBatchActive) {
       return {
@@ -727,7 +1135,7 @@ function StandardImageWorkspace() {
           "A feldolgozás helyben fut. Ne zárd be és ne frissítsd az oldalt.",
       };
     }
-    if (representativeJob?.status === "error") {
+    if (representativeStatus === "error") {
       return {
         title: "Egy képnek segítség kell",
         message:
@@ -745,7 +1153,7 @@ function StandardImageWorkspace() {
       message:
         "Húzz be vagy tallózz képeket, rendezd őket csoportokba, állítsd be a konfigurációt, majd indítsd el a konvertálást.",
     };
-  }, [completedCount, isBatchActive, representativeJob?.status]);
+  }, [completedCount, isBatchActive, representativeStatus]);
   return (
     <section
       id="workspace"
@@ -754,7 +1162,7 @@ function StandardImageWorkspace() {
       <div
         className={cn(
           "mx-auto flex w-full max-w-[96rem] flex-col gap-6 px-4 py-10 sm:px-6 lg:px-8",
-          jobs.length > 0 &&
+          hasInputs &&
             (selectedCount > 0
               ? "pb-80 sm:pb-56 lg:pb-44"
               : "pb-56 sm:pb-40 lg:pb-32"),
@@ -794,39 +1202,59 @@ function StandardImageWorkspace() {
                     className="text-muted-foreground text-sm"
                     aria-live="polite"
                   >
-                    {jobs.length} fájl · {groups.length} csoport ·{" "}
+                    {totalInputCount} kép · {groups.length} csoport ·{" "}
                     {selectedCount} kijelölve · {processIncludedCount}{" "}
                     konvertálásra · {completedCount} kész · {failedCount} hibás
                   </p>
                 </div>
-                {jobs.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2">
+                  {canImportDirectory && (
                     <Button
                       type="button"
                       variant="outline"
-                      disabled={isBatchActive || selectedCount === jobs.length}
-                      onClick={() => setAllJobsSelected(true)}
-                    >
-                      Mind kijelölése
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={isBatchActive || selectedCount === 0}
-                      onClick={() => setAllJobsSelected(false)}
-                    >
-                      Kijelölés törlése
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
                       disabled={isBatchActive}
-                      onClick={clearJobs}
+                      onClick={() => void importDirectoryCollection()}
                     >
-                      Lista törlése
+                      <HugeiconsIcon
+                        icon={FolderOpenIcon}
+                        strokeWidth={2}
+                        data-icon="inline-start"
+                        aria-hidden="true"
+                      />
+                      Mappa importálása
                     </Button>
-                  </div>
-                )}
+                  )}
+                  {jobs.length > 0 && (
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={
+                          isBatchActive || selectedCount === jobs.length
+                        }
+                        onClick={() => setAllJobsSelected(true)}
+                      >
+                        Mind kijelölése
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={isBatchActive || selectedCount === 0}
+                        onClick={() => setAllJobsSelected(false)}
+                      >
+                        Kijelölés törlése
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        disabled={isBatchActive}
+                        onClick={clearJobs}
+                      >
+                        Lista törlése
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
 
               <DragDropProvider
@@ -846,6 +1274,15 @@ function StandardImageWorkspace() {
                       imagePresets.find(
                         (preset) => preset.id === group.settings.presetId,
                       )?.recipe.name ?? "Egyedi";
+                    const groupCollections = lazyCollections.filter(
+                      (collection) => collection.groupId === group.id,
+                    );
+                    const groupImageCount =
+                      groupJobs.length +
+                      groupCollections.reduce(
+                        (total, collection) => total + collection.itemCount,
+                        0,
+                      );
 
                     return (
                       <GroupDropzone
@@ -946,7 +1383,7 @@ function StandardImageWorkspace() {
                                     {getConversionModeLabel(group.settings)}
                                   </Badge>
                                   <Badge variant="outline">
-                                    {groupJobs.length} kép
+                                    {groupImageCount} kép
                                   </Badge>
                                 </div>
                               </div>
@@ -993,7 +1430,9 @@ function StandardImageWorkspace() {
                                     <DropdownMenuGroup>
                                       <DropdownMenuItem
                                         variant="destructive"
-                                        onClick={() => removeGroup(group.id)}
+                                        onClick={() =>
+                                          removeWorkspaceGroup(group.id)
+                                        }
                                       >
                                         <HugeiconsIcon
                                           icon={Delete02Icon}
@@ -1009,70 +1448,100 @@ function StandardImageWorkspace() {
                             </CardHeader>
                             <Separator className="bg-foreground/20" />
                             <CardContent className="min-h-0 flex-1 overflow-y-auto py-px">
-                              <DndJobList
-                                groupId={group.id}
-                                ariaLabel={`${group.name} képei`}
-                                disabled={isBatchActive}
-                                className={cn(
-                                  groupJobs.length === 0
-                                    ? "grid place-items-center"
-                                    : "flex flex-col gap-2",
-                                )}
-                              >
-                                {groupJobs.length === 0 ? (
-                                  <div
-                                    className={cn(
-                                      "morf-group-dropzone-radius border-foreground/20 flex size-full min-h-48 flex-col items-center justify-center gap-3 border border-dashed p-6 text-center",
-                                      isDragActive && "border-ring",
-                                    )}
-                                  >
-                                    <p className="text-muted-foreground text-sm">
-                                      {isDragActive
-                                        ? "Engedd el a képeket"
-                                        : "Húzd ide a képeket"}
-                                    </p>
-                                    <Button
-                                      type="button"
-                                      disabled={isBatchActive}
-                                      onClick={(event) => {
-                                        event.stopPropagation();
-                                        open();
-                                      }}
-                                    >
-                                      <HugeiconsIcon
-                                        icon={ImageUploadIcon}
-                                        strokeWidth={2}
-                                        data-icon="inline-start"
-                                        aria-hidden="true"
-                                      />
-                                      Képek kiválasztása
-                                    </Button>
-                                    <p className="text-muted-foreground text-xs">
-                                      JPG, PNG, WebP, AVIF vagy HEIC/HEIF
-                                    </p>
-                                  </div>
-                                ) : (
-                                  groupJobs.map((job, jobIndex) => (
-                                    <FileJobCard
-                                      key={job.id}
-                                      job={job}
-                                      group={group}
-                                      sortIndex={jobIndex}
-                                      isSelected={selectedJobIds.includes(
-                                        job.id,
+                              <div className="flex min-h-full flex-col gap-2">
+                                {groupCollections.map((collection) => (
+                                  <LazyImageCollectionItem
+                                    key={collection.id}
+                                    collection={collection}
+                                    disabled={isBatchActive}
+                                    saving={activeLazySaveId === collection.id}
+                                    saveCompleted={
+                                      lazySaveProgress[collection.id] ?? 0
+                                    }
+                                    canSaveDirectory={canSaveLazyOutputToDirectory()}
+                                    onCancel={() =>
+                                      cancelLazyCollection(collection.id)
+                                    }
+                                    onRetry={() =>
+                                      retryLazyCollection(collection.id)
+                                    }
+                                    onSaveDirectory={() =>
+                                      void saveLazyCollection(
+                                        collection,
+                                        "directory",
+                                      )
+                                    }
+                                    onSaveZip={() =>
+                                      void saveLazyCollection(collection, "zip")
+                                    }
+                                  />
+                                ))}
+
+                                <DndJobList
+                                  groupId={group.id}
+                                  ariaLabel={`${group.name} képei`}
+                                  disabled={isBatchActive}
+                                  className={cn(
+                                    groupImageCount === 0
+                                      ? "grid flex-1 place-items-center"
+                                      : "flex flex-col gap-2",
+                                  )}
+                                >
+                                  {groupImageCount === 0 ? (
+                                    <div
+                                      className={cn(
+                                        "morf-group-dropzone-radius border-foreground/20 flex size-full min-h-48 flex-col items-center justify-center gap-3 border border-dashed p-6 text-center",
+                                        isDragActive && "border-ring",
                                       )}
-                                      onDimensions={updateJobDimensions}
-                                      onDuplicate={duplicateOne}
-                                      onRename={renameJob}
-                                      onSelectionChange={toggleJobSelection}
-                                      selectionDisabled={isBatchActive}
-                                      dragDisabled={isBatchActive}
-                                    />
-                                  ))
-                                )}
-                              </DndJobList>
+                                    >
+                                      <p className="text-muted-foreground text-sm">
+                                        {isDragActive
+                                          ? "Engedd el a képeket"
+                                          : "Húzd ide a képeket"}
+                                      </p>
+                                      <Button
+                                        type="button"
+                                        disabled={isBatchActive}
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          open();
+                                        }}
+                                      >
+                                        <HugeiconsIcon
+                                          icon={ImageUploadIcon}
+                                          strokeWidth={2}
+                                          data-icon="inline-start"
+                                          aria-hidden="true"
+                                        />
+                                        Képek kiválasztása
+                                      </Button>
+                                      <p className="text-muted-foreground text-xs">
+                                        JPG, PNG, WebP, AVIF vagy HEIC/HEIF
+                                      </p>
+                                    </div>
+                                  ) : (
+                                    groupJobs.map((job, jobIndex) => (
+                                      <FileJobCard
+                                        key={job.id}
+                                        job={job}
+                                        group={group}
+                                        sortIndex={jobIndex}
+                                        isSelected={selectedJobIds.includes(
+                                          job.id,
+                                        )}
+                                        onDimensions={updateJobDimensions}
+                                        onDuplicate={duplicateOne}
+                                        onRename={renameJob}
+                                        onSelectionChange={toggleJobSelection}
+                                        selectionDisabled={isBatchActive}
+                                        dragDisabled={isBatchActive}
+                                      />
+                                    ))
+                                  )}
+                                </DndJobList>
+                              </div>
                             </CardContent>
-                            {isDragActive && groupJobs.length > 0 && (
+                            {isDragActive && groupImageCount > 0 && (
                               <div
                                 className="bg-card/95 pointer-events-none absolute inset-0 z-10 grid place-items-center p-4"
                                 role="status"
@@ -1213,7 +1682,7 @@ function StandardImageWorkspace() {
           </Card>
         </div>
 
-        {jobs.length > 0 && (
+        {hasInputs && (
           <div
             ref={fixedBarsRef}
             className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex flex-col gap-2"
@@ -1373,7 +1842,7 @@ function StandardImageWorkspace() {
                       ? "Feldolgozás…"
                       : `Konvertálás indítása (${processableCount})`}
                   </Button>
-                  {completedCount > 0 && (
+                  {completedFileJobCount > 0 && (
                     <>
                       <Button
                         type="button"
@@ -1458,9 +1927,5 @@ export default function ImageWorkspace() {
     return new URLSearchParams(window.location.search).get("frameSet") ?? "";
   });
 
-  return frameSetId ? (
-    <FrameSetBatchWorkspace frameSetId={frameSetId} />
-  ) : (
-    <StandardImageWorkspace />
-  );
+  return <StandardImageWorkspace initialFrameSetId={frameSetId} />;
 }

@@ -19,9 +19,12 @@ import { frameSetSchemaVersion, type FrameSetManifestV1 } from "./types.ts";
 
 class MemoryFileHandle {
   readonly kind = "file";
+  readonly name: string;
   private blob = new Blob();
 
-  constructor(readonly name: string) {}
+  constructor(name: string) {
+    this.name = name;
+  }
 
   async createWritable() {
     return {
@@ -39,12 +42,15 @@ class MemoryFileHandle {
 
 class MemoryDirectoryHandle {
   readonly kind = "directory";
+  readonly name: string;
   readonly children = new Map<
     string,
     MemoryDirectoryHandle | MemoryFileHandle
   >();
 
-  constructor(readonly name: string) {}
+  constructor(name: string) {
+    this.name = name;
+  }
 
   async getDirectoryHandle(name: string, options?: { create?: boolean }) {
     const existing = this.children.get(name);
