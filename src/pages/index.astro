@@ -13,6 +13,7 @@ import {
   ArrowRight02Icon,
   BrowserIcon,
   FileZipIcon,
+  Film01Icon,
   Image02Icon,
   Resize01Icon,
 } from "@hugeicons/core-free-icons";
@@ -45,6 +46,14 @@ const tools = [
     category: "Képek",
   },
   {
+    title: "Videó frame-ekre bontása",
+    description:
+      "MP4, MOV és WebM videók teljes felbontású PNG frame-ekre bontása, választható FPS-sel.",
+    href: "/video-framekre-bontasa",
+    icon: Film01Icon,
+    category: "Videó",
+  },
+  {
     title: "Favicon generátor",
     description: "Favicon- és webappikon-csomag készítése egyetlen képből.",
     href: "/favicon-generator",
@@ -55,6 +64,7 @@ const tools = [
 
 const toolCategories = [
   { name: "Képek", slug: "kepek" },
+  { name: "Videó", slug: "video" },
   { name: "Web", slug: "web" },
 ].map((category) => ({
   ...category,

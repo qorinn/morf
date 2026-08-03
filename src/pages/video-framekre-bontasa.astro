@@ -1,0 +1,150 @@
+---
+import VideoFrameWorkspace from "@/components/video-frames/VideoFrameWorkspace";
+import SiteFooter from "@/components/layout/SiteFooter.astro";
+import SiteHeader from "@/components/layout/SiteHeader.astro";
+import FaqSection from "@/components/sections/FaqSection.astro";
+import PrivacySection from "@/components/sections/PrivacySection.astro";
+import ToolHero from "@/components/sections/ToolHero.astro";
+import VideoFramesGuide from "@/components/sections/VideoFramesGuide.astro";
+import MainLayout from "@/layouts/main.astro";
+
+const privacyItems = [
+  "A videó dekódolása és minden PNG frame elkészítése a saját böngésződben történik.",
+  "A frame-ek ideiglenesen a böngésző helyi, Morf számára elkülönített tárhelyére kerülnek.",
+  "A videó és a frame-ek nem töltődnek fel a Morf szerverére.",
+];
+
+const faqItems = [
+  {
+    question: "Valóban veszteségmentesek a frame-ek?",
+    answer:
+      "A Morf a dekódolt videóképet teljes felbontású PNG-be menti, ezért nem ad hozzá újabb veszteséges képtömörítést. A forrásvideó korábbi tömörítése során elveszett részleteket azonban nem tudja visszaállítani.",
+  },
+  {
+    question: "Mekkora vagy milyen hosszú videót dolgozhatok fel?",
+    answer:
+      "A Morf nem állít be videóhossz-, fájlméret- vagy frame-limitet. A tényleges határt a böngésző kodektámogatása, az eszköz teljesítménye és a szabad helyi tárhely adja. A feldolgozás folyamatosan, checkpointokban történik, nem tölti egyszerre memóriába a teljes videót.",
+  },
+  {
+    question: "Mit jelent a kimeneti FPS?",
+    answer:
+      "A Minden frame beállítás minden eredeti képkockát megtart. Kisebb FPS esetén a Morf időbélyeg alapján ritkít, de soha nem készít olyan új frame-et, amely nem volt benne a forrásvideóban.",
+  },
+  {
+    question: "Módosíthatom az FPS-t a feldolgozás után?",
+    answer:
+      "Igen. A kész sorozatot tovább ritkíthatod az optimalizálás vagy letöltés előtt. A feldolgozáskor kihagyott frame-eket utólag nem lehet visszaállítani, ezért a későbbi FPS nem lehet nagyobb az extrakciós értéknél.",
+  },
+  {
+    question: "Mi történik, ha elfogy a helyi tárhely?",
+    answer:
+      "A Morf checkpoint után biztonságosan szünetelteti a folyamatot, és megtartja az addig elkészült PNG-ket. Ezeket elmentheted vagy optimalizálhatod, szabadíthatsz fel helyet, illetve újrakezdheted kisebb FPS-sel.",
+  },
+  {
+    question: "Milyen videókat támogat az eszköz?",
+    answer:
+      "MP4, MOV és WebM konténereket fogad. A tényleges dekódolhatóság a videó kodekjétől és a böngésződtől is függ; ha egy kodek nem támogatott, a Morf ezt még a feldolgozás előtt jelzi.",
+  },
+];
+
+const seoDescription =
+  "Bonts MP4, MOV vagy WebM videót teljes felbontású, veszteségmentes PNG frame-ekre helyben, majd optimalizáld őket a Morf képkonvertálójában.";
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebApplication",
+      "@id": "/video-framekre-bontasa#alkalmazas",
+      name: "Morf videó frame-ekre bontó",
+      description: seoDescription,
+      applicationCategory: "MultimediaApplication",
+      applicationSubCategory: "Videó frame exportáló",
+      operatingSystem: "Web",
+      browserRequirements:
+        "JavaScriptet, Web Workert, WebCodecsot, OffscreenCanvast és OPFS-t támogató modern böngésző",
+      inLanguage: "hu",
+      isAccessibleForFree: true,
+      dateModified: "2026-07-30",
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "HUF",
+      },
+      featureList: [
+        "MP4, MOV és WebM videók helyi feldolgozása",
+        "Minden eredeti frame vagy választható kimeneti FPS",
+        "Választható kezdő- és végpont",
+        "Teljes felbontású veszteségmentes PNG-k",
+        "Checkpointos, memóriahatáros feldolgozás",
+        "Frame-ek közvetlen átadása a Morf képkonvertálóba",
+        "Mappás és ZIP-részes mentés",
+      ],
+      fileFormat: ["video/mp4", "video/quicktime", "video/webm", "image/png"],
+      creator: {
+        "@type": "Person",
+        name: "Paládi Bálint",
+      },
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "/video-framekre-bontasa#gyakori-kerdesek",
+      inLanguage: "hu",
+      mainEntity: faqItems.map((item) => ({
+        "@type": "Question",
+        name: item.question,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: item.answer,
+        },
+      })),
+    },
+  ],
+};
+---
+
+<MainLayout
+  title="Videó frame-ekre bontása online, PNG-be | Morf"
+  description={seoDescription}
+  canonicalPath="/video-framekre-bontasa"
+  structuredData={structuredData}
+>
+  <SiteHeader
+    active="videoFrames"
+    actionHref="#video-frame-workspace"
+    actionLabel="Frame-készítő megnyitása"
+    actionShortLabel="Megnyitás"
+  />
+
+  <main>
+    <ToolHero
+      title="Videóból veszteségmentes PNG frame-ek"
+      description="Bontsd a teljes videót vagy egy kiválasztott részletét képkockákra. Alapból minden eredeti frame elkészül, majd egy kattintással átviheted őket optimalizálásra."
+      primaryAction={{
+        href: "#video-frame-workspace",
+        label: "Frame-ek készítése",
+      }}
+      secondaryAction={{
+        href: "#framek-utmutato",
+        label: "Hogyan működik?",
+      }}
+    />
+
+    <VideoFrameWorkspace client:load />
+
+    <VideoFramesGuide />
+
+    <PrivacySection
+      title="A videód nálad marad"
+      description="A Morf helyben olvassa a videót, és a PNG-ket is a böngésződ saját tárhelyén készíti el. Nincs feltöltés vagy szerveroldali feldolgozás."
+      items={privacyItems}
+    />
+
+    <FaqSection
+      title="Videó frame-ek, röviden"
+      description="Válaszok a veszteségmentes PNG-kre, az FPS-re, a hosszú videókra, a tárhelyre és a böngészős kodektámogatásra."
+      items={faqItems}
+    />
+  </main>
+
+  <SiteFooter />
+</MainLayout>

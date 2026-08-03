@@ -69,6 +69,7 @@ import {
   newGroupTarget,
 } from "@/components/workspace/DndJobList";
 import { FileJobCard } from "@/components/workspace/FileJobCard";
+import { FrameSetBatchWorkspace } from "@/components/workspace/FrameSetBatchWorkspace";
 import { WorkspaceSettings } from "@/components/workspace/WorkspaceSettings";
 import {
   createDndGroupOrdersFromItems,
@@ -190,7 +191,7 @@ function getCompletedFiles(jobs: FileJob[]): SaveableFile[] {
   });
 }
 
-export default function ImageWorkspace() {
+function StandardImageWorkspace() {
   const jobs = useWorkspaceStore((state) => state.jobs);
   const groups = useWorkspaceStore((state) => state.groups);
   const activeGroupId = useWorkspaceStore((state) => state.activeGroupId);
@@ -1448,5 +1449,18 @@ export default function ImageWorkspace() {
         <Toaster />
       </div>
     </section>
+  );
+}
+
+export default function ImageWorkspace() {
+  const [frameSetId] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("frameSet") ?? "";
+  });
+
+  return frameSetId ? (
+    <FrameSetBatchWorkspace frameSetId={frameSetId} />
+  ) : (
+    <StandardImageWorkspace />
   );
 }

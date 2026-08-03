@@ -1,4 +1,8 @@
-import { BrowserIcon, Image02Icon } from "@hugeicons/core-free-icons";
+import {
+  BrowserIcon,
+  Film01Icon,
+  Image02Icon,
+} from "@hugeicons/core-free-icons";
 
 export const tools = [
   {
@@ -14,6 +18,21 @@ export const tools = [
       "Formátumváltás és átméretezés",
       "Több kép feldolgozása egyszerre",
       "Mentés egyenként vagy ZIP-ben",
+    ],
+  },
+  {
+    title: "Videó frame-ekre bontása",
+    shortDescription: "Veszteségmentes PNG frame-ek videóból.",
+    description:
+      "Bonts MP4, MOV vagy WebM videót teljes felbontású PNG frame-ekre, majd optimalizáld őket a képkonvertálóban.",
+    href: "/video-framekre-bontasa",
+    cta: "Frame-ek készítése",
+    icon: Film01Icon,
+    formats: "MP4, MOV, WebM → PNG",
+    features: [
+      "Minden frame vagy választható FPS",
+      "Checkpointos helyi feldolgozás",
+      "Egykattintásos átadás optimalizálásra",
     ],
   },
   {

@@ -4,7 +4,13 @@ import minimalLogo from "@/assets/brand/morf-logo-minimal.svg";
 import { buttonVariants } from "@/components/ui/button";
 
 interface Props {
-  active?: "home" | "converter" | "favicon" | "privacy" | null;
+  active?:
+    | "home"
+    | "converter"
+    | "favicon"
+    | "videoFrames"
+    | "privacy"
+    | null;
   actionHref?: string;
   actionLabel?: string;
   actionShortLabel?: string;
@@ -19,6 +25,11 @@ const {
 
 const navItems = [
   { key: "converter", href: "/kep-konvertalo", label: "Képkonvertáló" },
+  {
+    key: "videoFrames",
+    href: "/video-framekre-bontasa",
+    label: "Videó frame-ek",
+  },
   { key: "favicon", href: "/favicon-generator", label: "Favicon generátor" },
 ] as const;
 ---
