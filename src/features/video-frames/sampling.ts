@@ -54,6 +54,20 @@ export function estimateSelectedFrameCount(
   return Math.max(1, Math.round(Math.max(0, duration) * effectiveFps));
 }
 
+export function shouldExportLastBoundaryFrame(
+  timestamp: number,
+  firstTimestamp: number | null,
+  rangeStart: number,
+  rangeEnd: number,
+): boolean {
+  const isInsideRange =
+    timestamp + timestampEpsilon >= rangeStart && timestamp < rangeEnd;
+  const isDifferentFromFirst =
+    firstTimestamp === null ||
+    Math.abs(timestamp - firstTimestamp) > timestampEpsilon;
+  return isInsideRange && isDifferentFromFirst;
+}
+
 export function frameFileName(sourceName: string, frameIndex: number): string {
   const sourceBase =
     sourceName

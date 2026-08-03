@@ -91,9 +91,9 @@ import type {
 import { validateImageFile } from "@/features/image-processing/validation";
 import { createImageWorker } from "@/features/image-processing/worker-client";
 import {
-  canSaveLazyOutputToDirectory,
   downloadLazyOutputAsZipParts,
-  saveLazyOutputToDirectory,
+  downloadLazyOutputFiles,
+  iterateLazyOutputFiles,
 } from "@/features/lazy-image-collections/downloads";
 import { removeLazyOutput } from "@/features/lazy-image-collections/output-storage";
 import { processLazyImageCollection } from "@/features/lazy-image-collections/process";
@@ -114,8 +114,8 @@ import {
   downloadFilesAsZip,
   getSaveCapabilities,
   isFilePickerCancellation,
+  saveFileSequenceToChosenDirectory,
   saveFilesAsZip,
-  saveFilesToChosenDirectory,
   type SaveCapabilities,
   type SaveableFile,
 } from "@/lib/downloads";
@@ -277,10 +277,6 @@ function StandardImageWorkspace({
     [],
   );
   const [canImportDirectory, setCanImportDirectory] = useState(false);
-  const [activeLazySaveId, setActiveLazySaveId] = useState<string>();
-  const [lazySaveProgress, setLazySaveProgress] = useState<
-    Record<string, number>
-  >({});
   const fixedBarsRef = useRef<HTMLDivElement>(null);
   const batchRunRef = useRef(false);
   const activeWorkers = useRef(new Map<string, Worker>());
@@ -895,56 +891,6 @@ function StandardImageWorkspace({
     [removeGroup],
   );
 
-  const saveLazyCollection = useCallback(
-    async (collection: LazyImageCollection, mode: "directory" | "zip") => {
-      if (!collection.outputManifest) return;
-      setActiveLazySaveId(collection.id);
-      setLazySaveProgress((current) => ({
-        ...current,
-        [collection.id]: 0,
-      }));
-      setWorkspaceError(undefined);
-      try {
-        if (mode === "directory") {
-          await saveLazyOutputToDirectory(
-            collection.outputManifest,
-            (completed) =>
-              setLazySaveProgress((current) => ({
-                ...current,
-                [collection.id]: completed,
-              })),
-          );
-        } else {
-          await downloadLazyOutputAsZipParts(
-            collection.outputManifest,
-            `${collection.name.replace(/\.[^.]+$/u, "")}-morf`,
-            (completed) =>
-              setLazySaveProgress((current) => ({
-                ...current,
-                [collection.id]: completed,
-              })),
-          );
-        }
-        toast.add({
-          type: "success",
-          title: "A képcsoport mentése elkészült",
-          description: `${collection.completedCount} kép menthető.`,
-        });
-      } catch (error) {
-        if (!isFilePickerCancellation(error)) {
-          setWorkspaceError(
-            error instanceof Error
-              ? error.message
-              : "A képcsoport mentése nem sikerült.",
-          );
-        }
-      } finally {
-        setActiveLazySaveId(undefined);
-      }
-    },
-    [],
-  );
-
   const runSaveAction = useCallback(
     async (action: string, operation: () => Promise<void>) => {
       setActiveSaveAction(action);
@@ -968,21 +914,52 @@ function StandardImageWorkspace({
   );
 
   const downloadAllFiles = useCallback(() => {
-    const files = getCompletedFiles(useWorkspaceStore.getState().jobs);
-    downloadFiles(files);
-  }, []);
+    void runSaveAction("files-download", async () => {
+      const files = getCompletedFiles(useWorkspaceStore.getState().jobs);
+      downloadFiles(files);
+      for (const collection of lazyCollectionsRef.current) {
+        if (collection.status !== "completed" || !collection.outputManifest) {
+          continue;
+        }
+        await downloadLazyOutputFiles(collection.outputManifest, () => {});
+      }
+    });
+  }, [runSaveAction]);
 
   const saveAllFilesAs = useCallback(() => {
     void runSaveAction("files-as", async () => {
       const files = getCompletedFiles(useWorkspaceStore.getState().jobs);
-      await saveFilesToChosenDirectory(files);
+      const collections = lazyCollectionsRef.current.filter(
+        (collection) =>
+          collection.status === "completed" && collection.outputManifest,
+      );
+      async function* iterateAllCompletedFiles(): AsyncGenerator<SaveableFile> {
+        yield* files;
+        for (const collection of collections) {
+          if (!collection.outputManifest) continue;
+          yield* iterateLazyOutputFiles(collection.outputManifest);
+        }
+      }
+      await saveFileSequenceToChosenDirectory(iterateAllCompletedFiles());
     });
   }, [runSaveAction]);
 
   const downloadZip = useCallback(() => {
     void runSaveAction("zip-download", async () => {
       const files = getCompletedFiles(useWorkspaceStore.getState().jobs);
-      await downloadFilesAsZip(files, "morf-kepek.zip");
+      if (files.length > 0) {
+        await downloadFilesAsZip(files, "morf-kepek.zip");
+      }
+      for (const collection of lazyCollectionsRef.current) {
+        if (collection.status !== "completed" || !collection.outputManifest) {
+          continue;
+        }
+        await downloadLazyOutputAsZipParts(
+          collection.outputManifest,
+          `${collection.name.replace(/\.[^.]+$/u, "")}-morf`,
+          () => {},
+        );
+      }
     });
   }, [runSaveAction]);
 
@@ -1453,26 +1430,14 @@ function StandardImageWorkspace({
                                   <LazyImageCollectionItem
                                     key={collection.id}
                                     collection={collection}
-                                    disabled={isBatchActive}
-                                    saving={activeLazySaveId === collection.id}
-                                    saveCompleted={
-                                      lazySaveProgress[collection.id] ?? 0
+                                    disabled={
+                                      isBatchActive || Boolean(activeSaveAction)
                                     }
-                                    canSaveDirectory={canSaveLazyOutputToDirectory()}
                                     onCancel={() =>
                                       cancelLazyCollection(collection.id)
                                     }
                                     onRetry={() =>
                                       retryLazyCollection(collection.id)
-                                    }
-                                    onSaveDirectory={() =>
-                                      void saveLazyCollection(
-                                        collection,
-                                        "directory",
-                                      )
-                                    }
-                                    onSaveZip={() =>
-                                      void saveLazyCollection(collection, "zip")
                                     }
                                   />
                                 ))}
@@ -1842,7 +1807,7 @@ function StandardImageWorkspace({
                       ? "Feldolgozás…"
                       : `Konvertálás indítása (${processableCount})`}
                   </Button>
-                  {completedFileJobCount > 0 && (
+                  {completedCount > 0 && (
                     <>
                       <Button
                         type="button"
@@ -1856,7 +1821,9 @@ function StandardImageWorkspace({
                           data-icon="inline-start"
                           aria-hidden="true"
                         />
-                        Mentés
+                        {activeSaveAction === "files-download"
+                          ? "Mentés…"
+                          : "Mentés"}
                       </Button>
                       {saveCapabilities.directory && (
                         <Button
@@ -1890,7 +1857,7 @@ function StandardImageWorkspace({
                           ? "ZIP készítése…"
                           : "Mentés ZIP-be"}
                       </Button>
-                      {saveCapabilities.file && (
+                      {saveCapabilities.file && completedLazyCount === 0 && (
                         <Button
                           type="button"
                           variant="outline"

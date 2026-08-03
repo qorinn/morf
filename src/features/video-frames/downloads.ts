@@ -65,6 +65,27 @@ export async function saveFrameSetToDirectory(
   }
 }
 
+export async function downloadFrameSetFiles(
+  manifest: FrameSetManifestV1,
+  selectedCount: number,
+  onProgress: (progress: FrameSaveProgress) => void,
+): Promise<void> {
+  let completed = 0;
+
+  for await (const frame of iterateSelectedFrameRecords(manifest)) {
+    const file = await readFrameFile(manifest.id, frame.fileName);
+    downloadFile({
+      blob: file,
+      fileName: frame.fileName,
+      mimeType: "image/png",
+      description: "PNG frame",
+    });
+    completed += 1;
+    onProgress({ completed, total: selectedCount });
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 50));
+  }
+}
+
 function zipPartTargetBytes(): number {
   if (typeof navigator === "undefined") return 128 * 1024 * 1024;
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)

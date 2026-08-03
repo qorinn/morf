@@ -28,7 +28,7 @@ const faqItems = [
   {
     question: "Mit jelent a kimeneti FPS?",
     answer:
-      "A Minden frame beállítás minden eredeti képkockát megtart. Kisebb FPS esetén a Morf időbélyeg alapján ritkít, de soha nem készít olyan új frame-et, amely nem volt benne a forrásvideóban.",
+      "A Minden frame beállítás minden eredeti képkockát megtart. Kisebb FPS esetén a Morf időbélyeg alapján ritkít, de soha nem készít olyan új frame-et, amely nem volt benne a forrásvideóban. Külön beállítással csak a kijelölt időtartomány első és utolsó frame-jét is elmentheted.",
   },
   {
     question: "Módosíthatom az FPS-t a feldolgozás után?",
@@ -72,7 +72,7 @@ const structuredData = {
       },
       featureList: [
         "MP4, MOV és WebM videók helyi feldolgozása",
-        "Minden eredeti frame vagy választható kimeneti FPS",
+        "Minden eredeti frame, választható FPS vagy csak az első és utolsó frame",
         "Választható kezdő- és végpont",
         "Teljes felbontású veszteségmentes PNG-k",
         "Checkpointos, memóriahatáros feldolgozás",

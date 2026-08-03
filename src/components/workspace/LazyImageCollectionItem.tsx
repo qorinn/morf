@@ -1,7 +1,5 @@
 import {
   Cancel01Icon,
-  FileZipIcon,
-  FolderDownloadIcon,
   FolderLibraryIcon,
   InformationCircleIcon,
   RefreshIcon,
@@ -24,25 +22,15 @@ import { formatBytes } from "@/lib/filenames/image-filenames";
 type Props = {
   collection: LazyImageCollection;
   disabled: boolean;
-  saving: boolean;
-  saveCompleted: number;
-  canSaveDirectory: boolean;
   onCancel(): void;
   onRetry(): void;
-  onSaveDirectory(): void;
-  onSaveZip(): void;
 };
 
 export function LazyImageCollectionItem({
   collection,
   disabled,
-  saving,
-  saveCompleted,
-  canSaveDirectory,
   onCancel,
   onRetry,
-  onSaveDirectory,
-  onSaveZip,
 }: Props) {
   const [isGroupInfoOpen, setIsGroupInfoOpen] = useState(false);
   const isActive = [
@@ -51,11 +39,6 @@ export function LazyImageCollectionItem({
     "processing",
     "encoding",
   ].includes(collection.status);
-  const progress = saving
-    ? collection.completedCount > 0
-      ? (saveCompleted / collection.completedCount) * 100
-      : 0
-    : collection.progress;
   const statusLabel =
     collection.status === "completed"
       ? "Kész"
@@ -121,19 +104,19 @@ export function LazyImageCollectionItem({
             <p className="font-medium">Sok kép, egyetlen csoportban</p>
             <p className="text-background/80 leading-relaxed">
               A Morf nem nyitja meg egyszerre az összes képet, hanem sorban
-              halad rajtuk. Így sok kép sem lassítja
-              le feleslegesen az oldalt.
+              halad rajtuk. Így sok kép sem lassítja le feleslegesen az oldalt.
             </p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
 
-      {(isActive || saving) && (
-        <Progress value={progress} aria-label={`${collection.name} folyamata`}>
+      {isActive && (
+        <Progress
+          value={collection.progress}
+          aria-label={`${collection.name} folyamata`}
+        >
           <ProgressLabel>
-            {saving ? "Mentés" : "Konvertálás"} ·{" "}
-            {saving ? saveCompleted : collection.completedCount} /{" "}
-            {collection.itemCount}
+            Konvertálás · {collection.completedCount} / {collection.itemCount}
           </ProgressLabel>
         </Progress>
       )}
@@ -142,20 +125,28 @@ export function LazyImageCollectionItem({
         <p className="text-destructive text-xs">{collection.errorMessage}</p>
       )}
 
-      <div className="flex flex-wrap gap-2">
-        {isActive && (
-          <Button type="button" size="sm" variant="outline" onClick={onCancel}>
-            <HugeiconsIcon
-              icon={Cancel01Icon}
-              strokeWidth={2}
-              data-icon="inline-start"
-              aria-hidden="true"
-            />
-            Megszakítás
-          </Button>
-        )}
-        {(collection.status === "error" ||
-          collection.status === "cancelled") && (
+      {(isActive ||
+        collection.status === "error" ||
+        collection.status === "cancelled") && (
+        <div className="flex flex-wrap gap-2">
+          {isActive && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={onCancel}
+            >
+              <HugeiconsIcon
+                icon={Cancel01Icon}
+                strokeWidth={2}
+                data-icon="inline-start"
+                aria-hidden="true"
+              />
+              Megszakítás
+            </Button>
+          )}
+          {(collection.status === "error" ||
+            collection.status === "cancelled") && (
             <Button
               type="button"
               size="sm"
@@ -172,43 +163,8 @@ export function LazyImageCollectionItem({
               Újrapróbálás
             </Button>
           )}
-        {collection.status === "completed" && (
-          <>
-            {canSaveDirectory && (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={disabled || saving}
-                onClick={onSaveDirectory}
-              >
-                <HugeiconsIcon
-                  icon={FolderDownloadIcon}
-                  strokeWidth={2}
-                  data-icon="inline-start"
-                  aria-hidden="true"
-                />
-                Mappába mentés
-              </Button>
-            )}
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={disabled || saving}
-              onClick={onSaveZip}
-            >
-              <HugeiconsIcon
-                icon={FileZipIcon}
-                strokeWidth={2}
-                data-icon="inline-start"
-                aria-hidden="true"
-              />
-              ZIP-részek
-            </Button>
-          </>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,6 +2,7 @@ export const frameSetSchemaVersion = 1 as const;
 export const frameCheckpointSeconds = 15;
 
 export type FrameRateSelection = number | null;
+export type FrameExtractionMode = "timeline" | "first-last";
 
 export type VideoFrameMetadata = {
   fileName: string;
@@ -67,6 +68,7 @@ export type ExtractFramesRequest = {
   metadata: VideoFrameMetadata;
   rangeStart: number;
   rangeEnd: number;
+  extractionMode: FrameExtractionMode;
   extractionFps: FrameRateSelection;
   resume: boolean;
 };

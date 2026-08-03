@@ -4,6 +4,7 @@ import {
   ArrowRight02Icon,
   Delete02Icon,
   Download04Icon,
+  FileZipIcon,
   Film01Icon,
   FolderDownloadIcon,
   PauseIcon,
@@ -16,7 +17,6 @@ import { useDropzone } from "react-dropzone";
 import { FileUploadDropzone } from "@/components/upload/FileUploadDropzone";
 import { MascotAssistant } from "@/components/mascot/MascotAssistant";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -44,6 +44,7 @@ import { Toaster, toast } from "@/components/ui/toast";
 import {
   canSaveFrameSetToDirectory,
   downloadFrameSetAsZipParts,
+  downloadFrameSetFiles,
   saveFrameSetToDirectory,
 } from "@/features/video-frames/downloads";
 import {
@@ -122,7 +123,6 @@ type FpsControlProps = {
   disabled?: boolean;
   onAllFramesChange(value: boolean): void;
   onFpsChange(value: number): void;
-  description: string;
 };
 
 function FpsControl({
@@ -133,10 +133,12 @@ function FpsControl({
   disabled,
   onAllFramesChange,
   onFpsChange,
-  description,
 }: FpsControlProps) {
   return (
-    <Field>
+    <Field
+      data-disabled={disabled ? "true" : undefined}
+      className="transition-opacity data-[disabled=true]:opacity-50"
+    >
       <FieldLabel htmlFor={`${id}-all`}>Kimeneti képkockaszám</FieldLabel>
       <label
         htmlFor={`${id}-all`}
@@ -146,6 +148,7 @@ function FpsControl({
           id={`${id}-all`}
           checked={allFrames}
           disabled={disabled}
+          className={disabled ? "disabled:opacity-100" : undefined}
           onCheckedChange={(checked) => onAllFramesChange(checked === true)}
         />
         Minden elérhető frame
@@ -159,14 +162,13 @@ function FpsControl({
           step={0.01}
           value={fps}
           disabled={disabled || allFrames}
+          className={disabled ? "disabled:opacity-100" : undefined}
           aria-label="Kimeneti FPS"
           onChange={(event) => onFpsChange(Number(event.target.value))}
         />
         <span className="text-muted-foreground shrink-0 text-sm">FPS</span>
       </div>
-      <FieldDescription>
-        {description} Maximum: {formatFps(maximumFps)} FPS.
-      </FieldDescription>
+      <FieldDescription>Maximum: {formatFps(maximumFps)} FPS.</FieldDescription>
     </Field>
   );
 }
@@ -179,6 +181,7 @@ export default function VideoFrameWorkspace() {
   const [rangeStart, setRangeStart] = useState(0);
   const [rangeEnd, setRangeEnd] = useState(0);
   const [allFrames, setAllFrames] = useState(true);
+  const [firstAndLastOnly, setFirstAndLastOnly] = useState(false);
   const [extractionFps, setExtractionFps] = useState(10);
   const [resultAllFrames, setResultAllFrames] = useState(true);
   const [resultFps, setResultFps] = useState(10);
@@ -196,7 +199,7 @@ export default function VideoFrameWorkspace() {
   const previewsRef = useRef<PreviewFrame[]>([]);
 
   const effectiveExtractionFps: FrameRateSelection =
-    allFrames || !metadata
+    firstAndLastOnly || allFrames || !metadata
       ? null
       : normalizeFrameRate(extractionFps, metadata.sourceFps);
   const extractionMaximum = metadata?.sourceFps ?? 30;
@@ -205,11 +208,13 @@ export default function VideoFrameWorkspace() {
     manifest?.metadata.sourceFps ??
     extractionMaximum;
   const estimatedFrames = metadata
-    ? estimateSelectedFrameCount(
-        Math.max(0, rangeEnd - rangeStart),
-        metadata.sourceFps,
-        effectiveExtractionFps,
-      )
+    ? firstAndLastOnly
+      ? 2
+      : estimateSelectedFrameCount(
+          Math.max(0, rangeEnd - rangeStart),
+          metadata.sourceFps,
+          effectiveExtractionFps,
+        )
     : 0;
   const isActive = phase === "extracting";
 
@@ -324,6 +329,7 @@ export default function VideoFrameWorkspace() {
         setExtractionFps(sensibleFps);
         setResultFps(sensibleFps);
         setAllFrames(true);
+        setFirstAndLastOnly(false);
         setResultAllFrames(true);
         setPhase("configured");
       } catch (inspectionError) {
@@ -392,6 +398,7 @@ export default function VideoFrameWorkspace() {
             metadata,
             rangeStart,
             rangeEnd,
+            extractionMode: firstAndLastOnly ? "first-last" : "timeline",
             extractionFps: effectiveExtractionFps,
             resume,
           },
@@ -434,6 +441,7 @@ export default function VideoFrameWorkspace() {
     },
     [
       effectiveExtractionFps,
+      firstAndLastOnly,
       manifest,
       metadata,
       rangeEnd,
@@ -478,7 +486,7 @@ export default function VideoFrameWorkspace() {
   };
 
   const runSave = useCallback(
-    async (mode: "directory" | "zip") => {
+    async (mode: "directory" | "files" | "zip") => {
       if (!summary) return;
       const returnPhase = phase === "paused" ? "paused" : "ready";
       setPhase("saving");
@@ -496,6 +504,17 @@ export default function VideoFrameWorkspace() {
             type: "success",
             title: "A frame-ek mappába kerültek",
             description: `${summary.selectedCount} PNG mentése elkészült.`,
+          });
+        } else if (mode === "files") {
+          await downloadFrameSetFiles(
+            summary.manifest,
+            summary.selectedCount,
+            setSaveProgress,
+          );
+          toast.add({
+            type: "success",
+            title: "A letöltés elindult",
+            description: `${summary.selectedCount} PNG külön fájlként kerül a böngésző letöltési helyére.`,
           });
         } else {
           const parts = await downloadFrameSetAsZipParts(
@@ -573,9 +592,9 @@ export default function VideoFrameWorkspace() {
     }
     return {
       state: phase === "error" ? ("error" as const) : ("idle" as const),
-      title: "A videó az eszközödön marad",
+      title: "Csatolj egy videót",
       message:
-        "A dekódolás, a PNG-k elkészítése és az átadás is a böngésződben történik.",
+        "A feltöltés után kiválaszhatod, hogyan szeretnéd képekre bontani.",
     };
   }, [phase]);
 
@@ -622,7 +641,7 @@ export default function VideoFrameWorkspace() {
           source && (
             <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
               <div className="flex min-w-0 flex-col gap-6">
-                <Card className="border shadow-none ring-0">
+                <Card className="min-w-0 overflow-hidden border shadow-none ring-0">
                   <CardHeader>
                     <CardTitle>Forrásvideó</CardTitle>
                     <CardDescription>
@@ -642,11 +661,11 @@ export default function VideoFrameWorkspace() {
                         />
                       )}
                     </div>
-                    <dl className="grid content-start gap-3 text-sm">
-                      <div>
+                    <dl className="grid min-w-0 content-start gap-3 text-sm">
+                      <div className="min-w-0">
                         <dt className="text-muted-foreground">Fájlnév</dt>
                         <dd
-                          className="truncate font-medium"
+                          className="block max-w-full truncate font-medium"
                           title={source.name}
                         >
                           {source.name}
@@ -679,12 +698,6 @@ export default function VideoFrameWorkspace() {
                             ≈ {formatFps(metadata.sourceFps)}
                           </dd>
                         </div>
-                      </div>
-                      <div className="flex flex-wrap gap-2 pt-1">
-                        <Badge variant="outline">
-                          {metadata.codec.toUpperCase()}
-                        </Badge>
-                        <Badge variant="outline">PNG kimenet</Badge>
                       </div>
                     </dl>
                   </CardContent>
@@ -858,6 +871,24 @@ export default function VideoFrameWorkspace() {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuGroup>
+                                  <DropdownMenuItem
+                                    onClick={() => void runSave("files")}
+                                  >
+                                    <HugeiconsIcon
+                                      icon={Download04Icon}
+                                      strokeWidth={2}
+                                    />
+                                    Letöltés egyesével
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => void runSave("zip")}
+                                  >
+                                    <HugeiconsIcon
+                                      icon={FileZipIcon}
+                                      strokeWidth={2}
+                                    />
+                                    Letöltés ZIP-ben
+                                  </DropdownMenuItem>
                                   {canSaveFrameSetToDirectory() && (
                                     <DropdownMenuItem
                                       onClick={() => void runSave("directory")}
@@ -869,15 +900,6 @@ export default function VideoFrameWorkspace() {
                                       Mentés választott mappába
                                     </DropdownMenuItem>
                                   )}
-                                  <DropdownMenuItem
-                                    onClick={() => void runSave("zip")}
-                                  >
-                                    <HugeiconsIcon
-                                      icon={Download04Icon}
-                                      strokeWidth={2}
-                                    />
-                                    Letöltés ZIP-részekben
-                                  </DropdownMenuItem>
                                 </DropdownMenuGroup>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -892,9 +914,9 @@ export default function VideoFrameWorkspace() {
                 {phase === "configured" || phase === "extracting" ? (
                   <Card className="border shadow-none ring-0">
                     <CardHeader>
-                      <CardTitle>Frame-beállítások</CardTitle>
+                      <CardTitle>Beállítások</CardTitle>
                       <CardDescription>
-                        Alapból a teljes videó minden frame-je elkészül.
+                        Válaszd ki, hány képre szeretnéd felbontani a videót.
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-6">
@@ -935,19 +957,39 @@ export default function VideoFrameWorkspace() {
                         </Field>
                       </div>
 
+                      <Field>
+                        <label
+                          htmlFor="first-and-last-only"
+                          className="flex items-start gap-3 text-sm font-medium"
+                        >
+                          <Checkbox
+                            id="first-and-last-only"
+                            checked={firstAndLastOnly}
+                            disabled={phase !== "configured"}
+                            onCheckedChange={(checked) =>
+                              setFirstAndLastOnly(checked === true)
+                            }
+                          />
+                          <span>Csak az első és utolsó frame mentése</span>
+                        </label>
+                        <FieldDescription>
+                          A kijelölt időtartomány elejéről és végéről egy-egy
+                          kép készül.
+                        </FieldDescription>
+                      </Field>
+
                       <FpsControl
                         id="extraction-fps"
                         allFrames={allFrames}
                         fps={extractionFps}
                         maximumFps={metadata.sourceFps}
-                        disabled={phase !== "configured"}
+                        disabled={phase !== "configured" || firstAndLastOnly}
                         onAllFramesChange={setAllFrames}
                         onFpsChange={(value) =>
                           setExtractionFps(
                             Math.max(0.01, Math.min(value, metadata.sourceFps)),
                           )
                         }
-                        description="A kisebb FPS már dekódolás közben kihagyja a felesleges PNG-exportot."
                       />
 
                       <div className="bg-muted rounded-2xl border p-4">
@@ -955,7 +997,9 @@ export default function VideoFrameWorkspace() {
                           Becsült kimenet
                         </p>
                         <p className="mt-1 text-lg font-semibold tabular-nums">
-                          ≈ {estimatedFrames} PNG
+                          {firstAndLastOnly
+                            ? "= 2 PNG"
+                            : `≈ ${estimatedFrames} PNG`}
                         </p>
                         <p className="text-muted-foreground mt-2 text-xs">
                           A PNG-k pontos mérete a videó tartalmától függ.
@@ -996,7 +1040,6 @@ export default function VideoFrameWorkspace() {
                         disabled={phase === "saving"}
                         onAllFramesChange={handleResultAllFrames}
                         onFpsChange={handleResultFps}
-                        description="A módosítás az optimalizálásra és a letöltésre is érvényes."
                       />
                       <div className="bg-muted rounded-2xl border p-4">
                         <p className="text-muted-foreground text-xs">

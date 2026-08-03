@@ -6,6 +6,7 @@ import {
   frameFileName,
   normalizeFrameRate,
   selectFramesByFps,
+  shouldExportLastBoundaryFrame,
   shouldSelectFrame,
 } from "./sampling.ts";
 import type { FrameRecordV1 } from "./types.ts";
@@ -56,6 +57,12 @@ test("az FPS nem lehet nagyobb a forrásénál", () => {
 test("a becslés a tartomány és az effektív FPS alapján készül", () => {
   assert.equal(estimateSelectedFrameCount(10, 30, null), 300);
   assert.equal(estimateSelectedFrameCount(10, 30, 5), 50);
+});
+
+test("az első és utolsó frame mód nem menti kétszer ugyanazt a frame-et", () => {
+  assert.equal(shouldExportLastBoundaryFrame(0, 0, 0, 1), false);
+  assert.equal(shouldExportLastBoundaryFrame(0.96, 0, 0, 1), true);
+  assert.equal(shouldExportLastBoundaryFrame(1, 0, 0, 1), false);
 });
 
 test("biztonságos és determinisztikus frame-fájlnevet készít", () => {

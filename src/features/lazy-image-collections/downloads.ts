@@ -1,4 +1,8 @@
-import { downloadFilesAsZip, type SaveableFile } from "@/lib/downloads";
+import {
+  downloadFile,
+  downloadFilesAsZip,
+  type SaveableFile,
+} from "@/lib/downloads";
 
 import {
   iterateLazyOutputRecords,
@@ -30,6 +34,36 @@ export function canSaveLazyOutputToDirectory(): boolean {
     window.isSecureContext &&
     typeof (window as DirectoryPickerWindow).showDirectoryPicker === "function"
   );
+}
+
+export async function* iterateLazyOutputFiles(
+  manifest: LazyOutputManifestV1,
+): AsyncGenerator<SaveableFile> {
+  for await (const record of iterateLazyOutputRecords(manifest)) {
+    const file = await readLazyOutputFile(
+      manifest.collectionId,
+      record.fileName,
+    );
+    yield {
+      blob: file,
+      fileName: record.fileName,
+      mimeType: record.mimeType,
+      description: "Optimalizált kép",
+    };
+  }
+}
+
+export async function downloadLazyOutputFiles(
+  manifest: LazyOutputManifestV1,
+  onProgress: (completed: number) => void,
+): Promise<void> {
+  let completed = 0;
+  for await (const file of iterateLazyOutputFiles(manifest)) {
+    downloadFile(file);
+    completed += 1;
+    onProgress(completed);
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 50));
+  }
 }
 
 export async function saveLazyOutputToDirectory(

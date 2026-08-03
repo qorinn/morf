@@ -6,6 +6,7 @@ import {
   Input,
   MP4,
   QTFF,
+  type VideoSample,
   VideoSampleSink,
   WEBM,
 } from "mediabunny";
@@ -13,6 +14,7 @@ import {
 import {
   frameFileName,
   shouldSelectFrame,
+  shouldExportLastBoundaryFrame,
 } from "@/features/video-frames/sampling";
 import { isStorageNearLimit } from "@/features/video-frames/storage-capacity";
 import {
@@ -238,6 +240,42 @@ async function extractFrames(
     currentChunkStart = currentDecodedTimestamp;
   };
 
+  const exportSample = async (sample: VideoSample) => {
+    currentDecodedTimestamp = sample.timestamp;
+    report("decoding");
+    if (
+      !canvas ||
+      canvas.width !== sample.displayWidth ||
+      canvas.height !== sample.displayHeight
+    ) {
+      canvas = new OffscreenCanvas(sample.displayWidth, sample.displayHeight);
+      context = canvas.getContext("2d", { alpha: true });
+    }
+    if (!canvas || !context) {
+      throw new Error("A böngésző nem tud rajzvásznat létrehozni.");
+    }
+
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    sample.draw(context, 0, 0, canvas.width, canvas.height);
+    const blob = await canvas.convertToBlob({ type: "image/png" });
+    const nextIndex = manifest.frameCount + 1;
+    const fileName = frameFileName(request.file.name, nextIndex);
+
+    report("writing");
+    await writeFrameBlob(manifest.id, fileName, blob);
+    currentChunkFrames.push({
+      index: nextIndex,
+      timestamp: sample.timestamp,
+      duration: sample.duration,
+      fileName,
+      byteSize: blob.size,
+    });
+    manifest.frameCount = nextIndex;
+    manifest.totalBytes += blob.size;
+    manifest.lastSelectedTimestamp = sample.timestamp;
+    lastWrittenFrameSize = blob.size;
+  };
+
   try {
     report("preparing");
     const videoTrack = await input.getPrimaryVideoTrack();
@@ -256,6 +294,78 @@ async function extractFrames(
     report("decoding", initialStorageRemaining);
 
     const sink = new VideoSampleSink(videoTrack);
+
+    if (request.extractionMode === "first-last") {
+      if (manifest.frameCount === 0) {
+        let firstSample: VideoSample | null = null;
+        for await (const sample of sink.samples(
+          request.rangeStart,
+          request.rangeEnd,
+        )) {
+          firstSample = sample;
+          break;
+        }
+
+        if (firstSample) {
+          try {
+            await exportSample(firstSample);
+          } finally {
+            firstSample.close();
+          }
+          await flushCheckpoint();
+
+          const storageRemaining = await getStorageRemaining();
+          if (cancelRequested) {
+            manifest.status = "cancelled";
+            manifest.updatedAt = new Date().toISOString();
+            await writeFrameSetManifest(manifest);
+            return { manifest, reason: "cancelled" };
+          }
+          if (isStorageNearLimit(storageRemaining, lastWrittenFrameSize)) {
+            manifest.status = "paused";
+            manifest.updatedAt = new Date().toISOString();
+            await writeFrameSetManifest(manifest);
+            report("paused", storageRemaining, "storage");
+            return { manifest, reason: "storage" };
+          }
+          if (pauseRequested) {
+            manifest.status = "paused";
+            manifest.updatedAt = new Date().toISOString();
+            await writeFrameSetManifest(manifest);
+            report("paused", storageRemaining, "user");
+            return { manifest, reason: "paused" };
+          }
+        }
+      }
+
+      const lastSample = await sink.getSample(
+        Math.max(request.rangeStart, request.rangeEnd - timestampEpsilon),
+      );
+      if (lastSample) {
+        try {
+          if (
+            shouldExportLastBoundaryFrame(
+              lastSample.timestamp,
+              manifest.lastSelectedTimestamp,
+              request.rangeStart,
+              request.rangeEnd,
+            )
+          ) {
+            await exportSample(lastSample);
+          }
+        } finally {
+          lastSample.close();
+        }
+      }
+
+      await flushCheckpoint();
+      manifest.status = "ready";
+      manifest.updatedAt = new Date().toISOString();
+      await writeFrameSetManifest(manifest);
+      report("completed", await getStorageRemaining());
+      return { manifest, reason: "completed" };
+    }
+
     const resumeAfter = manifest.lastTimestamp;
     const iteratorStart =
       resumeAfter === null
@@ -280,41 +390,7 @@ async function extractFrames(
         );
 
         if (shouldExport) {
-          report("decoding");
-          if (
-            !canvas ||
-            canvas.width !== sample.displayWidth ||
-            canvas.height !== sample.displayHeight
-          ) {
-            canvas = new OffscreenCanvas(
-              sample.displayWidth,
-              sample.displayHeight,
-            );
-            context = canvas.getContext("2d", { alpha: true });
-          }
-          if (!canvas || !context) {
-            throw new Error("A böngésző nem tud rajzvásznat létrehozni.");
-          }
-
-          context.clearRect(0, 0, canvas.width, canvas.height);
-          sample.draw(context, 0, 0, canvas.width, canvas.height);
-          const blob = await canvas.convertToBlob({ type: "image/png" });
-          const nextIndex = manifest.frameCount + 1;
-          const fileName = frameFileName(request.file.name, nextIndex);
-
-          report("writing");
-          await writeFrameBlob(manifest.id, fileName, blob);
-          currentChunkFrames.push({
-            index: nextIndex,
-            timestamp: sample.timestamp,
-            duration: sample.duration,
-            fileName,
-            byteSize: blob.size,
-          });
-          manifest.frameCount = nextIndex;
-          manifest.totalBytes += blob.size;
-          manifest.lastSelectedTimestamp = sample.timestamp;
-          lastWrittenFrameSize = blob.size;
+          await exportSample(sample);
         }
 
         const reachedCheckpoint =
