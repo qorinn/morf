@@ -1,13 +1,53 @@
-# Astro with Tailwind
+# Morf
+
+A Morf egy ingyenes, privát szférát tiszteletben tartó, böngészőben futó digitális eszköztár. A fájlok feldolgozása közvetlenül a felhasználó eszközén történik: a Morf nem tölti fel a kiválasztott képeket és videókat saját szerverre.
+
+## Elérhető eszközök
+
+- **Képkonvertáló, képoptimalizáló és átméretező** – JPG, PNG, WebP, AVIF, HEIC és HEIF képek átalakítása, tömörítése és méretezése. Több kép és teljes mappák feldolgozása is támogatott.
+- **Videó képekre bontása** – MP4, MOV és WebM videók feldolgozása teljes felbontású PNG képkockákra, választható mintavételezési sebességgel.
+- **Favicon generátor** – favicon, Apple Touch és PWA-ikoncsomag készítése egyetlen képből, vágási és maskable-icon beállításokkal.
+
+## Adatvédelem
+
+A képfeldolgozás, videódekódolás, előnézet és fájlkészítés a böngészőben fut. A kiválasztott fájlok nem kerülnek a Morf szerverére. A részletekért lásd az alkalmazás [adatvédelmi tájékoztatóját](/adatvedelmi-tajekoztato).
+
+## Fejlesztés
+
+Előfeltétel: Node.js 22.12 vagy újabb.
 
 ```sh
-npm create astro@latest -- --template with-tailwindcss
+npm install
+npm run dev
 ```
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/withastro/astro/tree/latest/examples/with-tailwindcss)
-[![Open with CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/sandbox/github/withastro/astro/tree/latest/examples/with-tailwindcss)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/withastro/astro?devcontainer_path=.devcontainer/with-tailwindcss/devcontainer.json)
+Ellenőrzés, tesztek és éles build:
 
-Astro comes with [Tailwind](https://tailwindcss.com) support out of the box. This example showcases how to style your Astro project with Tailwind.
+```sh
+npm run check
+npm test
+npm run build
+```
 
-For complete setup instructions, please see our [Tailwind Styling Guide](https://docs.astro.build/en/guides/styling/#tailwind).
+## Technológia
+
+- [Astro](https://astro.build/) és React
+- Tailwind CSS
+- Web Workers és WebAssembly-alapú, kliensoldali feldolgozás
+
+## Szerzői jog és felhasználási feltételek
+
+Copyright © 2026 Paládi Webfejlesztés. Minden jog fenntartva.
+
+Ez a repository kizárólag átláthatósági és ellenőrzési célból nyilvános. A forráskód nyilvános elérhetősége **nem** jelent nyílt forráskódú licencet, és nem ad felhasználási engedélyt.
+
+Előzetes, írásbeli engedély nélkül tilos különösen:
+
+- a forráskód, annak érdemi része vagy az alkalmazás felületének másolása, módosítása, terjesztése vagy származékos mű készítése;
+- a Morf vagy abból származó alkalmazás üzemeltetése, közzététele, hostolása vagy saját termékként való feltüntetése;
+- a Morf neve, logója, arculata, szövegei, illusztrációi és egyéb márkaelemei használata;
+- az alkalmazás vagy bármely részének kereskedelmi célú felhasználása, értékesítése vagy továbblicencelése.
+
+A jelen repository klónozása, telepítése vagy a kódhoz való hozzáférés nem keletkeztet licencet és nem minősül hozzájárulásnak a fenti felhasználásokhoz. Az alkalmazás külső függőségei a saját licenceik szerint használhatók; ez nem terjed ki a Morf saját forráskódjára, arculatára vagy tartalmaira.
+
+Felhasználási, együttműködési vagy licencelési kérdésben: [hello@paladi-web.hu](mailto:hello@paladi-web.hu).
