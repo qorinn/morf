@@ -122,14 +122,14 @@ export async function createFrameSetCollection(
     summary.manifest.status !== "ready" &&
     summary.manifest.status !== "paused"
   ) {
-    throw new Error("A frame-készlet még nem áll készen az importálásra.");
+    throw new Error("A képkészlet még nem áll készen az importálásra.");
   }
 
   return {
     id: crypto.randomUUID(),
     groupId,
     name: summary.manifest.sourceName,
-    sourceLabel: "Videó frame-ek",
+    sourceLabel: "Videóból készült képek",
     source: { kind: "frame-set", frameSetId },
     itemCount: summary.selectedCount,
     totalBytes: summary.selectedBytes,

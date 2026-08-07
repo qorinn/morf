@@ -7,7 +7,10 @@ import { defineConfig } from "astro/config";
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://morfkit.com',
+  site: "https://morfkit.com",
+  redirects: {
+    "/video-framekre-bontasa": "/video-kepekre-bontasa",
+  },
   vite: {
     plugins: [tailwindcss()],
     resolve: {

@@ -72,6 +72,23 @@ export function areConversionSettingsEqual(
   );
 }
 
+export function conversionSettingsKey(
+  settings: ImageConversionSettings,
+): string {
+  return JSON.stringify(settings);
+}
+
+export function shouldProcessJobForSettings(
+  job: FileJob,
+  settings: ImageConversionSettings,
+): boolean {
+  if (job.status === "queued") return true;
+  return (
+    job.status === "completed" &&
+    job.result?.settingsKey !== conversionSettingsKey(settings)
+  );
+}
+
 export function getConversionModeLabel(
   settings: ImageConversionSettings,
 ): string {

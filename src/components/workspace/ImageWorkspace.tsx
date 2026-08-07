@@ -77,9 +77,11 @@ import {
   type DndJobItems,
 } from "@/components/workspace/dnd-job-order";
 import {
+  conversionSettingsKey,
   conversionSettingsToRecipe,
   getConversionModeLabel,
   getConversionResolutionLabel,
+  shouldProcessJobForSettings,
 } from "@/features/image-processing/conversion-settings";
 import { createProcessingError } from "@/features/image-processing/errors";
 import type {
@@ -110,6 +112,7 @@ import {
 import { createOutputFileNameFromBase } from "@/lib/filenames/image-filenames";
 import { cn } from "@/lib/utils";
 import {
+  downloadFile,
   downloadFiles,
   downloadFilesAsZip,
   getSaveCapabilities,
@@ -191,20 +194,24 @@ function getConcurrency(): number {
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 1 : 2;
 }
 
+function getCompletedFile(job: FileJob): SaveableFile | undefined {
+  if (!job.result) return undefined;
+
+  return {
+    blob: job.result.blob,
+    fileName: createOutputFileNameFromBase(
+      job.outputBaseName,
+      job.result.format,
+    ),
+    mimeType: job.result.mimeType,
+    description: "Kép",
+  };
+}
+
 function getCompletedFiles(jobs: FileJob[]): SaveableFile[] {
   return jobs.flatMap((job) => {
-    if (!job.result) return [];
-    return [
-      {
-        blob: job.result.blob,
-        fileName: createOutputFileNameFromBase(
-          job.outputBaseName,
-          job.result.format,
-        ),
-        mimeType: job.result.mimeType,
-        description: "Kép",
-      },
-    ];
+    const file = getCompletedFile(job);
+    return file ? [file] : [];
   });
 }
 
@@ -258,6 +265,9 @@ function StandardImageWorkspace({
   const renameJob = useWorkspaceStore((state) => state.renameJob);
   const failJob = useWorkspaceStore((state) => state.failJob);
   const setJobStatus = useWorkspaceStore((state) => state.setJobStatus);
+  const prepareJobsForProcessing = useWorkspaceStore(
+    (state) => state.prepareJobsForProcessing,
+  );
   const removeSelectedJobs = useWorkspaceStore(
     (state) => state.removeSelectedJobs,
   );
@@ -360,7 +370,7 @@ function StandardImageWorkspace({
       .then((draft) => {
         if (cancelled) return;
         importedFrameSetRef.current = initialFrameSetId;
-        const groupId = getOrCreateCollectionGroup("Videó frame-ek");
+        const groupId = getOrCreateCollectionGroup("Videóból készült képek");
         setLazyCollections((current) => [...current, { ...draft, groupId }]);
         setActiveGroup(groupId);
       })
@@ -369,7 +379,7 @@ function StandardImageWorkspace({
           setWorkspaceError(
             error instanceof Error
               ? error.message
-              : "A helyi frame-készlet már nem érhető el.",
+              : "A helyi képkészlet már nem érhető el.",
           );
         }
       });
@@ -378,35 +388,6 @@ function StandardImageWorkspace({
       cancelled = true;
     };
   }, [getOrCreateCollectionGroup, initialFrameSetId, setActiveGroup]);
-
-  useEffect(() => {
-    setLazyCollections((current) =>
-      current.map((collection) => {
-        if (collection.status !== "completed" || !collection.settingsKey) {
-          return collection;
-        }
-        const group = groups.find(
-          (candidate) => candidate.id === collection.groupId,
-        );
-        if (
-          !group ||
-          lazyCollectionSettingsKey(group.settings) === collection.settingsKey
-        ) {
-          return collection;
-        }
-        return {
-          ...collection,
-          status: "queued",
-          progress: 0,
-          completedCount: 0,
-          outputBytes: 0,
-          outputManifest: undefined,
-          errorMessage: undefined,
-          settingsKey: undefined,
-        };
-      }),
-    );
-  }, [groups]);
 
   const groupIds = useMemo(() => groups.map((group) => group.id), [groups]);
   const workspaceDndItems = useMemo(
@@ -623,6 +604,7 @@ function StandardImageWorkspace({
             height: result.height,
             size: blob.size,
             mimeType: result.mimeType,
+            settingsKey: conversionSettingsKey(settings),
           },
           result.originalWidth,
           result.originalHeight,
@@ -745,23 +727,44 @@ function StandardImageWorkspace({
       return;
     }
 
-    const state = useWorkspaceStore.getState();
-    const queuedJobs = state.jobs.flatMap((job) => {
-      if (!job.shouldProcess || job.status !== "queued") return [];
-
+    let state = useWorkspaceStore.getState();
+    const processableJobIds = state.jobs.flatMap((job) => {
+      if (!job.shouldProcess) return [];
       const group = state.groups.find(
         (candidate) => candidate.id === job.groupId,
       );
-      return group?.shouldProcess
-        ? [{ job, settings: { ...group.settings } }]
+      return group?.shouldProcess &&
+        shouldProcessJobForSettings(job, group.settings)
+        ? [job.id]
         : [];
     });
+    const staleJobIds = processableJobIds.filter((jobId) =>
+      state.jobs.some((job) => job.id === jobId && job.status === "completed"),
+    );
+    if (staleJobIds.length > 0) {
+      prepareJobsForProcessing(staleJobIds);
+      state = useWorkspaceStore.getState();
+    }
+    const processableJobIdSet = new Set(processableJobIds);
+    const queuedJobs = state.jobs.flatMap((job) => {
+      if (!processableJobIdSet.has(job.id) || job.status !== "queued") {
+        return [];
+      }
+      const group = state.groups.find(
+        (candidate) => candidate.id === job.groupId,
+      );
+      return group ? [{ job, settings: { ...group.settings } }] : [];
+    });
     const queuedCollections = lazyCollections.flatMap((collection) => {
-      if (collection.status !== "queued") return [];
       const group = state.groups.find(
         (candidate) => candidate.id === collection.groupId,
       );
-      return group?.shouldProcess
+      const needsProcessing =
+        collection.status === "queued" ||
+        (collection.status === "completed" &&
+          collection.settingsKey !==
+            (group ? lazyCollectionSettingsKey(group.settings) : undefined));
+      return group?.shouldProcess && needsProcessing
         ? [{ collection, settings: { ...group.settings } }]
         : [];
     });
@@ -819,7 +822,12 @@ function StandardImageWorkspace({
       batchRunRef.current = false;
       setIsBatchActive(false);
     }
-  }, [lazyCollections, processOneJob, processOneLazyCollection]);
+  }, [
+    lazyCollections,
+    prepareJobsForProcessing,
+    processOneJob,
+    processOneLazyCollection,
+  ]);
 
   const updateJobDimensions = useCallback(
     (id: string, width: number, height: number) => {
@@ -839,6 +847,16 @@ function StandardImageWorkspace({
     },
     [duplicateJob],
   );
+
+  const downloadOne = useCallback((id: string) => {
+    const job = useWorkspaceStore
+      .getState()
+      .jobs.find((candidate) => candidate.id === id);
+    if (!job) return;
+
+    const file = getCompletedFile(job);
+    if (file) downloadFile(file);
+  }, []);
 
   const removeSelected = useCallback(() => {
     const removedCount = removeSelectedJobs();
@@ -1056,23 +1074,28 @@ function StandardImageWorkspace({
       0,
     );
   const processableCount =
-    jobs.filter(
-      (job) =>
-        job.shouldProcess &&
-        job.status === "queued" &&
-        groups.some((group) => group.id === job.groupId && group.shouldProcess),
-    ).length +
-    lazyCollections.reduce(
-      (total, collection) =>
+    jobs.filter((job) => {
+      if (!job.shouldProcess) return false;
+      const group = groups.find((candidate) => candidate.id === job.groupId);
+      return Boolean(
+        group?.shouldProcess &&
+        shouldProcessJobForSettings(job, group.settings),
+      );
+    }).length +
+    lazyCollections.reduce((total, collection) => {
+      const group = groups.find(
+        (candidate) => candidate.id === collection.groupId,
+      );
+      const needsProcessing =
+        collection.status === "queued" ||
+        (collection.status === "completed" &&
+          collection.settingsKey !==
+            (group ? lazyCollectionSettingsKey(group.settings) : undefined));
+      return (
         total +
-        (collection.status === "queued" &&
-        groups.some(
-          (group) => group.id === collection.groupId && group.shouldProcess,
-        )
-          ? collection.itemCount
-          : 0),
-      0,
-    );
+        (group?.shouldProcess && needsProcessing ? collection.itemCount : 0)
+      );
+    }, 0);
   const totalInputCount =
     jobs.length +
     lazyCollections.reduce(
@@ -1495,6 +1518,7 @@ function StandardImageWorkspace({
                                           job.id,
                                         )}
                                         onDimensions={updateJobDimensions}
+                                        onDownload={downloadOne}
                                         onDuplicate={duplicateOne}
                                         onRename={renameJob}
                                         onSelectionChange={toggleJobSelection}

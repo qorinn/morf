@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   DragDropVerticalIcon,
+  Download04Icon,
   ImageNotFound01Icon,
   LayerAddIcon,
 } from "@hugeicons/core-free-icons";
@@ -32,6 +33,7 @@ type FileJobCardProps = {
   sortIndex: number;
   isSelected: boolean;
   onDimensions: (id: string, width: number, height: number) => void;
+  onDownload: (id: string) => void;
   onDuplicate: (id: string) => void;
   onRename: (id: string, outputBaseName: string) => void;
   onSelectionChange: (id: string) => void;
@@ -81,6 +83,7 @@ export function FileJobCard({
   sortIndex,
   isSelected,
   onDimensions,
+  onDownload,
   onDuplicate,
   onRename,
   onSelectionChange,
@@ -187,7 +190,7 @@ export function FileJobCard({
               </p>
             </div>
 
-            <div className="grid min-w-0 grid-cols-[2.5rem_minmax(0,1fr)_2rem] items-center gap-1">
+            <div className="grid min-w-0 grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-1">
               <div className="bg-muted flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl">
                 {previewFailed ? (
                   <HugeiconsIcon
@@ -235,20 +238,39 @@ export function FileJobCard({
                 />
               </InputGroup>
 
-              <Button
-                type="button"
-                size="icon-sm"
-                variant="ghost"
-                aria-label={`${job.file.name} duplikálása`}
-                disabled={selectionDisabled || isActive}
-                onClick={() => onDuplicate(job.id)}
-              >
-                <HugeiconsIcon
-                  icon={LayerAddIcon}
-                  strokeWidth={2}
-                  aria-hidden="true"
-                />
-              </Button>
+              <div className="flex items-center">
+                {job.status === "completed" && job.result && (
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="ghost"
+                    aria-label={`${job.file.name} letöltése`}
+                    title="Letöltés"
+                    onClick={() => onDownload(job.id)}
+                  >
+                    <HugeiconsIcon
+                      icon={Download04Icon}
+                      strokeWidth={2}
+                      aria-hidden="true"
+                    />
+                  </Button>
+                )}
+
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant="ghost"
+                  aria-label={`${job.file.name} duplikálása`}
+                  disabled={selectionDisabled || isActive}
+                  onClick={() => onDuplicate(job.id)}
+                >
+                  <HugeiconsIcon
+                    icon={LayerAddIcon}
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  />
+                </Button>
+              </div>
             </div>
           </div>
 

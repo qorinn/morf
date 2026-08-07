@@ -2,6 +2,7 @@
 
 import {
   BrowserIcon,
+  Film01Icon,
   Image02Icon,
   ImageCropIcon,
   MagicWand02Icon,
@@ -42,6 +43,27 @@ function HomeHeroGravity() {
               aria-hidden="true"
             />
             Képkonvertáló
+          </a>
+        </MatterBody>
+
+        <MatterBody
+          isDraggable={false}
+          x="68%"
+          y="13%"
+          angle={2}
+          className="z-10"
+        >
+          <a
+            href="/video-kepekre-bontasa"
+            className="bg-card/90 text-card-foreground focus-visible:ring-ring inline-flex items-center gap-2 rounded-4xl border px-4 py-3 text-sm font-semibold whitespace-nowrap shadow-sm transition-colors hover:bg-card focus-visible:ring-3 focus-visible:ring-offset-2 focus-visible:outline-none sm:px-5 sm:py-3.5 sm:text-base"
+          >
+            <HugeiconsIcon
+              icon={Film01Icon}
+              strokeWidth={1.8}
+              className="size-5"
+              aria-hidden="true"
+            />
+            Videó képekre bontása
           </a>
         </MatterBody>
 

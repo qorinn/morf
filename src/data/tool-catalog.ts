@@ -21,16 +21,16 @@ export const tools = [
     ],
   },
   {
-    title: "Videó frame-ekre bontása",
-    shortDescription: "Veszteségmentes PNG frame-ek videóból.",
+    title: "Videó képekre bontása",
+    shortDescription: "Veszteségmentes PNG képek videóból.",
     description:
-      "Bonts MP4, MOV vagy WebM videót teljes felbontású PNG frame-ekre, majd optimalizáld őket a képkonvertálóban.",
-    href: "/video-framekre-bontasa",
-    cta: "Frame-ek készítése",
+      "Bonts MP4, MOV vagy WebM videót teljes felbontású PNG képekre, majd optimalizáld őket a képkonvertálóban.",
+    href: "/video-kepekre-bontasa",
+    cta: "Képek készítése",
     icon: Film01Icon,
     formats: "MP4, MOV, WebM → PNG",
     features: [
-      "Minden frame vagy választható FPS",
+      "Minden képkocka vagy választható FPS",
       "Checkpointos helyi feldolgozás",
       "Egykattintásos átadás optimalizálásra",
     ],

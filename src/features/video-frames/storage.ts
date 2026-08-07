@@ -68,7 +68,7 @@ function assertSupportedVersion(
 ): void {
   if (value.schemaVersion !== frameSetSchemaVersion) {
     throw new Error(
-      `A helyi ${artifactName} verziója nem támogatott. Készíts új frame-készletet.`,
+      `A helyi ${artifactName} verziója nem támogatott. Készíts új képkészletet.`,
     );
   }
 }
@@ -87,7 +87,7 @@ export async function readFrameSetManifest(
     await getFrameSetDirectory(frameSetId),
     manifestFileName,
   );
-  assertSupportedVersion(manifest, "frame-készlet");
+  assertSupportedVersion(manifest, "képkészlet");
   return manifest;
 }
 

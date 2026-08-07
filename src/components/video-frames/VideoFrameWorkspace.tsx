@@ -151,7 +151,7 @@ function FpsControl({
           className={disabled ? "disabled:opacity-100" : undefined}
           onCheckedChange={(checked) => onAllFramesChange(checked === true)}
         />
-        Minden elérhető frame
+        Minden elérhető képkocka
       </label>
       <div className="flex items-center gap-3">
         <Input
@@ -415,13 +415,13 @@ export default function VideoFrameWorkspace() {
           setPhase("ready");
           toast.add({
             type: "success",
-            title: "Elkészültek a frame-ek",
+            title: "Elkészültek a képek",
             description: `${result.manifest.frameCount} veszteségmentes PNG készült.`,
           });
         } else if (result.reason === "storage") {
           await refreshSummary(result.manifest.id);
           setError(
-            "A helyi tárhely biztonságos határához értünk. Mentsd vagy optimalizáld az elkészült frame-eket, szabadíts fel helyet, vagy indíts kisebb FPS-sel.",
+            "A helyi tárhely biztonságos határához értünk. Mentsd vagy optimalizáld az elkészült képeket, szabadíts fel helyet, vagy indíts kisebb FPS-sel.",
           );
           setPhase("paused");
         } else {
@@ -432,7 +432,7 @@ export default function VideoFrameWorkspace() {
         setError(
           extractionError instanceof Error
             ? extractionError.message
-            : "A frame-ek elkészítése megszakadt.",
+            : "A képek elkészítése megszakadt.",
         );
         setPhase("error");
       } finally {
@@ -502,7 +502,7 @@ export default function VideoFrameWorkspace() {
           );
           toast.add({
             type: "success",
-            title: "A frame-ek mappába kerültek",
+            title: "A képek mappába kerültek",
             description: `${summary.selectedCount} PNG mentése elkészült.`,
           });
         } else if (mode === "files") {
@@ -533,7 +533,7 @@ export default function VideoFrameWorkspace() {
           setError(
             saveError instanceof Error
               ? saveError.message
-              : "A frame-ek mentése nem sikerült.",
+              : "A képek mentése nem sikerült.",
           );
         }
       } finally {
@@ -569,7 +569,7 @@ export default function VideoFrameWorkspace() {
     if (phase === "extracting") {
       return {
         state: "processing" as const,
-        title: "Morf frame-enként dolgozik",
+        title: "Morf képkockánként dolgozik",
         message:
           "A videó részletekben olvasódik, a PNG-k pedig folyamatosan a helyi tárhelyre kerülnek.",
       };
@@ -577,7 +577,7 @@ export default function VideoFrameWorkspace() {
     if (phase === "ready" || phase === "saving") {
       return {
         state: "success" as const,
-        title: "A frame-ek készen állnak",
+        title: "A képek készen állnak",
         message:
           "Elsődlegesen átviheted őket optimalizálásra, vagy megtarthatod a veszteségmentes PNG-ket.",
       };
@@ -628,7 +628,7 @@ export default function VideoFrameWorkspace() {
               onBrowse={open}
               title="Húzd ide a videót"
               activeTitle="Engedd el a videót"
-              description="Egy MP4, MOV vagy WebM videóból készíthetsz teljes felbontású PNG frame-eket."
+              description="Egy MP4, MOV vagy WebM videóból készíthetsz teljes felbontású PNG képeket."
               buttonLabel="Videó kiválasztása"
               busy={phase === "inspecting"}
               busyLabel="Videó ellenőrzése"
@@ -709,7 +709,7 @@ export default function VideoFrameWorkspace() {
                       <CardTitle>
                         {phase === "paused"
                           ? "Feldolgozás szünetel"
-                          : "Frame-ek készítése"}
+                          : "Képek készítése"}
                       </CardTitle>
                       <CardDescription>
                         {progress.frameCount} PNG ·{" "}
@@ -719,7 +719,7 @@ export default function VideoFrameWorkspace() {
                     <CardContent className="flex flex-col gap-5">
                       <Progress
                         value={progressPercent(progress)}
-                        aria-label="Frame-ek feldolgozási folyamata"
+                        aria-label="Képek feldolgozási folyamata"
                       >
                         <ProgressLabel>
                           {formatDuration(progress.currentTimestamp)} /{" "}
@@ -780,7 +780,7 @@ export default function VideoFrameWorkspace() {
                   summary && (
                     <Card className="border shadow-none ring-0">
                       <CardHeader>
-                        <CardTitle>Elkészült PNG frame-ek</CardTitle>
+                        <CardTitle>Elkészült PNG-képek</CardTitle>
                         <CardDescription>
                           {summary.selectedCount} kiválasztva ·{" "}
                           {formatBytes(summary.selectedBytes)} · eredeti
@@ -817,7 +817,7 @@ export default function VideoFrameWorkspace() {
                                   100
                                 : 0
                             }
-                            aria-label="Frame-ek mentése"
+                            aria-label="Képek mentése"
                           >
                             <ProgressLabel>PNG-k mentése</ProgressLabel>
                             <span className="text-muted-foreground ml-auto text-sm tabular-nums">
@@ -832,9 +832,8 @@ export default function VideoFrameWorkspace() {
                               Optimalizálnád a PNG-ket?
                             </h4>
                             <p className="text-muted-foreground mt-1 max-w-xl text-sm">
-                              Vidd át a kiválasztott frame-eket a
-                              képkonvertálóba, ahol formátumot, méretet és
-                              minőséget adhatsz meg.
+                              Vidd át a kiválasztott képeket a képkonvertálóba,
+                              ahol formátumot, méretet és minőséget adhatsz meg.
                             </p>
                           </div>
                           <div className="flex shrink-0 flex-wrap gap-2">
@@ -844,7 +843,7 @@ export default function VideoFrameWorkspace() {
                               disabled={phase === "saving"}
                               onClick={transferToConverter}
                             >
-                              Frame-ek optimalizálása
+                              Képek optimalizálása
                               <HugeiconsIcon
                                 icon={ArrowRight02Icon}
                                 strokeWidth={2}
@@ -970,7 +969,7 @@ export default function VideoFrameWorkspace() {
                               setFirstAndLastOnly(checked === true)
                             }
                           />
-                          <span>Csak az első és utolsó frame mentése</span>
+                          <span>Csak az első és utolsó képkocka mentése</span>
                         </label>
                         <FieldDescription>
                           A kijelölt időtartomány elejéről és végéről egy-egy
@@ -1017,7 +1016,7 @@ export default function VideoFrameWorkspace() {
                             strokeWidth={2}
                             data-icon="inline-start"
                           />
-                          Frame-ek elkészítése
+                          Képek elkészítése
                         </Button>
                       )}
                     </CardContent>
@@ -1025,7 +1024,7 @@ export default function VideoFrameWorkspace() {
                 ) : (
                   <Card className="border shadow-none ring-0">
                     <CardHeader>
-                      <CardTitle>Kiválasztott frame-ek</CardTitle>
+                      <CardTitle>Kiválasztott képek</CardTitle>
                       <CardDescription>
                         Az elkészült készlet tovább ritkítható, de nem
                         sűríthető.
@@ -1046,7 +1045,7 @@ export default function VideoFrameWorkspace() {
                           Aktív készlet
                         </p>
                         <p className="mt-1 text-lg font-semibold tabular-nums">
-                          {summary?.selectedCount ?? 0} frame
+                          {summary?.selectedCount ?? 0} kép
                         </p>
                         <p className="text-muted-foreground mt-1 text-sm tabular-nums">
                           {formatBytes(summary?.selectedBytes ?? 0)}

@@ -78,7 +78,7 @@ export async function downloadFrameSetFiles(
       blob: file,
       fileName: frame.fileName,
       mimeType: "image/png",
-      description: "PNG frame",
+      description: "PNG-kép",
     });
     completed += 1;
     onProgress({ completed, total: selectedCount });
@@ -121,9 +121,9 @@ export async function downloadFrameSetAsZipParts(
     const archive = await createZipArchive(files);
     downloadFile({
       blob: archive,
-      fileName: `${baseName}-framek-${String(partNumber).padStart(3, "0")}.zip`,
+      fileName: `${baseName}-kepek-${String(partNumber).padStart(3, "0")}.zip`,
       mimeType: "application/zip",
-      description: "PNG frame-ek",
+      description: "PNG-képek",
     });
     files = [];
     partBytes = 0;
@@ -139,7 +139,7 @@ export async function downloadFrameSetAsZipParts(
       blob: file,
       fileName: frame.fileName,
       mimeType: "image/png",
-      description: "PNG frame",
+      description: "PNG-kép",
     });
     partBytes += frame.byteSize;
     completed += 1;
