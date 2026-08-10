@@ -9,6 +9,7 @@ interface Props {
     | "converter"
     | "favicon"
     | "videoFrames"
+    | "sharePreview"
     | "privacy"
     | null;
   actionHref?: string;
@@ -31,6 +32,11 @@ const navItems = [
     label: "Videó képekre",
   },
   { key: "favicon", href: "/favicon-generator", label: "Favicon generátor" },
+  {
+    key: "sharePreview",
+    href: "/megosztasi-elozet-tervezo",
+    label: "Megosztási előnézet",
+  },
 ] as const;
 ---
 
@@ -77,7 +83,7 @@ const navItems = [
     </a>
 
     <div class="flex items-center gap-2">
-      <div class="hidden items-center gap-1 sm:flex">
+      <div class="hidden items-center gap-1 lg:flex">
         {
           navItems.map((item) => (
             <a

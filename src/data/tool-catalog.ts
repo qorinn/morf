@@ -2,6 +2,7 @@ import {
   BrowserIcon,
   Film01Icon,
   Image02Icon,
+  Share01Icon,
 } from "@hugeicons/core-free-icons";
 
 export const tools = [
@@ -33,6 +34,22 @@ export const tools = [
       "Minden képkocka vagy választható FPS",
       "Checkpointos helyi feldolgozás",
       "Egykattintásos átadás optimalizálásra",
+    ],
+  },
+  {
+    title: "Open Graph ellenőrző",
+    shortDescription: "Ellenőrzés, előnézet és javítható meta adatok.",
+    description:
+      "Ellenőrizd az oldalad Open Graph adatait, nézd meg a megosztási előnézetet, majd másold ki a javított meta tageket.",
+    href: "/megosztasi-elozet-tervezo",
+    cta: "Oldal ellenőrzése",
+    icon: Share01Icon,
+    formats: "Open Graph, X Card",
+    features: [
+      "Éles oldal Open Graph ellenőrzése",
+      "Helyi kép-előnézet drag and droppal",
+      "Ajánlott szöveghossz és képméret",
+      "Azonnal másolható meta tag kód",
     ],
   },
   {

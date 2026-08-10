@@ -22,6 +22,7 @@
   --accent: oklch(0.915 0.07 292);
   --accent-foreground: oklch(0.285 0.105 289);
   --destructive: oklch(0.637 0.187 31.467);
+  --warning: oklch(0.67 0.14 72);
   --border: oklch(0.89 0.025 169);
   --input: oklch(87.651% 0.01207 170.688);
   --ring: oklch(0.62 0.18 289);
@@ -52,6 +53,36 @@
   --dark-section-accent: oklch(0.81 0.105 166);
   --dark-section-border: oklch(0.62 0.08 169 / 0.28);
 
+  --social-preview-canvas: #ffffff;
+  --social-preview-foreground: #0f1419;
+  --social-preview-empty: #f3f4f6;
+  --social-preview-empty-stripe: #e5e7eb;
+  --platform-neutral-border: #d8dde3;
+  --platform-facebook: #1877f2;
+  --platform-facebook-surface: #f0f2f5;
+  --platform-facebook-muted: #65676b;
+  --platform-x: #0f1419;
+  --platform-x-muted: #536471;
+  --platform-linkedin: #0a66c2;
+  --platform-linkedin-muted: #666666;
+  --platform-whatsapp: #25d366;
+  --platform-whatsapp-surface: #075e54;
+  --platform-whatsapp-content: #064c44;
+  --platform-whatsapp-muted: #b7d6d1;
+  --platform-discord: #5865f2;
+  --platform-discord-surface: #2b2d31;
+  --platform-discord-foreground: #f2f3f5;
+  --platform-discord-muted: #b5bac1;
+  --platform-discord-accent: #00a8fc;
+  --platform-discord-border: #404249;
+
+  --audit-error-surface: oklch(0.965 0.028 25);
+  --audit-warning-surface: oklch(0.97 0.035 82);
+  --audit-success-surface: oklch(97.75% 0.01485 165.149);
+  --audit-error-border: oklch(0.67 0.15 25);
+  --audit-warning-border: oklch(0.74 0.14 82);
+  --audit-success-border: oklch(80.982% 0.05039 173.662);
+
   --shadow-surface:
     inset 0 1px 0 var(--surface-highlight),
     inset 0 -1px 0 oklch(0.53 0.07 169 / 0.08);
@@ -73,6 +104,7 @@
   --accent: oklch(0.35 0.105 289);
   --accent-foreground: oklch(0.965 0.012 169);
   --destructive: oklch(0.704 0.191 22.216);
+  --warning: oklch(0.78 0.14 78);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.72 0.16 289);
@@ -100,6 +132,13 @@
   --dark-section-muted: oklch(0.75 0.035 169);
   --dark-section-accent: oklch(0.79 0.11 166);
   --dark-section-border: oklch(0.65 0.08 169 / 0.24);
+
+  --audit-error-surface: oklch(0.27 0.045 25);
+  --audit-warning-surface: oklch(0.285 0.045 82);
+  --audit-success-surface: oklch(0.27 0.04 165);
+  --audit-error-border: oklch(0.72 0.17 25);
+  --audit-warning-border: oklch(0.8 0.15 82);
+  --audit-success-border: oklch(0.72 0.13 165);
 }
 
 @theme inline {
@@ -122,6 +161,7 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-warning: var(--warning);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -426,6 +466,151 @@
     box-shadow:
       inset 0 0.3rem 0.9rem oklch(0.36 0.055 171 / 0.13),
       0 1px 0 var(--surface-highlight);
+  }
+
+  .morf-share-preview-panel {
+    color: var(--social-preview-foreground);
+    background: var(--social-preview-canvas);
+    border-color: var(--border);
+  }
+
+  .morf-platform-tab[aria-selected="true"][data-platform="facebook"] {
+    color: var(--platform-facebook);
+  }
+
+  .morf-platform-tab[aria-selected="true"][data-platform="x"] {
+    color: var(--platform-x);
+  }
+
+  .morf-platform-tab[aria-selected="true"][data-platform="linkedin"] {
+    color: var(--platform-linkedin);
+  }
+
+  .morf-platform-tab[aria-selected="true"][data-platform="whatsapp"] {
+    color: var(--platform-whatsapp);
+  }
+
+  .morf-platform-tab[aria-selected="true"][data-platform="discord"] {
+    color: var(--platform-discord);
+  }
+
+  .morf-platform-tab[aria-selected="true"][data-platform="html"] {
+    color: var(--social-preview-foreground);
+  }
+
+  .morf-platform-facebook-card,
+  .morf-platform-x-card,
+  .morf-platform-linkedin-card {
+    color: var(--social-preview-foreground);
+    background: var(--social-preview-canvas);
+  }
+
+  .morf-platform-facebook-card,
+  .morf-platform-facebook-footer,
+  .morf-platform-x-card > div {
+    border-color: var(--platform-neutral-border);
+  }
+
+  .morf-platform-facebook-footer {
+    background: var(--platform-facebook-surface);
+  }
+
+  .morf-platform-facebook-card .morf-platform-muted {
+    color: var(--platform-facebook-muted);
+  }
+
+  .morf-platform-x-card .morf-platform-muted {
+    color: var(--platform-x-muted);
+  }
+
+  .morf-platform-x-overlay {
+    color: var(--social-preview-canvas);
+    background: color-mix(in srgb, var(--platform-x) 92%, transparent);
+  }
+
+  .morf-platform-linkedin-card {
+    border-color: var(--platform-neutral-border);
+  }
+
+  .morf-platform-linkedin-card .morf-platform-muted {
+    color: var(--platform-linkedin-muted);
+  }
+
+  .morf-platform-whatsapp-card {
+    color: var(--social-preview-canvas);
+    background: var(--platform-whatsapp-surface);
+  }
+
+  .morf-platform-whatsapp-content {
+    background: var(--platform-whatsapp-content);
+  }
+
+  .morf-platform-whatsapp-card .morf-platform-muted {
+    color: var(--platform-whatsapp-muted);
+  }
+
+  .morf-platform-discord-card {
+    color: var(--platform-discord-foreground);
+    background: var(--platform-discord-surface);
+    border-left-color: var(--platform-discord);
+  }
+
+  .morf-platform-discord-card > div {
+    border-color: var(--platform-discord-border);
+  }
+
+  .morf-platform-discord-card .morf-platform-muted {
+    color: var(--platform-discord-muted);
+  }
+
+  .morf-platform-discord-card .morf-platform-accent {
+    color: var(--platform-discord-accent);
+  }
+
+  .morf-audit-result-card[data-severity="error"] {
+    border-width: 1.5px;
+    border-color: var(--audit-error-border);
+    background: linear-gradient(
+      100deg,
+      var(--audit-error-surface),
+      var(--card) 72%
+    );
+  }
+
+  .morf-audit-result-card[data-severity="warning"] {
+    border-width: 1.5px;
+    border-color: var(--audit-warning-border);
+    background: linear-gradient(
+      100deg,
+      var(--audit-warning-surface),
+      var(--card) 72%
+    );
+  }
+
+  .morf-audit-result-card[data-severity="success"] {
+    border-width: 1.5px;
+    border-color: var(--audit-success-border);
+    background: linear-gradient(
+      100deg,
+      var(--audit-success-surface),
+      var(--card) 72%
+    );
+  }
+
+  .morf-share-image-empty {
+    color: var(--platform-x-muted);
+    background-color: var(--social-preview-empty);
+    background-image: repeating-linear-gradient(
+      135deg,
+      var(--social-preview-empty-stripe) 0 1.35rem,
+      transparent 1.35rem 2.7rem
+    );
+  }
+
+  .morf-share-code {
+    color: var(--dark-section-foreground);
+    background: color-mix(in oklch, var(--foreground) 14%, var(--dark-section));
+    border-color: var(--dark-section-border);
   }
 
   .morf-cropper cropper-canvas {

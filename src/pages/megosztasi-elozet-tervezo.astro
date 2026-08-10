@@ -1,0 +1,68 @@
+---
+import SiteFooter from "@/components/layout/SiteFooter.astro";
+import SiteHeader from "@/components/layout/SiteHeader.astro";
+import FaqSection from "@/components/sections/FaqSection.astro";
+import PrivacySection from "@/components/sections/PrivacySection.astro";
+import { SharePreviewWorkspace } from "@/components/share-preview/SharePreviewWorkspace";
+import MainLayout from "@/layouts/main.astro";
+
+const privacyItems = [
+  "A feltöltött kép csak a böngésződben jelenik meg, a Morf nem tölti fel vagy tárolja.",
+  "A meta tagek kódja közvetlenül a böngésződben készül, és csak akkor kerül máshová, ha te kimásolod.",
+  "A valódi megosztási képhez a saját, nyilvánosan elérhető képed URL-jét kell megadnod.",
+];
+
+const faqItems = [
+  {
+    question: "Miért kell minden oldalhoz külön cím, leírás és kép?",
+    answer:
+      "A megosztási előnézet dönti el, mit lát valaki, mielőtt megnyitja a hivatkozást. Ha minden oldal ugyanazt az általános címet, leírást és képet használja, a konkrét tartalom kevésbé érthető és a link kevésbé kattintható. A fontos landingek, cikkek, termékek és eszközoldalak mind kapjanak saját meta adatokat.",
+  },
+  {
+    question: "Mekkora legyen az Open Graph kép?",
+    answer:
+      "A biztos kiindulópont 1200 × 630 pixel, 1,91:1 képaránnyal. Használj éles, jól olvasható képet, és a fontos szöveget vagy részleteket ne tedd közvetlenül a szélekhez. A különböző platformok kicsit eltérően vághatnak.",
+  },
+  {
+    question: "Miért kell a képnek publikus URL?",
+    answer:
+      "A Facebook, LinkedIn, X és más megosztó szolgáltatások a meta tagben megadott URL-ről töltik le a képet. A tervezőbe húzott fájl csak helyi előnézet, azt egy külső szolgáltatás nem tudja elérni. A kész kép legyen már feltöltve a saját webhelyedre vagy CDN-edre.",
+  },
+  {
+    question: "Mikor frissül a megosztási előnézet?",
+    answer:
+      "A webhelyeden azonnal az új meta tagek lesznek érvényesek, de a közösségi platformok korábbi előnézetet gyorsítótárból mutathatnak. Publikálás után érdemes az adott platform megosztási hibakeresőjében újra lekérni az URL-t.",
+  },
+];
+---
+
+<MainLayout
+  title="Open Graph ellenőrző és megosztási előnézet | Morf"
+  description="Ellenőrizd egy éles oldal Open Graph adatait, javítsd a címet, leírást és megosztási képet, majd másold ki a friss meta tageket."
+  canonicalPath="/megosztasi-elozet-tervezo"
+>
+  <SiteHeader
+    active="sharePreview"
+    actionHref="#megosztasi-elozet-tervezo"
+    actionLabel="Oldal ellenőrzése"
+    actionShortLabel="Ellenőrzés"
+  />
+
+  <main>
+    <SharePreviewWorkspace client:load />
+
+    <PrivacySection
+      title="A képed nálad marad"
+      description="A helyi kép csak az előnézethez kell, a Morf nem küldi el sehova. A megosztáshoz használt végleges kép URL-jét te adod meg."
+      items={privacyItems}
+    />
+
+    <FaqSection
+      title="Megosztási előnézet, jól beállítva"
+      description="A címről, leírásról, Open Graph képről és az oldalankénti meta adatokról."
+      items={faqItems}
+    />
+  </main>
+
+  <SiteFooter />
+</MainLayout>
