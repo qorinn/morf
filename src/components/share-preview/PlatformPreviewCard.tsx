@@ -185,11 +185,11 @@ export function PlatformPreviewCard({
   return (
     <div className="morf-platform-facebook-card w-full max-w-5xl overflow-hidden border">
       <PreviewMedia image={image} imageAlt={imageAlt} media={media} />
-      <div className="morf-platform-facebook-footer border-t px-5 py-4 sm:px-7 sm:py-5">
-        <p className="morf-platform-muted text-sm font-medium tracking-wide uppercase">
+      <div className="morf-platform-facebook-footer border-t px-3 py-2">
+        <p className="morf-platform-muted text-xs font-medium tracking-wide uppercase">
           {host}
         </p>
-        <h3 className="mt-1 line-clamp-2 text-lg leading-tight font-semibold sm:text-2xl">
+        <h3 className="-mt-px line-clamp-2 text-lg leading-tight font-semibold">
           {safeTitle}
         </h3>
       </div>
