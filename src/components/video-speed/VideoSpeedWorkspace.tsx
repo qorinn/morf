@@ -47,6 +47,7 @@ import { downloadFile } from "@/lib/downloads/file-saver";
 import { formatBytes } from "@/lib/filenames/image-filenames";
 
 type Phase = "empty" | "inspecting" | "ready" | "rendering-audio" | "exporting" | "complete" | "error";
+type FrameScrubState = { targetFrame: number; requestedFrame: number | undefined; seeking: boolean };
 
 const graph = { width: 1000, height: 210, paddingX: 36, paddingY: 16 };
 const transitionOptions: Array<{ value: SpeedTransition; label: string }> = [
@@ -458,6 +459,8 @@ export default function VideoSpeedWorkspace() {
   const curveDragRestoreRef = useRef<{ time: number; wasPlaying: boolean } | undefined>(undefined);
   const controllerDragRestoreRef = useRef<{ wasPlaying: boolean } | undefined>(undefined);
   const curveSeekFrameRef = useRef<number | undefined>(undefined);
+  const controllerScrubRef = useRef<FrameScrubState | undefined>(undefined);
+  const controllerResumeAfterScrubRef = useRef(false);
 
   const sourceDuration = metadata?.duration ?? 0;
   const outputDuration = useMemo(
@@ -595,6 +598,55 @@ export default function VideoSpeedWorkspace() {
     setPreviewTime(target);
   }, [sourceDuration]);
 
+  const requestLatestControllerFrame = useCallback(() => {
+    const video = videoRef.current;
+    const frameRate = metadata?.frameRate ?? 0;
+    const scrub = controllerScrubRef.current;
+    if (!video || !scrub || frameRate <= 0 || sourceDuration <= 0) return;
+    if (scrub.seeking) return;
+
+    const maxFrame = Math.max(0, Math.ceil(sourceDuration * frameRate) - 1);
+    const currentFrame = Math.min(maxFrame, Math.max(0, Math.round(video.currentTime * frameRate)));
+    if (currentFrame === scrub.targetFrame) {
+      controllerScrubRef.current = undefined;
+      if (controllerResumeAfterScrubRef.current) {
+        controllerResumeAfterScrubRef.current = false;
+        void video.play().catch(() => undefined);
+      }
+      return;
+    }
+
+    scrub.seeking = true;
+    scrub.requestedFrame = scrub.targetFrame;
+    video.currentTime = Math.min(sourceDuration, scrub.targetFrame / frameRate);
+  }, [metadata?.frameRate, sourceDuration]);
+
+  const cancelControllerFrameScrub = useCallback(() => {
+    controllerScrubRef.current = undefined;
+    controllerResumeAfterScrubRef.current = false;
+  }, []);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const handleFrameSeeked = () => {
+      const scrub = controllerScrubRef.current;
+      if (!scrub?.seeking) return;
+      scrub.seeking = false;
+      if (scrub.targetFrame !== scrub.requestedFrame) {
+        requestLatestControllerFrame();
+        return;
+      }
+      controllerScrubRef.current = undefined;
+      if (controllerResumeAfterScrubRef.current) {
+        controllerResumeAfterScrubRef.current = false;
+        void video.play().catch(() => undefined);
+      }
+    };
+    video.addEventListener("seeked", handleFrameSeeked);
+    return () => video.removeEventListener("seeked", handleFrameSeeked);
+  }, [requestLatestControllerFrame]);
+
   const previewCurvePoint = useCallback((point: SpeedPoint) => {
     const target = sourceTimeAtPosition(point.position, sourceDuration);
     if (curveSeekFrameRef.current !== undefined) {
@@ -609,10 +661,11 @@ export default function VideoSpeedWorkspace() {
   const startCurvePointPreview = useCallback((point: SpeedPoint) => {
     const video = videoRef.current;
     if (!video) return;
+    cancelControllerFrameScrub();
     curveDragRestoreRef.current = { time: video.currentTime, wasPlaying: !video.paused };
     video.pause();
     previewCurvePoint(point);
-  }, [previewCurvePoint]);
+  }, [cancelControllerFrameScrub, previewCurvePoint]);
 
   const restoreCurvePointPreview = useCallback(() => {
     const video = videoRef.current;
@@ -639,30 +692,50 @@ export default function VideoSpeedWorkspace() {
   const startControllerDrag = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
+    cancelControllerFrameScrub();
     controllerDragRestoreRef.current = { wasPlaying: !video.paused };
     video.pause();
-  }, []);
+  }, [cancelControllerFrameScrub]);
 
   const moveController = useCallback((position: number) => {
-    seekPreview(sourceTimeAtPosition(position, sourceDuration));
-  }, [seekPreview, sourceDuration]);
+    const video = videoRef.current;
+    const frameRate = metadata?.frameRate ?? 0;
+    if (!video || frameRate <= 0 || sourceDuration <= 0) return;
+    const maxFrame = Math.max(0, Math.ceil(sourceDuration * frameRate) - 1);
+    const targetFrame = Math.min(
+      maxFrame,
+      Math.max(0, Math.round(sourceTimeAtPosition(position, sourceDuration) * frameRate)),
+    );
+    if (!controllerScrubRef.current) {
+      controllerScrubRef.current = { targetFrame, requestedFrame: undefined, seeking: false };
+    }
+    else controllerScrubRef.current.targetFrame = targetFrame;
+    requestLatestControllerFrame();
+  }, [metadata?.frameRate, requestLatestControllerFrame, sourceDuration]);
 
   const endControllerDrag = useCallback(() => {
     const video = videoRef.current;
     const restore = controllerDragRestoreRef.current;
     controllerDragRestoreRef.current = undefined;
-    if (video && restore?.wasPlaying) void video.play().catch(() => undefined);
-  }, []);
+    if (!video || !restore?.wasPlaying) return;
+    if (controllerScrubRef.current) {
+      controllerResumeAfterScrubRef.current = true;
+      requestLatestControllerFrame();
+    } else {
+      void video.play().catch(() => undefined);
+    }
+  }, [requestLatestControllerFrame]);
 
   const togglePreviewPlayback = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
+    cancelControllerFrameScrub();
     if (video.paused) {
       void video.play().catch(() => undefined);
     } else {
       video.pause();
     }
-  }, []);
+  }, [cancelControllerFrameScrub]);
 
   const runExport = async () => {
     if (!source || !metadata || !workerRef.current) return;
