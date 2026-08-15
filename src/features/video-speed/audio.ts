@@ -6,6 +6,8 @@ import {
 } from "./curve";
 import type { ProcessedAudio, SpeedCurve, VideoSpeedMetadata } from "./types";
 
+export { createPreviewLoopBuffer } from "./preview-loop";
+
 const supportedFormats = [MP4, QTFF, WEBM];
 const maximumPitchPreservingSpeed = 8;
 
@@ -27,7 +29,7 @@ function createAudioBuffer(
   return new AudioBuffer({ numberOfChannels, length, sampleRate });
 }
 
-async function decodeAudio(file: File, metadata: VideoSpeedMetadata): Promise<AudioBuffer | undefined> {
+export async function decodeSourceAudio(file: File, metadata: VideoSpeedMetadata): Promise<AudioBuffer | undefined> {
   if (!metadata.hasAudio || !metadata.audioSampleRate || !metadata.audioChannels) {
     return undefined;
   }
@@ -164,7 +166,7 @@ export async function renderCurveAudio({
   onProgress?: (ratio: number) => void;
 }): Promise<ProcessedAudio | undefined> {
   if (signal?.aborted) throw new DOMException("Az export megszakítva.", "AbortError");
-  const source = await decodeAudio(file, metadata);
+  const source = await decodeSourceAudio(file, metadata);
   if (!source) return undefined;
 
   const outputDuration = estimateOutputDuration(curve, metadata.duration);

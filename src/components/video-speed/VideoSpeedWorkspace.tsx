@@ -1,12 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { proxy } from "comlink";
 import {
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
   Delete02Icon,
   Download04Icon,
   Film01Icon,
+  MusicNote01Icon,
   PauseIcon,
   PlayIcon,
+  RepeatIcon,
   Video01Icon,
+  VolumeHighIcon,
+  VolumeMute01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useDropzone } from "react-dropzone";
@@ -15,29 +21,35 @@ import { FileUploadDropzone } from "@/components/upload/FileUploadDropzone";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Field, FieldDescription } from "@/components/ui/field";
 import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress";
 import {
+  addHardCut,
   addSpeedPoint,
   createSpeedCurveFileName,
   curvePresetId,
   defaultSpeedCurve,
   estimateOutputDuration,
   frameNumberAtSourceTime,
+  isHardCut,
   MAX_SPEED,
   MIN_SPEED,
   outputTimeAtSourceTime,
-  removeSpeedPoint,
+  removeCurveNode,
   sampleSpeedCurve,
   speedAt,
   speedPresets,
   sourceTimeAtPosition,
+  updateCurveNodeTransition,
+  updateHardCutPosition,
+  updateHardCutSpeed,
   updateSpeedPoint,
-  updateSpeedPointTransition,
 } from "@/features/video-speed/curve";
-import { renderCurveAudio } from "@/features/video-speed/audio";
-import type { SpeedCurve, SpeedPoint, SpeedTransition, VideoSpeedMetadata } from "@/features/video-speed/types";
+import {
+  createPreviewLoopBuffer,
+  decodeSourceAudio,
+  renderCurveAudio,
+} from "@/features/video-speed/audio";
+import type { SpeedCurve, SpeedCurveNode, SpeedPoint, SpeedTransition, VideoSpeedMetadata } from "@/features/video-speed/types";
 import {
   createVideoSpeedWorker,
   transferableExportRequest,
@@ -48,14 +60,16 @@ import { formatBytes } from "@/lib/filenames/image-filenames";
 
 type Phase = "empty" | "inspecting" | "ready" | "rendering-audio" | "exporting" | "complete" | "error";
 type FrameScrubState = { targetFrame: number; requestedFrame: number | undefined; seeking: boolean };
+type ControllerDragState = { shouldResume: boolean };
+type PreviewAudioLoop = { source: AudioBufferSourceNode; gain: GainNode };
+type HardCutDrag = { pointIndex: number; target: "position" | "before" | "after" };
 
-const graph = { width: 1000, height: 210, paddingX: 36, paddingY: 16 };
+const graph = { width: 1000, height: 320, paddingLeft: 50, paddingRight: 14, paddingY: 24 };
 const transitionOptions: Array<{ value: SpeedTransition; label: string }> = [
   { value: "ease-in", label: "Ease in" },
   { value: "ease-out", label: "Ease out" },
   { value: "ease-in-out", label: "Ease in-out" },
   { value: "linear", label: "Lineáris" },
-  { value: "hard-cut", label: "Hard cut" },
 ];
 
 function formatDuration(seconds: number): string {
@@ -75,15 +89,23 @@ function formatTimestamp(seconds: number): string {
 }
 
 function positionToX(position: number) {
-  return graph.paddingX + position * (graph.width - graph.paddingX * 2);
+  return graph.paddingLeft + position * (graph.width - graph.paddingLeft - graph.paddingRight);
 }
 
 function speedToY(speed: number) {
+  const speedRange = Math.log10(MAX_SPEED) - Math.log10(MIN_SPEED);
+  const ratio = (Math.log10(Math.min(MAX_SPEED, Math.max(MIN_SPEED, speed))) - Math.log10(MIN_SPEED)) / speedRange;
   return (
     graph.paddingY +
-    ((MAX_SPEED - speed) / (MAX_SPEED - MIN_SPEED)) *
-      (graph.height - graph.paddingY * 2)
+    (1 - ratio) * (graph.height - graph.paddingY * 2)
   );
+}
+
+function isInsideGraph(event: { currentTarget: SVGSVGElement; clientX: number; clientY: number }) {
+  const rect = event.currentTarget.getBoundingClientRect();
+  const x = ((event.clientX - rect.left) / rect.width) * graph.width;
+  const y = ((event.clientY - rect.top) / rect.height) * graph.height;
+  return x >= graph.paddingLeft && x <= graph.width - graph.paddingRight && y >= graph.paddingY && y <= graph.height - graph.paddingY;
 }
 
 function graphPosition(event: {
@@ -92,12 +114,11 @@ function graphPosition(event: {
   clientY: number;
 }) {
   const rect = event.currentTarget.getBoundingClientRect();
-  const position = (event.clientX - rect.left - (graph.paddingX / graph.width) * rect.width) /
-    (rect.width * (1 - (graph.paddingX * 2) / graph.width));
-  const speed = MAX_SPEED -
-    ((event.clientY - rect.top - (graph.paddingY / graph.height) * rect.height) /
-      (rect.height * (1 - (graph.paddingY * 2) / graph.height))) *
-      (MAX_SPEED - MIN_SPEED);
+  const position = (event.clientX - rect.left - (graph.paddingLeft / graph.width) * rect.width) /
+    (rect.width * ((graph.width - graph.paddingLeft - graph.paddingRight) / graph.width));
+  const verticalPosition = (event.clientY - rect.top - (graph.paddingY / graph.height) * rect.height) /
+    (rect.height * (1 - (graph.paddingY * 2) / graph.height));
+  const speed = MIN_SPEED * Math.pow(MAX_SPEED / MIN_SPEED, 1 - verticalPosition);
   return {
     position: Math.min(1, Math.max(0, position)),
     speed: Math.min(MAX_SPEED, Math.max(MIN_SPEED, speed)),
@@ -106,8 +127,8 @@ function graphPosition(event: {
 
 function graphPositionFromClientX(svg: SVGSVGElement, clientX: number) {
   const rect = svg.getBoundingClientRect();
-  const position = (clientX - rect.left - (graph.paddingX / graph.width) * rect.width) /
-    (rect.width * (1 - (graph.paddingX * 2) / graph.width));
+  const position = (clientX - rect.left - (graph.paddingLeft / graph.width) * rect.width) /
+    (rect.width * ((graph.width - graph.paddingLeft - graph.paddingRight) / graph.width));
   return Math.min(1, Math.max(0, position));
 }
 
@@ -132,8 +153,8 @@ function CurveEditor({
   frameRate: number;
   playbackPosition: number;
   onChange(curve: SpeedCurve): void;
-  onDragStart?(point: SpeedPoint): void;
-  onDragMove?(point: SpeedPoint): void;
+  onDragStart?(node: SpeedCurveNode): void;
+  onDragMove?(node: SpeedCurveNode): void;
   onDragEnd?(): void;
   onControllerDragStart?(): void;
   onControllerDragMove?(position: number): void;
@@ -141,7 +162,9 @@ function CurveEditor({
   onControllerSeek?(position: number): void;
 }) {
   const [dragIndex, setDragIndex] = useState<number>();
+  const [hardCutDrag, setHardCutDrag] = useState<HardCutDrag>();
   const [activeIndex, setActiveIndex] = useState<number>();
+  const [addMode, setAddMode] = useState<"point" | "hard-cut">("point");
   const [controllerPosition, setControllerPosition] = useState<number>();
   const [isControllerDragging, setIsControllerDragging] = useState(false);
   const suppressClickRef = useRef(false);
@@ -154,16 +177,15 @@ function CurveEditor({
   const path = sampleSpeedCurve(normalized)
     .map((point, index) => `${index === 0 ? "M" : "L"} ${positionToX(point.position)} ${speedToY(point.speed)}`)
     .join(" ");
-  const activePoint = activeIndex === undefined ? undefined : normalized.points[activeIndex];
-  const activeSourceTime = activePoint
-    ? sourceTimeAtPosition(activePoint.position, sourceDuration)
+  const activeNode = activeIndex === undefined ? undefined : normalized.points[activeIndex];
+  const activeSourceTime = activeNode
+    ? sourceTimeAtPosition(activeNode.position, sourceDuration)
     : 0;
 
   const changePointFromPointer = (event: React.PointerEvent<SVGSVGElement>) => {
     let nextDragIndex = dragIndex;
     if (nextDragIndex === undefined && pointPointerStartRef.current) {
       const start = pointPointerStartRef.current;
-      if (start.index === 0 || start.index === normalized.points.length - 1) return;
       if (Math.hypot(event.clientX - start.clientX, event.clientY - start.clientY) < 4) return;
       nextDragIndex = start.index;
       setDragIndex(nextDragIndex);
@@ -180,6 +202,20 @@ function CurveEditor({
     if (dragIndex === undefined) return;
     setDragIndex(undefined);
     onDragEnd?.();
+  };
+
+  const moveHardCut = (event: React.PointerEvent<SVGElement>, index: number, target: HardCutDrag["target"]) => {
+    if (hardCutDrag?.pointIndex !== index || hardCutDrag.target !== target || disabled) return;
+    const svg = svgRef.current;
+    if (!svg) return;
+    if (target === "position") {
+      const nextCurve = updateHardCutPosition(normalized, index, graphPosition({ currentTarget: svg, clientX: event.clientX, clientY: event.clientY }).position);
+      onChange(nextCurve);
+      onDragMove?.(nextCurve.points[index]);
+      return;
+    }
+    const speed = graphPosition({ currentTarget: svg, clientX: event.clientX, clientY: event.clientY }).speed;
+    onChange(updateHardCutSpeed(normalized, index, target, speed));
   };
 
   const currentControllerPosition = controllerPosition ?? playbackPosition;
@@ -200,28 +236,25 @@ function CurveEditor({
   };
 
   return (
-    <div className="relative overflow-hidden rounded-xl border bg-card">
-      {activePoint && (
-        <div
-          className="border-border bg-card/95 pointer-events-none absolute top-3 right-3 z-10 flex items-baseline gap-2 rounded-lg border px-3 py-2 text-xs shadow-none"
-          aria-live="polite"
+    <div className="relative overflow-hidden bg-card">
+      <div className="px-2 sm:px-3 py-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={disabled}
+          aria-pressed={addMode === "hard-cut"}
+          className="aria-pressed:border-primary aria-pressed:bg-muted"
+          onClick={() => setAddMode((mode) => mode === "hard-cut" ? "point" : "hard-cut")}
         >
-          <span
-            className="text-muted-foreground"
-            title="A frame-sorszám az átlagos FPS alapján számolt becslés; változó FPS-nél eltérhet."
-          >
-            {formatTimestamp(activeSourceTime)} · ~#{frameNumberAtSourceTime(activeSourceTime, frameRate)}. frame
-          </span>
-          <strong className="text-foreground text-sm font-semibold tabular-nums">
-            {activePoint.speed.toFixed(2)}×
-          </strong>
-        </div>
-      )}
+          Hard cut hozzáadása
+        </Button>
+      </div>
       <svg
         ref={svgRef}
         viewBox={`0 0 ${graph.width} ${graph.height}`}
-        className="block h-44 w-full touch-none select-none sm:h-52"
-        aria-label="Sebességgörbe. A függőleges jelző a videó aktuális pozícióját mutatja. Kattintással új pontot adhatsz hozzá, a pontok húzhatók."
+        className="block aspect-[25/8] h-auto w-full touch-none select-none"
+        aria-label="Sebességgörbe. A függőleges jelző a videó aktuális pozícióját mutatja. Kattintással normál pontot vagy hard cutot adhatsz hozzá."
         onPointerMove={changePointFromPointer}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
@@ -230,26 +263,29 @@ function CurveEditor({
             suppressClickRef.current = false;
             return;
           }
-          if (dragIndex !== undefined || disabled) return;
+          if (dragIndex !== undefined || disabled || !isInsideGraph(event)) return;
           const target = event.target as SVGElement;
-          if (target.dataset.point === "true") return;
+          if (target.dataset.point === "true" || target.dataset.hardCutPoint === "true" || target.dataset.hardCutRail === "true") return;
           const point = graphPosition(event);
-          const nextCurve = addSpeedPoint(normalized, point);
+          const nextCurve = addMode === "hard-cut"
+            ? addHardCut(normalized, { position: point.position, afterSpeed: point.speed })
+            : addSpeedPoint(normalized, point);
           setActiveIndex(
             nextCurve.points.findIndex(
               (candidate) =>
                 Math.abs(candidate.position - point.position) < 0.001 &&
-                Math.abs(candidate.speed - point.speed) < 0.001,
+                (addMode === "hard-cut" ? isHardCut(candidate) : !isHardCut(candidate)),
             ),
           );
           onChange(nextCurve);
+          setAddMode("point");
         }}
       >
         {[0.1, 1, 3, 6, 10].map((speed) => (
           <g key={speed}>
             <line
-              x1={graph.paddingX}
-              x2={graph.width - graph.paddingX}
+              x1={graph.paddingLeft}
+              x2={graph.width - graph.paddingRight}
               y1={speedToY(speed)}
               y2={speedToY(speed)}
               className="stroke-border"
@@ -323,20 +359,113 @@ function CurveEditor({
           aria-hidden="true"
         />
         <path d={path} fill="none" className="stroke-primary" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" pointerEvents="none" />
-        {normalized.points.map((point, index) => (
+        {normalized.points.map((point, index) => isHardCut(point) && (
+          <g key={`hard-cut-${index}`}>
+            <rect
+              data-hard-cut-rail="true"
+              x={positionToX(point.position) - 12}
+              y={graph.paddingY}
+              width="24"
+              height={graph.height - graph.paddingY * 2}
+              tabIndex={disabled ? -1 : 0}
+              role="slider"
+              aria-label={`Hard cut időpontja: ${Math.round(point.position * 100)}%. Balra és jobbra mozgatható.`}
+              aria-valuemin={0}
+              aria-valuemax={1}
+              aria-valuenow={point.position}
+              className="fill-transparent stroke-transparent cursor-ew-resize outline-none focus-visible:stroke-ring focus-visible:stroke-[4px] disabled:cursor-default"
+              onPointerDown={(event) => {
+                if (disabled) return;
+                event.currentTarget.setPointerCapture(event.pointerId);
+                suppressClickRef.current = true;
+                setActiveIndex(index);
+                setHardCutDrag({ pointIndex: index, target: "position" });
+                onDragStart?.(point);
+              }}
+              onPointerMove={(event) => moveHardCut(event, index, "position")}
+              onPointerUp={() => {
+                setHardCutDrag(undefined);
+                onDragEnd?.();
+              }}
+              onPointerCancel={() => {
+                setHardCutDrag(undefined);
+                onDragEnd?.();
+              }}
+              onFocus={() => setActiveIndex(index)}
+              onKeyDown={(event) => {
+                if (disabled) return;
+                if (event.key === "Delete" || event.key === "Backspace") {
+                  event.preventDefault();
+                  onChange(removeCurveNode(normalized, index));
+                  return;
+                }
+                if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+                  event.preventDefault();
+                  const positionStep = ((event.shiftKey ? 10 : 1) / Math.max(1, frameRate)) / Math.max(sourceDuration, 0.1);
+                  onChange(updateHardCutPosition(normalized, index, point.position + (event.key === "ArrowRight" ? positionStep : -positionStep)));
+                }
+              }}
+            />
+            <line
+              x1={positionToX(point.position)}
+              x2={positionToX(point.position)}
+              y1={speedToY(point.beforeSpeed)}
+              y2={speedToY(point.afterSpeed)}
+              className="stroke-primary"
+              strokeWidth="5"
+              pointerEvents="none"
+            />
+            {(["before", "after"] as const).map((side) => {
+              const speed = side === "before" ? point.beforeSpeed : point.afterSpeed;
+              return (
+                <circle
+                  key={side}
+                  data-hard-cut-point="true"
+                  cx={positionToX(point.position)}
+                  cy={speedToY(speed)}
+                  r="7"
+                  tabIndex={disabled ? -1 : 0}
+                  role="slider"
+                  aria-label={`${side === "before" ? "Hard cut előtti" : "Hard cut utáni"} sebesség: ${speed.toFixed(1)}×. Csak fel és le mozgatható.`}
+                  aria-valuemin={MIN_SPEED}
+                  aria-valuemax={MAX_SPEED}
+                  aria-valuenow={speed}
+                  className="fill-card stroke-primary cursor-ns-resize stroke-[4px] outline-none focus-visible:stroke-ring focus-visible:stroke-[5px] disabled:cursor-default"
+                  onPointerDown={(event) => {
+                    if (disabled) return;
+                    event.currentTarget.setPointerCapture(event.pointerId);
+                    suppressClickRef.current = true;
+                    setActiveIndex(index);
+                    setHardCutDrag({ pointIndex: index, target: side });
+                  }}
+                  onPointerMove={(event) => moveHardCut(event, index, side)}
+                  onPointerUp={() => setHardCutDrag(undefined)}
+                  onPointerCancel={() => setHardCutDrag(undefined)}
+                  onFocus={() => setActiveIndex(index)}
+                  onKeyDown={(event) => {
+                    if (disabled || (event.key !== "ArrowUp" && event.key !== "ArrowDown")) return;
+                    event.preventDefault();
+                    onChange(updateHardCutSpeed(normalized, index, side, speed + (event.key === "ArrowUp" ? (event.shiftKey ? 0.5 : 0.1) : -(event.shiftKey ? 0.5 : 0.1))));
+                  }}
+                />
+              );
+            })}
+          </g>
+        ))}
+        {normalized.points.map((point, index) => !isHardCut(point) && (
           <circle
-            key={`${point.position}-${index}`}
+            key={`point-${index}`}
             data-point="true"
             cx={positionToX(point.position)}
             cy={speedToY(point.speed)}
             r="8"
             tabIndex={disabled ? -1 : 0}
             role="slider"
-            aria-label={`${index === 0 || index === normalized.points.length - 1 ? "Rögzített" : "Szerkeszthető"} görbepont: ${Math.round(point.position * 100)}%, ${point.speed.toFixed(1)}×`}
+            aria-label={`${index === 0 ? "Kezdőpont, függőlegesen szerkeszthető" : index === normalized.points.length - 1 ? "Végpont, függőlegesen szerkeszthető" : "Szerkeszthető"} görbepont: ${Math.round(point.position * 100)}%, ${point.speed.toFixed(1)}×`}
             aria-valuemin={MIN_SPEED}
             aria-valuemax={MAX_SPEED}
             aria-valuenow={point.speed}
-            className="fill-card stroke-primary cursor-grab stroke-[4px] outline-none focus-visible:stroke-ring data-[selected=true]:stroke-ring data-[selected=true]:stroke-[5px] disabled:cursor-default"
+            className={`fill-card stroke-primary stroke-[4px] outline-none focus-visible:stroke-ring data-[selected=true]:stroke-ring data-[selected=true]:stroke-[5px] disabled:cursor-default ${index === 0 || index === normalized.points.length - 1 ? "cursor-ns-resize" : "cursor-grab"}`}
             data-selected={activeIndex === index ? "true" : undefined}
             onPointerDown={(event) => {
               if (disabled) return;
@@ -352,10 +481,11 @@ function CurveEditor({
             }}
             onFocus={() => setActiveIndex(index)}
             onKeyDown={(event) => {
-              if (disabled || index === 0 || index === normalized.points.length - 1) return;
+              if (disabled) return;
               if (event.key === "Delete" || event.key === "Backspace") {
+                if (index === 0 || index === normalized.points.length - 1) return;
                 event.preventDefault();
-                onChange(removeSpeedPoint(normalized, index));
+                onChange(removeCurveNode(normalized, index));
                 return;
               }
               const multiplier = event.shiftKey ? 0.5 : 0.1;
@@ -366,10 +496,11 @@ function CurveEditor({
                   speed: point.speed + (event.key === "ArrowUp" ? multiplier : -multiplier),
                 }));
               }
-              if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+              if (index > 0 && index < normalized.points.length - 1 && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
                 event.preventDefault();
+                const positionStep = ((event.shiftKey ? 10 : 1) / Math.max(1, frameRate)) / Math.max(sourceDuration, 0.1);
                 onChange(updateSpeedPoint(normalized, index, {
-                  position: point.position + (event.key === "ArrowRight" ? 0.02 : -0.02),
+                  position: point.position + (event.key === "ArrowRight" ? positionStep : -positionStep),
                   speed: point.speed,
                 }));
               }
@@ -377,63 +508,79 @@ function CurveEditor({
           />
         ))}
       </svg>
-      {activePoint && activeIndex !== undefined && (
-        <section className="border-border bg-muted/45 flex flex-col gap-3 border-t p-4" aria-labelledby="selected-speed-point-heading">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <div>
-              <h4 id="selected-speed-point-heading" className="text-sm font-semibold">Kiválasztott pont</h4>
-              <p className="text-muted-foreground text-xs">{formatTimestamp(activeSourceTime)} · {activePoint.speed.toFixed(1)}×</p>
+      {activeNode && activeIndex !== undefined && (
+        <section className="flex flex-col gap-3 p-4" aria-labelledby="selected-speed-point-heading">
+          <div>
+            <div className="border-border bg-card pointer-events-none flex items-baseline gap-2 rounded-lg border px-3 py-1.5 text-xs" aria-live="polite">
+              <span
+                className="text-muted-foreground"
+                title="A frame-sorszám az átlagos FPS alapján számolt becslés; változó FPS-nél eltérhet."
+              >
+                {formatTimestamp(activeSourceTime)} · ~#{frameNumberAtSourceTime(activeSourceTime, frameRate)}. frame
+              </span>
+              <strong className="text-foreground text-sm font-semibold tabular-nums">
+                {isHardCut(activeNode)
+                  ? `${activeNode.beforeSpeed.toFixed(1)}× → ${activeNode.afterSpeed.toFixed(1)}×`
+                  : `${activeNode.speed.toFixed(2)}×`}
+              </strong>
             </div>
-            <span className="text-muted-foreground text-xs">
-              {activeIndex === 0 ? "Kezdőpont" : activeIndex === normalized.points.length - 1 ? "Végpont" : "Köztes pont"}
-            </span>
           </div>
-          {activeIndex > 0 && (
-            <fieldset className="flex flex-col gap-2">
-              <legend className="text-muted-foreground text-xs font-medium">Bal oldali átmenet</legend>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-                {transitionOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    disabled={disabled}
-                    aria-pressed={activePoint.incomingTransition === option.value}
-                    className="border-input bg-card hover:border-primary/50 focus-visible:ring-ring rounded-md border px-2 py-1.5 text-xs font-medium outline-none transition-colors focus-visible:ring-3 data-[state=selected]:border-ring data-[state=selected]:bg-muted disabled:opacity-50"
-                    data-state={activePoint.incomingTransition === option.value ? "selected" : undefined}
-                    onClick={() => onChange(updateSpeedPointTransition(normalized, activeIndex, "incoming", option.value))}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-              {activePoint.incomingTransition === "hard-cut" && (
-                <p className="text-muted-foreground text-xs">Ugrás a pont sebességére.</p>
-              )}
-            </fieldset>
-          )}
-          {activeIndex < normalized.points.length - 1 && (
-            <fieldset className="flex flex-col gap-2">
-              <legend className="text-muted-foreground text-xs font-medium">Jobb oldali átmenet</legend>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-                {transitionOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    disabled={disabled}
-                    aria-pressed={activePoint.outgoingTransition === option.value}
-                    className="border-input bg-card hover:border-primary/50 focus-visible:ring-ring rounded-md border px-2 py-1.5 text-xs font-medium outline-none transition-colors focus-visible:ring-3 data-[state=selected]:border-ring data-[state=selected]:bg-muted disabled:opacity-50"
-                    data-state={activePoint.outgoingTransition === option.value ? "selected" : undefined}
-                    onClick={() => onChange(updateSpeedPointTransition(normalized, activeIndex, "outgoing", option.value))}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-              {activePoint.outgoingTransition === "hard-cut" && (
-                <p className="text-muted-foreground text-xs">Azonnali visszaállás 1×-re.</p>
-              )}
-            </fieldset>
-          )}
+          <div className="grid gap-3 md:grid-cols-2">
+            {activeIndex > 0 && (
+              <fieldset className="border-primary/35 bg-card flex min-w-0 flex-col gap-2 rounded-md border border-l-4 p-3">
+                <legend className="sr-only">Bal oldali átmenet</legend>
+                <div className="text-primary flex items-center gap-1.5 text-xs font-semibold">
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={15} strokeWidth={2.2} aria-hidden="true" />
+                  <span>Balról érkezik</span>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {transitionOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      disabled={disabled}
+                      aria-pressed={activeNode.incomingTransition === option.value}
+                      className="border-input bg-card hover:border-primary/50 focus-visible:ring-ring rounded-md border px-2 py-1.5 text-xs font-medium outline-none transition-colors focus-visible:ring-3 data-[state=selected]:border-primary data-[state=selected]:bg-muted disabled:opacity-50"
+                      data-state={activeNode.incomingTransition === option.value ? "selected" : undefined}
+                      onClick={() => onChange(updateCurveNodeTransition(normalized, activeIndex, "incoming", option.value))}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+                {isHardCut(activeNode) && (
+                  <p className="text-muted-foreground text-xs">A hard cut bal oldali végéhez fut.</p>
+                )}
+              </fieldset>
+            )}
+            {activeIndex < normalized.points.length - 1 && (
+              <fieldset className={`border-ring/40 flex min-w-0 flex-col gap-2 rounded-md border border-r-4 p-3 ${activeIndex === 0 ? "md:col-start-2" : ""}`}>
+                <legend className="sr-only">Jobb oldali átmenet</legend>
+                <div className="text-secondary-foreground flex items-center justify-end gap-1.5 text-xs font-semibold">
+                  <span>Jobbra indul</span>
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={15} strokeWidth={2.2} aria-hidden="true" />
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {transitionOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      disabled={disabled}
+                      aria-pressed={activeNode.outgoingTransition === option.value}
+                      className="border-input bg-card hover:border-secondary focus-visible:ring-ring rounded-md border px-2 py-1.5 text-xs font-medium outline-none transition-colors focus-visible:ring-3 data-[state=selected]:border-ring data-[state=selected]:bg-secondary/45 disabled:opacity-50"
+                      data-state={activeNode.outgoingTransition === option.value ? "selected" : undefined}
+                      onClick={() => onChange(updateCurveNodeTransition(normalized, activeIndex, "outgoing", option.value))}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+                {isHardCut(activeNode) && (
+                  <p className="text-muted-foreground text-xs">A hard cut jobb oldali végéből indul.</p>
+                )}
+              </fieldset>
+            )}
+          </div>
         </section>
       )}
     </div>
@@ -452,15 +599,25 @@ export default function VideoSpeedWorkspace() {
   const [result, setResult] = useState<{ blob: Blob; fileName: string }>();
   const [isPlaying, setIsPlaying] = useState(false);
   const [previewTime, setPreviewTime] = useState(0);
+  const [scrubAudioEnabled, setScrubAudioEnabled] = useState(true);
+  const [isScrubAudioPreparing, setIsScrubAudioPreparing] = useState(false);
+  const [isScrubAudioLooping, setIsScrubAudioLooping] = useState(false);
+  const [scrubAudioError, setScrubAudioError] = useState<string>();
+  const [videoLoopEnabled, setVideoLoopEnabled] = useState(false);
   const workerRef = useRef<VideoSpeedWorkerHandle | undefined>(undefined);
   const videoRef = useRef<HTMLVideoElement>(null);
   const exportAbortRef = useRef<AbortController | undefined>(undefined);
   const sourceUrlRef = useRef<string | undefined>(undefined);
   const curveDragRestoreRef = useRef<{ time: number; wasPlaying: boolean } | undefined>(undefined);
-  const controllerDragRestoreRef = useRef<{ wasPlaying: boolean } | undefined>(undefined);
-  const curveSeekFrameRef = useRef<number | undefined>(undefined);
+  const controllerDragRestoreRef = useRef<ControllerDragState | undefined>(undefined);
   const controllerScrubRef = useRef<FrameScrubState | undefined>(undefined);
   const controllerResumeAfterScrubRef = useRef(false);
+  const previewAudioContextRef = useRef<AudioContext | undefined>(undefined);
+  const previewAudioBufferRef = useRef<AudioBuffer | undefined>(undefined);
+  const previewAudioDecodeRef = useRef<Promise<AudioBuffer | undefined> | undefined>(undefined);
+  const previewAudioLoopRef = useRef<PreviewAudioLoop | undefined>(undefined);
+  const previewAudioSessionRef = useRef(0);
+  const previewAudioRequestRef = useRef(0);
 
   const sourceDuration = metadata?.duration ?? 0;
   const outputDuration = useMemo(
@@ -474,6 +631,113 @@ export default function VideoSpeedWorkspace() {
   const activePreset = curvePresetId(curve);
   const busy = phase === "inspecting" || phase === "rendering-audio" || phase === "exporting";
 
+  const stopPreviewAudioLoop = useCallback(() => {
+    const activeLoop = previewAudioLoopRef.current;
+    previewAudioLoopRef.current = undefined;
+    if (!activeLoop) return;
+
+    const now = previewAudioContextRef.current?.currentTime ?? 0;
+    try {
+      activeLoop.gain.gain.cancelScheduledValues(now);
+      activeLoop.gain.gain.setValueAtTime(activeLoop.gain.gain.value, now);
+      activeLoop.gain.gain.linearRampToValueAtTime(0, now + 0.008);
+      activeLoop.source.stop(now + 0.01);
+    } catch {
+      // A már leállított AudioBufferSourceNode nem igényel további kezelést.
+    }
+    setIsScrubAudioLooping(false);
+  }, []);
+
+  const cancelPreviewAudioLoop = useCallback(() => {
+    previewAudioRequestRef.current += 1;
+    stopPreviewAudioLoop();
+  }, [stopPreviewAudioLoop]);
+
+  const resetPreviewAudio = useCallback(() => {
+    previewAudioSessionRef.current += 1;
+    cancelPreviewAudioLoop();
+    previewAudioBufferRef.current = undefined;
+    previewAudioDecodeRef.current = undefined;
+    const context = previewAudioContextRef.current;
+    previewAudioContextRef.current = undefined;
+    if (context && context.state !== "closed") void context.close();
+    setIsScrubAudioPreparing(false);
+    setScrubAudioError(undefined);
+  }, [cancelPreviewAudioLoop]);
+
+  const getPreviewAudioContext = useCallback(() => {
+    const current = previewAudioContextRef.current;
+    if (current) return current;
+    const AudioContextConstructor = window.AudioContext ?? (
+      window as typeof window & { webkitAudioContext?: typeof AudioContext }
+    ).webkitAudioContext;
+    if (!AudioContextConstructor) {
+      throw new Error("Ebben a böngészőben a hangloop előnézet nem támogatott.");
+    }
+    const context = new AudioContextConstructor();
+    previewAudioContextRef.current = context;
+    return context;
+  }, []);
+
+  const startPreviewAudioLoop = useCallback(async (sourceTime: number) => {
+    const request = ++previewAudioRequestRef.current;
+    const dragState = controllerDragRestoreRef.current;
+    if (!source || !metadata?.hasAudio || !scrubAudioEnabled || !dragState?.shouldResume) {
+      cancelPreviewAudioLoop();
+      return;
+    }
+
+    const session = previewAudioSessionRef.current;
+    try {
+      const context = getPreviewAudioContext();
+      await context.resume();
+      let audioBuffer = previewAudioBufferRef.current;
+      if (!audioBuffer) {
+        setIsScrubAudioPreparing(true);
+        setScrubAudioError(undefined);
+        const decoding = previewAudioDecodeRef.current ?? decodeSourceAudio(source, metadata);
+        previewAudioDecodeRef.current = decoding;
+        audioBuffer = await decoding;
+        if (session !== previewAudioSessionRef.current) return;
+        previewAudioBufferRef.current = audioBuffer;
+        setIsScrubAudioPreparing(false);
+        if (request !== previewAudioRequestRef.current) return;
+      }
+
+      if (
+        !audioBuffer ||
+        session !== previewAudioSessionRef.current ||
+        request !== previewAudioRequestRef.current ||
+        !controllerDragRestoreRef.current?.shouldResume
+      ) {
+        return;
+      }
+
+      stopPreviewAudioLoop();
+      const loopSource = context.createBufferSource();
+      const gain = context.createGain();
+      loopSource.buffer = createPreviewLoopBuffer(audioBuffer, sourceTime);
+      loopSource.loop = true;
+      loopSource.connect(gain).connect(context.destination);
+      const now = context.currentTime;
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(1, now + 0.008);
+      loopSource.onended = () => {
+        loopSource.disconnect();
+        gain.disconnect();
+      };
+      loopSource.start();
+      previewAudioLoopRef.current = { source: loopSource, gain };
+      setIsScrubAudioLooping(true);
+    } catch (reason) {
+      if (session !== previewAudioSessionRef.current) return;
+      setIsScrubAudioPreparing(false);
+      setScrubAudioError(reason instanceof Error ? reason.message : "A hangloop előnézet nem indítható.");
+      if (request !== previewAudioRequestRef.current) return;
+      cancelPreviewAudioLoop();
+    }
+  }, [cancelPreviewAudioLoop, getPreviewAudioContext, metadata, scrubAudioEnabled, source, stopPreviewAudioLoop]);
+
   const releaseWorker = useCallback(() => {
     workerRef.current?.worker.terminate();
     workerRef.current = undefined;
@@ -482,6 +746,7 @@ export default function VideoSpeedWorkspace() {
   const clearResult = useCallback(() => setResult(undefined), []);
 
   const selectSource = useCallback(async (file: File) => {
+    resetPreviewAudio();
     clearResult();
     setPhase("inspecting");
     setError(undefined);
@@ -489,6 +754,8 @@ export default function VideoSpeedWorkspace() {
     setCurve(defaultSpeedCurve);
     setPreviewTime(0);
     setIsPlaying(false);
+    setScrubAudioEnabled(true);
+    setVideoLoopEnabled(false);
     const nextUrl = URL.createObjectURL(file);
     setSourceUrl((current) => {
       if (current) URL.revokeObjectURL(current);
@@ -511,7 +778,7 @@ export default function VideoSpeedWorkspace() {
       setPhase("error");
       setError(reason instanceof Error ? reason.message : "A videó vizsgálata nem sikerült.");
     }
-  }, [clearResult, releaseWorker]);
+  }, [clearResult, releaseWorker, resetPreviewAudio]);
 
   const dropzone = useDropzone({
     multiple: false,
@@ -531,14 +798,9 @@ export default function VideoSpeedWorkspace() {
 
   useEffect(() => () => {
     releaseWorker();
+    resetPreviewAudio();
     if (sourceUrlRef.current) URL.revokeObjectURL(sourceUrlRef.current);
-  }, [releaseWorker]);
-
-  useEffect(() => () => {
-    if (curveSeekFrameRef.current !== undefined) {
-      window.cancelAnimationFrame(curveSeekFrameRef.current);
-    }
-  }, []);
+  }, [releaseWorker, resetPreviewAudio]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -590,14 +852,6 @@ export default function VideoSpeedWorkspace() {
     };
   }, [curve, metadata, preservePitch]);
 
-  const seekPreview = useCallback((time: number) => {
-    const video = videoRef.current;
-    if (!video || !Number.isFinite(time)) return;
-    const target = Math.min(sourceDuration, Math.max(0, time));
-    video.currentTime = target;
-    setPreviewTime(target);
-  }, [sourceDuration]);
-
   const requestLatestControllerFrame = useCallback(() => {
     const video = videoRef.current;
     const frameRate = metadata?.frameRate ?? 0;
@@ -609,6 +863,9 @@ export default function VideoSpeedWorkspace() {
     const currentFrame = Math.min(maxFrame, Math.max(0, Math.round(video.currentTime * frameRate)));
     if (currentFrame === scrub.targetFrame) {
       controllerScrubRef.current = undefined;
+      if (controllerDragRestoreRef.current?.shouldResume) {
+        void startPreviewAudioLoop(scrub.targetFrame / frameRate);
+      }
       if (controllerResumeAfterScrubRef.current) {
         controllerResumeAfterScrubRef.current = false;
         void video.play().catch(() => undefined);
@@ -619,7 +876,7 @@ export default function VideoSpeedWorkspace() {
     scrub.seeking = true;
     scrub.requestedFrame = scrub.targetFrame;
     video.currentTime = Math.min(sourceDuration, scrub.targetFrame / frameRate);
-  }, [metadata?.frameRate, sourceDuration]);
+  }, [metadata?.frameRate, sourceDuration, startPreviewAudioLoop]);
 
   const cancelControllerFrameScrub = useCallback(() => {
     controllerScrubRef.current = undefined;
@@ -638,6 +895,9 @@ export default function VideoSpeedWorkspace() {
         return;
       }
       controllerScrubRef.current = undefined;
+      if (controllerDragRestoreRef.current?.shouldResume) {
+        void startPreviewAudioLoop(scrub.targetFrame / Math.max(1, metadata?.frameRate ?? 1));
+      }
       if (controllerResumeAfterScrubRef.current) {
         controllerResumeAfterScrubRef.current = false;
         void video.play().catch(() => undefined);
@@ -645,59 +905,9 @@ export default function VideoSpeedWorkspace() {
     };
     video.addEventListener("seeked", handleFrameSeeked);
     return () => video.removeEventListener("seeked", handleFrameSeeked);
-  }, [requestLatestControllerFrame]);
+  }, [metadata?.frameRate, requestLatestControllerFrame, startPreviewAudioLoop]);
 
-  const previewCurvePoint = useCallback((point: SpeedPoint) => {
-    const target = sourceTimeAtPosition(point.position, sourceDuration);
-    if (curveSeekFrameRef.current !== undefined) {
-      window.cancelAnimationFrame(curveSeekFrameRef.current);
-    }
-    curveSeekFrameRef.current = window.requestAnimationFrame(() => {
-      curveSeekFrameRef.current = undefined;
-      seekPreview(target);
-    });
-  }, [seekPreview, sourceDuration]);
-
-  const startCurvePointPreview = useCallback((point: SpeedPoint) => {
-    const video = videoRef.current;
-    if (!video) return;
-    cancelControllerFrameScrub();
-    curveDragRestoreRef.current = { time: video.currentTime, wasPlaying: !video.paused };
-    video.pause();
-    previewCurvePoint(point);
-  }, [cancelControllerFrameScrub, previewCurvePoint]);
-
-  const restoreCurvePointPreview = useCallback(() => {
-    const video = videoRef.current;
-    const restore = curveDragRestoreRef.current;
-    curveDragRestoreRef.current = undefined;
-    if (!video || !restore) return;
-    if (curveSeekFrameRef.current !== undefined) {
-      window.cancelAnimationFrame(curveSeekFrameRef.current);
-      curveSeekFrameRef.current = undefined;
-    }
-
-    let restored = false;
-    const finishRestore = () => {
-      if (restored) return;
-      restored = true;
-      setPreviewTime(restore.time);
-      if (restore.wasPlaying) void video.play().catch(() => undefined);
-    };
-    video.addEventListener("seeked", finishRestore, { once: true });
-    video.currentTime = restore.time;
-    window.requestAnimationFrame(finishRestore);
-  }, []);
-
-  const startControllerDrag = useCallback(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    cancelControllerFrameScrub();
-    controllerDragRestoreRef.current = { wasPlaying: !video.paused };
-    video.pause();
-  }, [cancelControllerFrameScrub]);
-
-  const moveController = useCallback((position: number) => {
+  const requestPreviewFrameAtPosition = useCallback((position: number) => {
     const video = videoRef.current;
     const frameRate = metadata?.frameRate ?? 0;
     if (!video || frameRate <= 0 || sourceDuration <= 0) return;
@@ -713,29 +923,143 @@ export default function VideoSpeedWorkspace() {
     requestLatestControllerFrame();
   }, [metadata?.frameRate, requestLatestControllerFrame, sourceDuration]);
 
+  const previewCurvePoint = useCallback((node: SpeedCurveNode) => {
+    requestPreviewFrameAtPosition(node.position);
+  }, [requestPreviewFrameAtPosition]);
+
+  const startCurvePointPreview = useCallback((point: SpeedCurveNode) => {
+    const video = videoRef.current;
+    if (!video) return;
+    cancelControllerFrameScrub();
+    curveDragRestoreRef.current = { time: video.currentTime, wasPlaying: !video.paused };
+    video.pause();
+    previewCurvePoint(point);
+  }, [cancelControllerFrameScrub, previewCurvePoint]);
+
+  const restoreCurvePointPreview = useCallback(() => {
+    const video = videoRef.current;
+    const restore = curveDragRestoreRef.current;
+    curveDragRestoreRef.current = undefined;
+    if (!video || !restore) return;
+    cancelControllerFrameScrub();
+
+    let restored = false;
+    const finishRestore = () => {
+      if (restored) return;
+      restored = true;
+      setPreviewTime(restore.time);
+      if (restore.wasPlaying) void video.play().catch(() => undefined);
+    };
+    video.addEventListener("seeked", finishRestore, { once: true });
+    video.currentTime = restore.time;
+    window.requestAnimationFrame(finishRestore);
+  }, [cancelControllerFrameScrub]);
+
+  const startControllerDrag = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    cancelControllerFrameScrub();
+    controllerDragRestoreRef.current = { shouldResume: !video.paused };
+    video.pause();
+  }, [cancelControllerFrameScrub]);
+
+  const moveController = useCallback((position: number) => {
+    cancelPreviewAudioLoop();
+    requestPreviewFrameAtPosition(position);
+  }, [cancelPreviewAudioLoop, requestPreviewFrameAtPosition]);
+
   const endControllerDrag = useCallback(() => {
     const video = videoRef.current;
     const restore = controllerDragRestoreRef.current;
     controllerDragRestoreRef.current = undefined;
-    if (!video || !restore?.wasPlaying) return;
+    cancelPreviewAudioLoop();
+    if (!video || !restore?.shouldResume) return;
     if (controllerScrubRef.current) {
       controllerResumeAfterScrubRef.current = true;
       requestLatestControllerFrame();
     } else {
       void video.play().catch(() => undefined);
     }
-  }, [requestLatestControllerFrame]);
+  }, [cancelPreviewAudioLoop, requestLatestControllerFrame]);
+
+  useEffect(() => {
+    const dragState = controllerDragRestoreRef.current;
+    if (!scrubAudioEnabled) {
+      cancelPreviewAudioLoop();
+      return;
+    }
+    if (!dragState?.shouldResume) return;
+    if (controllerScrubRef.current) {
+      requestLatestControllerFrame();
+      return;
+    }
+    const video = videoRef.current;
+    if (video) void startPreviewAudioLoop(video.currentTime);
+  }, [cancelPreviewAudioLoop, requestLatestControllerFrame, scrubAudioEnabled, startPreviewAudioLoop]);
+
+  const toggleControllerTransport = useCallback(() => {
+    const video = videoRef.current;
+    const dragState = controllerDragRestoreRef.current;
+    if (!video || !dragState) return;
+
+    dragState.shouldResume = !dragState.shouldResume;
+    if (!dragState.shouldResume) {
+      cancelPreviewAudioLoop();
+      return;
+    }
+    if (controllerScrubRef.current) {
+      requestLatestControllerFrame();
+    } else {
+      void startPreviewAudioLoop(video.currentTime);
+    }
+  }, [cancelPreviewAudioLoop, requestLatestControllerFrame, startPreviewAudioLoop]);
 
   const togglePreviewPlayback = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
     cancelControllerFrameScrub();
+    cancelPreviewAudioLoop();
     if (video.paused) {
+      if (video.ended) video.currentTime = 0;
       void video.play().catch(() => undefined);
     } else {
       video.pause();
     }
-  }, [cancelControllerFrameScrub]);
+  }, [cancelControllerFrameScrub, cancelPreviewAudioLoop]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const handleEnded = () => {
+      cancelPreviewAudioLoop();
+      if (!videoLoopEnabled) return;
+      video.currentTime = 0;
+      setPreviewTime(0);
+      void video.play().catch(() => undefined);
+    };
+    video.addEventListener("ended", handleEnded);
+    return () => video.removeEventListener("ended", handleEnded);
+  }, [cancelPreviewAudioLoop, videoLoopEnabled]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.code !== "Space") return;
+      const controllerIsHeld = controllerDragRestoreRef.current !== undefined;
+      const target = event.target as Element | null;
+      const targetHandlesSpace = target?.closest("button, input, textarea, select, [contenteditable='true']");
+      if (!controllerIsHeld && targetHandlesSpace) return;
+
+      event.preventDefault();
+      if (event.repeat) return;
+      if (controllerIsHeld) {
+        toggleControllerTransport();
+      } else {
+        togglePreviewPlayback();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [toggleControllerTransport, togglePreviewPlayback]);
 
   const runExport = async () => {
     if (!source || !metadata || !workerRef.current) return;
@@ -840,105 +1164,120 @@ export default function VideoSpeedWorkspace() {
         )}
 
         {source && metadata && (
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.45fr)_minmax(20rem,0.8fr)]">
-            <div className="flex min-w-0 flex-col gap-6">
-              <Card className="border bg-card shadow-none">
-                <CardHeader className="flex-row items-start justify-between gap-4">
-                  <div className="min-w-0 space-y-1">
-                    <CardTitle className="truncate">Előnézet és sebességgörbe</CardTitle>
-                    <CardDescription className="truncate">{source.name} · {formatBytes(source.size)} · {metadata.width} × {metadata.height} · {metadata.frameRate.toFixed(2)} FPS</CardDescription>
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1.45fr)_minmax(20rem,0.8fr)] lg:gap-6">
+            <div className="order-2 flex min-w-0 flex-col gap-4 lg:order-none lg:col-start-1">
+              <header className="flex items-start justify-between gap-4">
+                <div className="min-w-0 space-y-1">
+                  <h3 className="truncate text-base font-semibold">Előnézet és sebességgörbe</h3>
+                  <p className="text-muted-foreground truncate text-sm">{source.name} · {formatBytes(source.size)} · {metadata.width} × {metadata.height} · {metadata.frameRate.toFixed(2)} FPS</p>
+                </div>
+                <Button variant="ghost" size="sm" disabled={busy} onClick={() => dropzone.open()}>Csere</Button>
+              </header>
+              <div className="border-border overflow-hidden border bg-card">
+                <div className="relative bg-black">
+                  <video
+                    ref={videoRef}
+                    src={sourceUrl}
+                    className="aspect-video w-full"
+                    aria-label="Videó előnézet"
+                    onPlay={() => setIsPlaying(true)}
+                    onPause={() => setIsPlaying(false)}
+                    onEnded={() => setIsPlaying(false)}
+                  />
+                </div>
+                <div className="bg-muted/45 flex flex-wrap items-center gap-x-3 gap-y-2 sm:flex-nowrap px-2 sm:px-3 py-2 border-b border-border">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 aria-pressed:border-primary aria-pressed:bg-muted"
+                    onClick={togglePreviewPlayback}
+                    aria-label={isPlaying ? "Videó szüneteltetése" : "Videó lejátszása"}
+                  >
+                    <HugeiconsIcon icon={isPlaying ? PauseIcon : PlayIcon} data-icon="inline-start" strokeWidth={2} />
+                    {isPlaying ? "Szünet" : "Lejátszás"}
+                  </Button>
+                  <span className="text-muted-foreground ml-auto shrink-0 text-xs font-medium tabular-nums" aria-live="off">
+                    Kimenet: {formatDuration(previewOutputTime)} / {formatDuration(outputDuration)}
+                  </span>
+                  <span className="bg-card text-foreground shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold tabular-nums">
+                    {speedAt(curve, sourceDuration > 0 ? previewTime / sourceDuration : 0).toFixed(2)}×
+                  </span>
+                </div>
+                <section aria-label="Sebességgörbe">
+                  <CurveEditor
+                    curve={curve}
+                    disabled={busy}
+                    sourceDuration={sourceDuration}
+                    frameRate={metadata.frameRate}
+                    playbackPosition={sourceDuration > 0 ? previewTime / sourceDuration : 0}
+                    onChange={setCurve}
+                    onDragStart={startCurvePointPreview}
+                    onDragMove={previewCurvePoint}
+                    onDragEnd={restoreCurvePointPreview}
+                    onControllerDragStart={startControllerDrag}
+                    onControllerDragMove={moveController}
+                    onControllerDragEnd={endControllerDrag}
+                    onControllerSeek={moveController}
+                  />
+                </section>
+                <div className="border-border flex flex-col gap-2 border-t px-3 py-3 text-sm">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    {isScrubAudioPreparing && <span className="text-muted-foreground text-xs" role="status">Hang előkészítése…</span>}
+                    {isScrubAudioLooping && <span className="text-primary text-xs font-medium" role="status">Hang loopol</span>}
+                    {!metadata.hasAudio && <span className="text-muted-foreground text-xs">Nincs dekódolható hangsáv.</span>}
+                    {scrubAudioError && <span className="text-destructive text-xs" role="status">{scrubAudioError}</span>}
                   </div>
-                  <Button variant="ghost" size="sm" disabled={busy} onClick={() => dropzone.open()}>Csere</Button>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-4">
-                  <div className="relative overflow-hidden rounded-xl bg-black">
-                    <video
-                      ref={videoRef}
-                      src={sourceUrl}
-                      className="aspect-video w-full"
-                      aria-label="Videó előnézet"
-                      onPlay={() => setIsPlaying(true)}
-                      onPause={() => setIsPlaying(false)}
-                      onEnded={() => setIsPlaying(false)}
-                    />
-                  </div>
-                  <div className="border-border bg-muted/45 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border p-2 sm:flex-nowrap sm:p-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="shrink-0"
-                      onClick={togglePreviewPlayback}
-                      aria-label={isPlaying ? "Videó szüneteltetése" : "Videó lejátszása"}
-                    >
-                      <HugeiconsIcon icon={isPlaying ? PauseIcon : PlayIcon} data-icon="inline-start" strokeWidth={2} />
-                      {isPlaying ? "Szünet" : "Lejátszás"}
+                  {curve.points.length > 2 && (
+                    <Button variant="ghost" size="sm" className="w-fit" disabled={busy} onClick={() => setCurve(defaultSpeedCurve)}>
+                      <HugeiconsIcon icon={Delete02Icon} data-icon="inline-start" strokeWidth={2} />
+                      Egyedi pontok törlése
                     </Button>
-                    <span className="text-muted-foreground ml-auto shrink-0 text-xs font-medium tabular-nums" aria-live="off">
-                      Kimenet: {formatDuration(previewOutputTime)} / {formatDuration(outputDuration)}
-                    </span>
-                    <span className="bg-card text-foreground shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold tabular-nums">
-                      {speedAt(curve, sourceDuration > 0 ? previewTime / sourceDuration : 0).toFixed(2)}×
-                    </span>
-                  </div>
-                  <p className="text-muted-foreground text-sm">A preview a görbe alapján állítja a lejátszási sebességet. A görbén lévő vonallal a videóban is tekerhetsz.</p>
-                  <section className="border-border flex flex-col gap-4 border-t pt-4" aria-labelledby="speed-curve-heading">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="space-y-1">
-                        <h3 id="speed-curve-heading" className="text-sm font-semibold">Sebességgörbe</h3>
-                        <p className="text-muted-foreground text-sm">A jelző a videó pozícióját követi.</p>
-                      </div>
-                      <span className="bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-semibold">{activePreset === "custom" ? "Egyedi" : speedPresets.find((preset) => preset.id === activePreset)?.label}</span>
-                    </div>
-                    <CurveEditor
-                      curve={curve}
-                      disabled={busy}
-                      sourceDuration={sourceDuration}
-                      frameRate={metadata.frameRate}
-                      playbackPosition={sourceDuration > 0 ? previewTime / sourceDuration : 0}
-                      onChange={setCurve}
-                      onDragStart={startCurvePointPreview}
-                      onDragMove={previewCurvePoint}
-                      onDragEnd={restoreCurvePointPreview}
-                      onControllerDragStart={startControllerDrag}
-                      onControllerDragMove={moveController}
-                      onControllerDragEnd={endControllerDrag}
-                      onControllerSeek={moveController}
-                    />
-                    <p className="text-muted-foreground text-sm">Kattints a grafikonra új ponthoz. A köztes pontok húzhatók; fókuszban nyílbillentyűkkel vagy Delete-tel is szerkeszthetők.</p>
-                    {curve.points.length > 2 && (
-                      <Button variant="ghost" size="sm" className="w-fit" disabled={busy} onClick={() => setCurve(defaultSpeedCurve)}>
-                        <HugeiconsIcon icon={Delete02Icon} data-icon="inline-start" strokeWidth={2} />
-                        Egyedi pontok törlése
-                      </Button>
-                    )}
-                  </section>
-                </CardContent>
-              </Card>
+                  )}
+                </div>
+              </div>
             </div>
 
-            <aside className="flex flex-col gap-6 lg:sticky lg:top-6 lg:self-start">
-              <Card className="bg-muted/45 border shadow-none">
-                <CardHeader>
-                  <CardTitle>Curve presetek</CardTitle>
-                  <CardDescription>Kiindulópontok, amelyeket utána szabadon alakíthatsz.</CardDescription>
+            <aside className="order-1 flex flex-col gap-3 lg:order-none lg:sticky lg:top-6 lg:self-start lg:gap-6">
+              <Card className="border-0 bg-transparent shadow-none lg:border lg:bg-muted/45">
+                <CardHeader className="px-0 pb-3 lg:px-6">
+                  <CardTitle className="text-base">Curve presetek</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-2">
-                  {speedPresets.map((preset) => (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      disabled={busy}
-                      aria-pressed={activePreset === preset.id}
-                      className="border-input bg-card hover:border-primary/50 focus-visible:ring-ring flex min-h-24 flex-col justify-between rounded-lg border p-3 text-left outline-none transition-colors focus-visible:ring-3 data-[state=selected]:border-ring data-[state=selected]:bg-muted disabled:opacity-50"
-                      data-state={activePreset === preset.id ? "selected" : undefined}
-                      onClick={() => setCurve(preset.curve)}
-                    >
-                      <svg viewBox="0 0 100 36" className="h-8 w-full" aria-hidden="true">
-                        <path d={preset.curve.points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.position * 100} ${34 - ((point.speed - MIN_SPEED) / (MAX_SPEED - MIN_SPEED)) * 32}`).join(" ")} fill="none" className="stroke-primary" strokeWidth="3" strokeLinecap="round" />
-                      </svg>
-                      <span className="text-sm font-semibold">{preset.label}</span>
-                    </button>
-                  ))}
+                <CardContent className="flex flex-col gap-3 px-0 lg:gap-4 lg:px-6">
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {speedPresets.map((preset) => (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        disabled={busy}
+                        aria-pressed={activePreset === preset.id}
+                        className="border-input bg-card hover:border-primary/50 focus-visible:ring-ring flex min-h-14 flex-col justify-between rounded-md border p-1.5 text-left outline-none transition-colors focus-visible:ring-3 data-[state=selected]:border-ring data-[state=selected]:bg-muted disabled:opacity-50"
+                        data-state={activePreset === preset.id ? "selected" : undefined}
+                        onClick={() => setCurve(preset.curve)}
+                      >
+                        <svg viewBox="0 0 100 36" className="h-4 w-full" aria-hidden="true">
+                          <path d={sampleSpeedCurve(preset.curve, 8).map((point, index) => `${index === 0 ? "M" : "L"} ${point.position * 100} ${34 - ((point.speed - MIN_SPEED) / (MAX_SPEED - MIN_SPEED)) * 32}`).join(" ")} fill="none" className="stroke-primary" strokeWidth="3" strokeLinecap="round" />
+                        </svg>
+                        <span className="text-[11px] font-semibold leading-tight">{preset.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" className="justify-start aria-pressed:border-primary aria-pressed:bg-muted" aria-pressed={videoLoopEnabled} onClick={() => setVideoLoopEnabled((enabled) => !enabled)}>
+                      <HugeiconsIcon icon={RepeatIcon} data-icon="inline-start" strokeWidth={2} />
+                      Videó loop
+                    </Button>
+                    <Button variant="outline" size="sm" className="justify-start aria-pressed:border-primary aria-pressed:bg-muted" disabled={!metadata.hasAudio} aria-pressed={scrubAudioEnabled} onClick={() => {
+                      setScrubAudioEnabled((enabled) => !enabled);
+                      if (scrubAudioEnabled) cancelPreviewAudioLoop();
+                    }}>
+                      <HugeiconsIcon icon={scrubAudioEnabled ? VolumeHighIcon : VolumeMute01Icon} data-icon="inline-start" strokeWidth={2} />
+                      Hangloop tekeréskor
+                    </Button>
+                    <Button variant="outline" size="sm" className="justify-start aria-pressed:border-primary aria-pressed:bg-muted" disabled={busy || !metadata.hasAudio} aria-pressed={preservePitch} onClick={() => setPreservePitch((enabled) => !enabled)}>
+                      <HugeiconsIcon icon={MusicNote01Icon} data-icon="inline-start" strokeWidth={2} />
+                      Hangmagasság megtartása
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -952,13 +1291,6 @@ export default function VideoSpeedWorkspace() {
                     <div><dt className="text-muted-foreground">Forrás</dt><dd className="font-semibold tabular-nums">{formatDuration(sourceDuration)}</dd></div>
                     <div><dt className="text-muted-foreground">Becsült kimenet</dt><dd className="font-semibold tabular-nums">{formatDuration(outputDuration)}</dd></div>
                   </dl>
-                  <Field data-disabled={!metadata.hasAudio ? "true" : undefined} className="gap-2 data-[disabled=true]:opacity-55">
-                    <label className="flex items-start gap-3 text-sm font-medium">
-                      <Checkbox checked={preservePitch} disabled={busy || !metadata.hasAudio} onCheckedChange={(checked) => setPreservePitch(checked === true)} />
-                      <span>Hangmagasság megtartása</span>
-                    </label>
-                    <FieldDescription>{metadata.hasAudio ? "Bekapcsolva a hang tempója változik, de a hangmagassága megmarad. 8× felett kapcsold ki, vagy csökkentsd a görbét." : "A feltöltött videóban nincs dekódolható hangsáv."}</FieldDescription>
-                  </Field>
                   <Button size="lg" disabled={busy} onClick={() => void runExport()}>
                     <HugeiconsIcon icon={Film01Icon} data-icon="inline-start" strokeWidth={2} />
                     MP4 exportálása

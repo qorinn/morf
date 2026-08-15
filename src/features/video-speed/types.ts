@@ -1,6 +1,7 @@
-export type SpeedTransition = "ease-in" | "ease-out" | "ease-in-out" | "linear" | "hard-cut";
+export type SpeedTransition = "ease-in" | "ease-out" | "ease-in-out" | "linear";
 
 export type SpeedPoint = {
+  kind?: "point";
   /** A forrásvideó relatív pozíciója 0 és 1 között. */
   position: number;
   /** Lejátszási sebesség 0,1× és 10× között. */
@@ -11,8 +12,24 @@ export type SpeedPoint = {
   outgoingTransition?: SpeedTransition;
 };
 
+export type HardCut = {
+  kind: "hard-cut";
+  /** A két sebességpont közös, relatív forrásideje. */
+  position: number;
+  /** A vágás közvetlen bal oldalán érvényes sebesség. */
+  beforeSpeed: number;
+  /** A vágás közvetlen jobb oldalán érvényes sebesség. */
+  afterSpeed: number;
+  /** Az előző normál ponttól a bal oldali cut-pontig tartó easing. */
+  incomingTransition?: SpeedTransition;
+  /** A jobb oldali cut-ponttól a következő normál pontig tartó easing. */
+  outgoingTransition?: SpeedTransition;
+};
+
+export type SpeedCurveNode = SpeedPoint | HardCut;
+
 export type SpeedCurve = {
-  points: SpeedPoint[];
+  points: SpeedCurveNode[];
 };
 
 export type SpeedPresetId = "normal" | "montage" | "hero" | "jump-cut" | "flash-in" | "custom";

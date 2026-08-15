@@ -2,12 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  addHardCut,
   addSpeedPoint,
   createSpeedCurveFileName,
   defaultSpeedCurve,
   defaultSpeedTransition,
   estimateOutputDuration,
   frameNumberAtSourceTime,
+  isHardCut,
   normalizeSpeedCurve,
   outputTimeAtSourceTime,
   snapSpeed,
@@ -15,7 +17,8 @@ import {
   speedAt,
   speedPresets,
   sampleSpeedCurve,
-  updateSpeedPointTransition,
+  updateHardCutPosition,
+  updateHardCutSpeed,
   updateSpeedPoint,
 } from "./curve.ts";
 
@@ -52,6 +55,20 @@ test("a köztes pont a végpontok között marad húzáskor", () => {
   assert.ok(updated.points[1].position < updated.points[2].position);
 });
 
+test("a kezdő- és végpont sebessége szerkeszthető, de a pozíciójuk rögzített", () => {
+  const startAdjusted = updateSpeedPoint(defaultSpeedCurve, 0, { position: 0.4, speed: 2.34 });
+  const adjusted = updateSpeedPoint(startAdjusted, startAdjusted.points.length - 1, { position: 0.6, speed: 0.56 });
+  const first = adjusted.points[0];
+  const last = adjusted.points.at(-1);
+
+  assert.ok(first && !isHardCut(first));
+  assert.ok(last && !isHardCut(last));
+  assert.equal(first.position, 0);
+  assert.equal(first.speed, 2.3);
+  assert.equal(last.position, 1);
+  assert.equal(last.speed, 0.6);
+});
+
 test("a letöltési név a forrásnévből készül", () => {
   assert.equal(createSpeedCurveFileName("nyaralás.mov"), "nyaralás-speed-curve.mp4");
 });
@@ -65,7 +82,9 @@ test("a görbepont forrásideje és képkockája pontosan számolódik", () => {
 test("a sebességpontok 0,1×-es lépésekre igazodnak", () => {
   assert.equal(snapSpeed(2.34), 2.3);
   assert.equal(snapSpeed(2.36), 2.4);
-  assert.equal(normalizeSpeedCurve({ points: [{ position: 0.5, speed: 0.55 }] }).points[1].speed, 0.6);
+  const normalized = normalizeSpeedCurve({ points: [{ position: 0.5, speed: 0.55 }] });
+  assert.ok(!isHardCut(normalized.points[1]));
+  assert.equal(normalized.points[1].speed, 0.6);
 });
 
 test("a forrásidőből számolt preview idő a kimeneti hosszhoz igazodik", () => {
@@ -96,19 +115,29 @@ test("a kétoldali easing eltér a lineáris átmenettől, de a végértékeket 
   assert.notEqual(Number(speedAt(curve, 0.25).toFixed(3)), 2);
 });
 
-test("a bal és jobb hard cut valódi függőleges sebességugrást készít", () => {
-  const leftCut = {
+test("a hard cut két azonos időbélyegű pont között valódi függőleges ugrást készít", () => {
+  const cut = {
     points: [
       { position: 0, speed: 1 },
-      { position: 0.5, speed: 2.8, incomingTransition: "hard-cut" as const },
+      { kind: "hard-cut" as const, position: 0.5, beforeSpeed: 1, afterSpeed: 2.8, incomingTransition: "linear" as const, outgoingTransition: "linear" as const },
       { position: 1, speed: 1 },
     ],
   };
-  assert.equal(speedAt(leftCut, 0.499), 1);
-  assert.equal(speedAt(leftCut, 0.5), 2.8);
+  assert.equal(speedAt(cut, 0.499), 1);
+  assert.equal(speedAt(cut, 0.5), 2.8);
+  assert.ok(sampleSpeedCurve(cut).some((sample, index, samples) => sample.position === 0.5 && sample.speed === 1 && samples[index + 1]?.speed === 2.8));
+});
 
-  const rightCut = updateSpeedPointTransition(leftCut, 1, "outgoing", "hard-cut");
-  assert.equal(speedAt(rightCut, 0.5), 2.8);
-  assert.equal(speedAt(rightCut, 0.501), 1);
-  assert.ok(sampleSpeedCurve(rightCut).some((sample, index, samples) => index > 0 && sample.position === samples[index - 1].position && sample.speed !== samples[index - 1].speed));
+test("a hard cut két vége külön állítható, az időpontjuk együtt mozog", () => {
+  const inserted = addHardCut(defaultSpeedCurve, { position: 0.5, afterSpeed: 2.8 });
+  const beforeAdjusted = updateHardCutSpeed(inserted, 1, "before", 1.7);
+  const adjusted = updateHardCutPosition(updateHardCutSpeed(beforeAdjusted, 1, "after", 0.6), 1, 0.65);
+  const samples = sampleSpeedCurve(adjusted);
+
+  assert.ok(isHardCut(adjusted.points[1]));
+  assert.equal(adjusted.points[1].position, 0.65);
+  assert.equal(adjusted.points[1].beforeSpeed, 1.7);
+  assert.equal(adjusted.points[1].afterSpeed, 0.6);
+  assert.ok(samples.some((sample, index) => sample.position === 0.65 && sample.speed === 1.7 && samples[index + 1]?.speed === 0.6));
+  assert.equal(speedAt(adjusted, 0.65), 0.6);
 });
