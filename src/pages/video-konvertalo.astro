@@ -1,0 +1,124 @@
+---
+import VideoConverterWorkspace from "@/components/video-converter/VideoConverterWorkspace";
+import SiteFooter from "@/components/layout/SiteFooter.astro";
+import SiteHeader from "@/components/layout/SiteHeader.astro";
+import FaqSection from "@/components/sections/FaqSection.astro";
+import PrivacySection from "@/components/sections/PrivacySection.astro";
+import ToolHero from "@/components/sections/ToolHero.astro";
+import MainLayout from "@/layouts/main.astro";
+
+const privacyItems = [
+  "A videó dekódolása, átméretezése és újrakódolása a saját böngésződben történik.",
+  "A Morf nem tölti fel a forrásvideót, és a kész fájlt sem tárolja szerveren.",
+  "A hosszabb videóknál az export a böngésződ memóriáját és processzorát használja.",
+];
+
+const faqItems = [
+  {
+    question: "Milyen videókat tölthetek fel?",
+    answer: "MP4, M4V, MOV, WebM, MKV és MPEG-TS videót. A tényleges dekódolhatóság a fájl kodekjétől és a böngésződ WebCodecs-támogatásától is függ.",
+  },
+  {
+    question: "Milyen formátumot tölthetek le?",
+    answer: "MP4-et és MOV-ot H.264/AAC kodekkel, WebM-et VP9/Opus kodekkel. Az eszköz feltöltés után megmutatja, melyik kimenet kódolható a böngésződben.",
+  },
+  {
+    question: "Mit jelent a felbontás százalék?",
+    answer: "A szélességet és magasságot együtt arányosan csökkenti. A 50% például egy 1920 × 1080-as videóból 960 × 540-es kimenetet készít.",
+  },
+  {
+    question: "Pontosan akkora lesz a kész fájl, mint a becslés?",
+    answer: "Nem feltétlenül. A becslés a felbontásból, képkockasebességből, kiválasztott formátumból, minőségből és hangsávból készül. A végső méretet a videó tartalma is befolyásolja.",
+  },
+  {
+    question: "Megmarad a hangsáv?",
+    answer: "Igen, ha a böngésződ a forrás hangját dekódolni és a választott kimenet hangkodekjét kódolni tudja. Hang nélküli videónál a kimenet is néma marad.",
+  },
+];
+
+const seoDescription = "Konvertálj és optimalizálj MP4, MOV, WebM, MKV vagy MPEG-TS videót helyben a böngésződben. Válassz MP4, WebM vagy MOV kimenetet, és csökkentsd a felbontást százalékosan.";
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebApplication",
+      "@id": "/video-konvertalo#alkalmazas",
+      name: "Morf videó konvertáló és optimalizáló",
+      description: seoDescription,
+      applicationCategory: "MultimediaApplication",
+      applicationSubCategory: "Videókonvertáló",
+      operatingSystem: "Web",
+      browserRequirements: "JavaScriptet, Web Workert és WebCodecsot támogató modern böngésző",
+      inLanguage: "hu",
+      isAccessibleForFree: true,
+      offers: { "@type": "Offer", price: "0", priceCurrency: "HUF" },
+      featureList: ["MP4, WebM és MOV kimenet", "Százalékos felbontáscsökkentés", "Várható fájlméret becslése", "Helyi böngészős feldolgozás"],
+      fileFormat: ["video/mp4", "video/quicktime", "video/webm", "video/x-matroska", "video/mp2t"],
+      creator: { "@type": "Person", name: "Paládi Bálint" },
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "/video-konvertalo#gyakori-kerdesek",
+      inLanguage: "hu",
+      mainEntity: faqItems.map((item) => ({
+        "@type": "Question",
+        name: item.question,
+        acceptedAnswer: { "@type": "Answer", text: item.answer },
+      })),
+    },
+  ],
+};
+---
+
+<MainLayout
+  title="Videó konvertáló és optimalizáló online | Morf"
+  description={seoDescription}
+  canonicalPath="/video-konvertalo"
+  structuredData={structuredData}
+>
+  <SiteHeader
+    active="videoConverter"
+    actionHref="#video-converter-workspace"
+    actionLabel="Konvertáló megnyitása"
+    actionShortLabel="Megnyitás"
+  />
+
+  <main>
+    <ToolHero
+      title="Videó konvertáló és optimalizáló"
+      description="Válts MP4, WebM vagy MOV formátumra, csökkentsd a felbontást, és lásd előre a várható fájlméretet. A videód végig nálad marad."
+      primaryAction={{ href: "#video-converter-workspace", label: "Videó konvertálása" }}
+      secondaryAction={{ href: "#hogyan-mukodik", label: "Hogyan működik?" }}
+    />
+
+    <VideoConverterWorkspace client:load />
+
+    <section id="hogyan-mukodik" class="morf-section-normal scroll-mt-6">
+      <div class="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-14 sm:px-6 sm:py-18 lg:px-8">
+        <header class="flex max-w-2xl flex-col gap-3">
+          <h2 class="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">Három lépésben kész</h2>
+          <p class="text-muted-foreground text-base leading-relaxed">A formátumváltás és az optimalizálás egyetlen helyi feldolgozásban fut le.</p>
+        </header>
+        <ol class="grid gap-4 md:grid-cols-3">
+          <li class="border-border flex flex-col gap-3 border-t pt-4"><span class="text-primary text-sm font-semibold tabular-nums">01</span><h3 class="font-heading text-xl font-semibold">Töltsd fel a videót</h3><p class="text-muted-foreground text-sm leading-relaxed">Az eszköz ellenőrzi a konténert, a kodeket és a rendelkezésre álló kimeneteket.</p></li>
+          <li class="border-border flex flex-col gap-3 border-t pt-4"><span class="text-primary text-sm font-semibold tabular-nums">02</span><h3 class="font-heading text-xl font-semibold">Állítsd be a kimenetet</h3><p class="text-muted-foreground text-sm leading-relaxed">Válassz formátumot, felbontást és minőségi szintet, majd ellenőrizd a becsült méretet.</p></li>
+          <li class="border-border flex flex-col gap-3 border-t pt-4"><span class="text-primary text-sm font-semibold tabular-nums">03</span><h3 class="font-heading text-xl font-semibold">Töltsd le</h3><p class="text-muted-foreground text-sm leading-relaxed">A Morf a kész videót a böngésződben állítja elő, majd rögtön letöltheted.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <PrivacySection
+      title="A videód nálad marad"
+      description="A forrásvideó és a kész fájl is a saját böngésződben marad. A Morf nem küldi szerverre a videódat."
+      items={privacyItems}
+    />
+
+    <FaqSection
+      title="Videókonvertálás, röviden"
+      description="A támogatott formátumokról, felbontásról, fájlméretről és a hangsávról."
+      items={faqItems}
+    />
+  </main>
+
+  <SiteFooter />
+</MainLayout>

@@ -10,6 +10,7 @@ interface Props {
     | "favicon"
     | "videoFrames"
     | "videoSpeed"
+    | "videoConverter"
     | "sharePreview"
     | "privacy"
     | null;
@@ -36,6 +37,11 @@ const navItems = [
     key: "videoSpeed",
     href: "/video-gyorsitas-lassitas",
     label: "Videó gyorsítás",
+  },
+  {
+    key: "videoConverter",
+    href: "/video-konvertalo",
+    label: "Videó konvertáló",
   },
   { key: "favicon", href: "/favicon-generator", label: "Favicon generátor" },
   {

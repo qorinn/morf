@@ -11,8 +11,6 @@ import {
   PlayIcon,
   RepeatIcon,
   Video01Icon,
-  VolumeHighIcon,
-  VolumeMute01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useDropzone } from "react-dropzone";
@@ -44,11 +42,7 @@ import {
   updateHardCutSpeed,
   updateSpeedPoint,
 } from "@/features/video-speed/curve";
-import {
-  createPreviewLoopBuffer,
-  decodeSourceAudio,
-  renderCurveAudio,
-} from "@/features/video-speed/audio";
+import { renderCurveAudio } from "@/features/video-speed/audio";
 import type { SpeedCurve, SpeedCurveNode, SpeedPoint, SpeedTransition, VideoSpeedMetadata } from "@/features/video-speed/types";
 import {
   createVideoSpeedWorker,
@@ -61,7 +55,6 @@ import { formatBytes } from "@/lib/filenames/image-filenames";
 type Phase = "empty" | "inspecting" | "ready" | "rendering-audio" | "exporting" | "complete" | "error";
 type FrameScrubState = { targetFrame: number; requestedFrame: number | undefined; seeking: boolean };
 type ControllerDragState = { shouldResume: boolean };
-type PreviewAudioLoop = { source: AudioBufferSourceNode; gain: GainNode };
 type HardCutDrag = { pointIndex: number; target: "position" | "before" | "after" };
 
 const graph = { width: 1000, height: 320, paddingLeft: 50, paddingRight: 14, paddingY: 24 };
@@ -530,7 +523,7 @@ function CurveEditor({
               <fieldset className="border-primary/35 bg-card flex min-w-0 flex-col gap-2 rounded-md border border-l-4 p-3">
                 <legend className="sr-only">Bal oldali átmenet</legend>
                 <div className="text-primary flex items-center gap-1.5 text-xs font-semibold">
-                  <HugeiconsIcon icon={ArrowRight01Icon} size={15} strokeWidth={2.2} aria-hidden="true" />
+                  <HugeiconsIcon icon={ArrowLeft01Icon} size={15} strokeWidth={2.2} aria-hidden="true" />
                   <span>Balról érkezik</span>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5">
@@ -599,10 +592,6 @@ export default function VideoSpeedWorkspace() {
   const [result, setResult] = useState<{ blob: Blob; fileName: string }>();
   const [isPlaying, setIsPlaying] = useState(false);
   const [previewTime, setPreviewTime] = useState(0);
-  const [scrubAudioEnabled, setScrubAudioEnabled] = useState(true);
-  const [isScrubAudioPreparing, setIsScrubAudioPreparing] = useState(false);
-  const [isScrubAudioLooping, setIsScrubAudioLooping] = useState(false);
-  const [scrubAudioError, setScrubAudioError] = useState<string>();
   const [videoLoopEnabled, setVideoLoopEnabled] = useState(false);
   const workerRef = useRef<VideoSpeedWorkerHandle | undefined>(undefined);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -612,12 +601,6 @@ export default function VideoSpeedWorkspace() {
   const controllerDragRestoreRef = useRef<ControllerDragState | undefined>(undefined);
   const controllerScrubRef = useRef<FrameScrubState | undefined>(undefined);
   const controllerResumeAfterScrubRef = useRef(false);
-  const previewAudioContextRef = useRef<AudioContext | undefined>(undefined);
-  const previewAudioBufferRef = useRef<AudioBuffer | undefined>(undefined);
-  const previewAudioDecodeRef = useRef<Promise<AudioBuffer | undefined> | undefined>(undefined);
-  const previewAudioLoopRef = useRef<PreviewAudioLoop | undefined>(undefined);
-  const previewAudioSessionRef = useRef(0);
-  const previewAudioRequestRef = useRef(0);
 
   const sourceDuration = metadata?.duration ?? 0;
   const outputDuration = useMemo(
@@ -631,113 +614,6 @@ export default function VideoSpeedWorkspace() {
   const activePreset = curvePresetId(curve);
   const busy = phase === "inspecting" || phase === "rendering-audio" || phase === "exporting";
 
-  const stopPreviewAudioLoop = useCallback(() => {
-    const activeLoop = previewAudioLoopRef.current;
-    previewAudioLoopRef.current = undefined;
-    if (!activeLoop) return;
-
-    const now = previewAudioContextRef.current?.currentTime ?? 0;
-    try {
-      activeLoop.gain.gain.cancelScheduledValues(now);
-      activeLoop.gain.gain.setValueAtTime(activeLoop.gain.gain.value, now);
-      activeLoop.gain.gain.linearRampToValueAtTime(0, now + 0.008);
-      activeLoop.source.stop(now + 0.01);
-    } catch {
-      // A már leállított AudioBufferSourceNode nem igényel további kezelést.
-    }
-    setIsScrubAudioLooping(false);
-  }, []);
-
-  const cancelPreviewAudioLoop = useCallback(() => {
-    previewAudioRequestRef.current += 1;
-    stopPreviewAudioLoop();
-  }, [stopPreviewAudioLoop]);
-
-  const resetPreviewAudio = useCallback(() => {
-    previewAudioSessionRef.current += 1;
-    cancelPreviewAudioLoop();
-    previewAudioBufferRef.current = undefined;
-    previewAudioDecodeRef.current = undefined;
-    const context = previewAudioContextRef.current;
-    previewAudioContextRef.current = undefined;
-    if (context && context.state !== "closed") void context.close();
-    setIsScrubAudioPreparing(false);
-    setScrubAudioError(undefined);
-  }, [cancelPreviewAudioLoop]);
-
-  const getPreviewAudioContext = useCallback(() => {
-    const current = previewAudioContextRef.current;
-    if (current) return current;
-    const AudioContextConstructor = window.AudioContext ?? (
-      window as typeof window & { webkitAudioContext?: typeof AudioContext }
-    ).webkitAudioContext;
-    if (!AudioContextConstructor) {
-      throw new Error("Ebben a böngészőben a hangloop előnézet nem támogatott.");
-    }
-    const context = new AudioContextConstructor();
-    previewAudioContextRef.current = context;
-    return context;
-  }, []);
-
-  const startPreviewAudioLoop = useCallback(async (sourceTime: number) => {
-    const request = ++previewAudioRequestRef.current;
-    const dragState = controllerDragRestoreRef.current;
-    if (!source || !metadata?.hasAudio || !scrubAudioEnabled || !dragState?.shouldResume) {
-      cancelPreviewAudioLoop();
-      return;
-    }
-
-    const session = previewAudioSessionRef.current;
-    try {
-      const context = getPreviewAudioContext();
-      await context.resume();
-      let audioBuffer = previewAudioBufferRef.current;
-      if (!audioBuffer) {
-        setIsScrubAudioPreparing(true);
-        setScrubAudioError(undefined);
-        const decoding = previewAudioDecodeRef.current ?? decodeSourceAudio(source, metadata);
-        previewAudioDecodeRef.current = decoding;
-        audioBuffer = await decoding;
-        if (session !== previewAudioSessionRef.current) return;
-        previewAudioBufferRef.current = audioBuffer;
-        setIsScrubAudioPreparing(false);
-        if (request !== previewAudioRequestRef.current) return;
-      }
-
-      if (
-        !audioBuffer ||
-        session !== previewAudioSessionRef.current ||
-        request !== previewAudioRequestRef.current ||
-        !controllerDragRestoreRef.current?.shouldResume
-      ) {
-        return;
-      }
-
-      stopPreviewAudioLoop();
-      const loopSource = context.createBufferSource();
-      const gain = context.createGain();
-      loopSource.buffer = createPreviewLoopBuffer(audioBuffer, sourceTime);
-      loopSource.loop = true;
-      loopSource.connect(gain).connect(context.destination);
-      const now = context.currentTime;
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(1, now + 0.008);
-      loopSource.onended = () => {
-        loopSource.disconnect();
-        gain.disconnect();
-      };
-      loopSource.start();
-      previewAudioLoopRef.current = { source: loopSource, gain };
-      setIsScrubAudioLooping(true);
-    } catch (reason) {
-      if (session !== previewAudioSessionRef.current) return;
-      setIsScrubAudioPreparing(false);
-      setScrubAudioError(reason instanceof Error ? reason.message : "A hangloop előnézet nem indítható.");
-      if (request !== previewAudioRequestRef.current) return;
-      cancelPreviewAudioLoop();
-    }
-  }, [cancelPreviewAudioLoop, getPreviewAudioContext, metadata, scrubAudioEnabled, source, stopPreviewAudioLoop]);
-
   const releaseWorker = useCallback(() => {
     workerRef.current?.worker.terminate();
     workerRef.current = undefined;
@@ -746,7 +622,6 @@ export default function VideoSpeedWorkspace() {
   const clearResult = useCallback(() => setResult(undefined), []);
 
   const selectSource = useCallback(async (file: File) => {
-    resetPreviewAudio();
     clearResult();
     setPhase("inspecting");
     setError(undefined);
@@ -754,7 +629,6 @@ export default function VideoSpeedWorkspace() {
     setCurve(defaultSpeedCurve);
     setPreviewTime(0);
     setIsPlaying(false);
-    setScrubAudioEnabled(true);
     setVideoLoopEnabled(false);
     const nextUrl = URL.createObjectURL(file);
     setSourceUrl((current) => {
@@ -778,7 +652,7 @@ export default function VideoSpeedWorkspace() {
       setPhase("error");
       setError(reason instanceof Error ? reason.message : "A videó vizsgálata nem sikerült.");
     }
-  }, [clearResult, releaseWorker, resetPreviewAudio]);
+  }, [clearResult, releaseWorker]);
 
   const dropzone = useDropzone({
     multiple: false,
@@ -798,9 +672,8 @@ export default function VideoSpeedWorkspace() {
 
   useEffect(() => () => {
     releaseWorker();
-    resetPreviewAudio();
     if (sourceUrlRef.current) URL.revokeObjectURL(sourceUrlRef.current);
-  }, [releaseWorker, resetPreviewAudio]);
+  }, [releaseWorker]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -863,9 +736,6 @@ export default function VideoSpeedWorkspace() {
     const currentFrame = Math.min(maxFrame, Math.max(0, Math.round(video.currentTime * frameRate)));
     if (currentFrame === scrub.targetFrame) {
       controllerScrubRef.current = undefined;
-      if (controllerDragRestoreRef.current?.shouldResume) {
-        void startPreviewAudioLoop(scrub.targetFrame / frameRate);
-      }
       if (controllerResumeAfterScrubRef.current) {
         controllerResumeAfterScrubRef.current = false;
         void video.play().catch(() => undefined);
@@ -876,7 +746,7 @@ export default function VideoSpeedWorkspace() {
     scrub.seeking = true;
     scrub.requestedFrame = scrub.targetFrame;
     video.currentTime = Math.min(sourceDuration, scrub.targetFrame / frameRate);
-  }, [metadata?.frameRate, sourceDuration, startPreviewAudioLoop]);
+  }, [metadata?.frameRate, sourceDuration]);
 
   const cancelControllerFrameScrub = useCallback(() => {
     controllerScrubRef.current = undefined;
@@ -895,9 +765,6 @@ export default function VideoSpeedWorkspace() {
         return;
       }
       controllerScrubRef.current = undefined;
-      if (controllerDragRestoreRef.current?.shouldResume) {
-        void startPreviewAudioLoop(scrub.targetFrame / Math.max(1, metadata?.frameRate ?? 1));
-      }
       if (controllerResumeAfterScrubRef.current) {
         controllerResumeAfterScrubRef.current = false;
         void video.play().catch(() => undefined);
@@ -905,7 +772,7 @@ export default function VideoSpeedWorkspace() {
     };
     video.addEventListener("seeked", handleFrameSeeked);
     return () => video.removeEventListener("seeked", handleFrameSeeked);
-  }, [metadata?.frameRate, requestLatestControllerFrame, startPreviewAudioLoop]);
+  }, [requestLatestControllerFrame]);
 
   const requestPreviewFrameAtPosition = useCallback((position: number) => {
     const video = videoRef.current;
@@ -964,15 +831,13 @@ export default function VideoSpeedWorkspace() {
   }, [cancelControllerFrameScrub]);
 
   const moveController = useCallback((position: number) => {
-    cancelPreviewAudioLoop();
     requestPreviewFrameAtPosition(position);
-  }, [cancelPreviewAudioLoop, requestPreviewFrameAtPosition]);
+  }, [requestPreviewFrameAtPosition]);
 
   const endControllerDrag = useCallback(() => {
     const video = videoRef.current;
     const restore = controllerDragRestoreRef.current;
     controllerDragRestoreRef.current = undefined;
-    cancelPreviewAudioLoop();
     if (!video || !restore?.shouldResume) return;
     if (controllerScrubRef.current) {
       controllerResumeAfterScrubRef.current = true;
@@ -980,22 +845,7 @@ export default function VideoSpeedWorkspace() {
     } else {
       void video.play().catch(() => undefined);
     }
-  }, [cancelPreviewAudioLoop, requestLatestControllerFrame]);
-
-  useEffect(() => {
-    const dragState = controllerDragRestoreRef.current;
-    if (!scrubAudioEnabled) {
-      cancelPreviewAudioLoop();
-      return;
-    }
-    if (!dragState?.shouldResume) return;
-    if (controllerScrubRef.current) {
-      requestLatestControllerFrame();
-      return;
-    }
-    const video = videoRef.current;
-    if (video) void startPreviewAudioLoop(video.currentTime);
-  }, [cancelPreviewAudioLoop, requestLatestControllerFrame, scrubAudioEnabled, startPreviewAudioLoop]);
+  }, [requestLatestControllerFrame]);
 
   const toggleControllerTransport = useCallback(() => {
     const video = videoRef.current;
@@ -1003,35 +853,24 @@ export default function VideoSpeedWorkspace() {
     if (!video || !dragState) return;
 
     dragState.shouldResume = !dragState.shouldResume;
-    if (!dragState.shouldResume) {
-      cancelPreviewAudioLoop();
-      return;
-    }
-    if (controllerScrubRef.current) {
-      requestLatestControllerFrame();
-    } else {
-      void startPreviewAudioLoop(video.currentTime);
-    }
-  }, [cancelPreviewAudioLoop, requestLatestControllerFrame, startPreviewAudioLoop]);
+  }, []);
 
   const togglePreviewPlayback = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
     cancelControllerFrameScrub();
-    cancelPreviewAudioLoop();
     if (video.paused) {
       if (video.ended) video.currentTime = 0;
       void video.play().catch(() => undefined);
     } else {
       video.pause();
     }
-  }, [cancelControllerFrameScrub, cancelPreviewAudioLoop]);
+  }, [cancelControllerFrameScrub]);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
     const handleEnded = () => {
-      cancelPreviewAudioLoop();
       if (!videoLoopEnabled) return;
       video.currentTime = 0;
       setPreviewTime(0);
@@ -1039,7 +878,7 @@ export default function VideoSpeedWorkspace() {
     };
     video.addEventListener("ended", handleEnded);
     return () => video.removeEventListener("ended", handleEnded);
-  }, [cancelPreviewAudioLoop, videoLoopEnabled]);
+  }, [videoLoopEnabled]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -1221,12 +1060,6 @@ export default function VideoSpeedWorkspace() {
                   />
                 </section>
                 <div className="border-border flex flex-col gap-2 border-t px-3 py-3 text-sm">
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    {isScrubAudioPreparing && <span className="text-muted-foreground text-xs" role="status">Hang előkészítése…</span>}
-                    {isScrubAudioLooping && <span className="text-primary text-xs font-medium" role="status">Hang loopol</span>}
-                    {!metadata.hasAudio && <span className="text-muted-foreground text-xs">Nincs dekódolható hangsáv.</span>}
-                    {scrubAudioError && <span className="text-destructive text-xs" role="status">{scrubAudioError}</span>}
-                  </div>
                   {curve.points.length > 2 && (
                     <Button variant="ghost" size="sm" className="w-fit" disabled={busy} onClick={() => setCurve(defaultSpeedCurve)}>
                       <HugeiconsIcon icon={Delete02Icon} data-icon="inline-start" strokeWidth={2} />
@@ -1265,13 +1098,6 @@ export default function VideoSpeedWorkspace() {
                     <Button variant="outline" size="sm" className="justify-start aria-pressed:border-primary aria-pressed:bg-muted" aria-pressed={videoLoopEnabled} onClick={() => setVideoLoopEnabled((enabled) => !enabled)}>
                       <HugeiconsIcon icon={RepeatIcon} data-icon="inline-start" strokeWidth={2} />
                       Videó loop
-                    </Button>
-                    <Button variant="outline" size="sm" className="justify-start aria-pressed:border-primary aria-pressed:bg-muted" disabled={!metadata.hasAudio} aria-pressed={scrubAudioEnabled} onClick={() => {
-                      setScrubAudioEnabled((enabled) => !enabled);
-                      if (scrubAudioEnabled) cancelPreviewAudioLoop();
-                    }}>
-                      <HugeiconsIcon icon={scrubAudioEnabled ? VolumeHighIcon : VolumeMute01Icon} data-icon="inline-start" strokeWidth={2} />
-                      Hangloop tekeréskor
                     </Button>
                     <Button variant="outline" size="sm" className="justify-start aria-pressed:border-primary aria-pressed:bg-muted" disabled={busy || !metadata.hasAudio} aria-pressed={preservePitch} onClick={() => setPreservePitch((enabled) => !enabled)}>
                       <HugeiconsIcon icon={MusicNote01Icon} data-icon="inline-start" strokeWidth={2} />

@@ -52,6 +52,21 @@ export const tools = [
     ],
   },
   {
+    title: "Videó konvertáló és optimalizáló",
+    shortDescription: "Formátumváltás, kisebb felbontás és méretbecslés.",
+    description:
+      "Konvertálj videót MP4, WebM vagy MOV formátumba, csökkentsd a felbontását százalékosan, és lásd előre a várható fájlméretet.",
+    href: "/video-konvertalo",
+    cta: "Videó konvertálása",
+    icon: Film01Icon,
+    formats: "MP4, MOV, WebM, MKV, TS → MP4, WebM, MOV",
+    features: [
+      "Százalékos felbontáscsökkentés",
+      "Három tömörítési szint",
+      "Helyi feldolgozás és letöltés",
+    ],
+  },
+  {
     title: "Open Graph ellenőrző",
     shortDescription: "Ellenőrzés, előnézet és javítható meta adatok.",
     description:
