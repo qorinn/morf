@@ -37,6 +37,21 @@ export const tools = [
     ],
   },
   {
+    title: "Videó gyorsítás és lassítás",
+    shortDescription: "Sebességgörbe, preview és MP4-export.",
+    description:
+      "Gyorsíts vagy lassíts videót szerkeszthető sebességgörbével, majd töltsd le H.264/AAC MP4-ként.",
+    href: "/video-gyorsitas-lassitas",
+    cta: "Videó szerkesztése",
+    icon: Film01Icon,
+    formats: "MP4, MOV, WebM → MP4",
+    features: [
+      "Húzható pontok és öt curve preset",
+      "Lejátszható preview és hosszbecslés",
+      "Opcionális hangmagasság-megtartás",
+    ],
+  },
+  {
     title: "Open Graph ellenőrző",
     shortDescription: "Ellenőrzés, előnézet és javítható meta adatok.",
     description:
