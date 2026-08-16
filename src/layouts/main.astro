@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import { localeMetadata, type Locale } from "@/lib/locale";
 
 interface Props {
   title?: string;
@@ -8,6 +9,8 @@ interface Props {
   canonicalPath?: string;
   structuredData?: Record<string, unknown>;
   robots?: string;
+  locale?: Locale;
+  alternateLocales?: Array<{ locale: Locale; path: string }>;
 }
 
 const {
@@ -17,7 +20,10 @@ const {
   canonicalPath = Astro.url.pathname,
   structuredData,
   robots = "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+  locale = "hu",
+  alternateLocales = [],
 } = Astro.props;
+const localeMeta = localeMetadata[locale];
 const title = titleProp ?? content?.title ?? "Morf";
 const canonicalUrl = Astro.site
   ? new URL(canonicalPath, Astro.site).href
@@ -27,20 +33,29 @@ const structuredDataJson = structuredData
   : undefined;
 ---
 
-<html lang="hu">
+<html lang={localeMeta.htmlLang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" />
     <link rel="canonical" href={canonicalUrl} />
+    {
+      alternateLocales.map((alternate) => (
+        <link
+          rel="alternate"
+          hreflang={localeMetadata[alternate.locale].htmlLang}
+          href={Astro.site ? new URL(alternate.path, Astro.site).href : alternate.path}
+        />
+      ))
+    }
     {Astro.site && <link rel="sitemap" href="/sitemap-index.xml" />}
     <meta name="description" content={description} />
     <meta name="robots" content={robots} />
     <meta name="author" content="Paládi Bálint" />
     <meta name="application-name" content="Morf" />
     <meta property="og:type" content="website" />
-    <meta property="og:locale" content="hu_HU" />
+    <meta property="og:locale" content={localeMeta.ogLocale} />
     <meta property="og:site_name" content="Morf" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />

@@ -11,6 +11,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { useDropzone } from "react-dropzone";
 
 import { FileUploadDropzone } from "@/components/upload/FileUploadDropzone";
+import { BrowserSupportHint } from "@/components/browser-support/BrowserSupportHint";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { Toaster } from "@/components/ui/toast";
 import {
   createVideoConverterFileName,
   estimateOutputBytes,
@@ -40,7 +42,9 @@ import {
   type VideoConverterWorkerHandle,
 } from "@/features/video-converter/worker-client";
 import { downloadFile } from "@/lib/downloads/file-saver";
+import { isBrowserSupportError, videoConverterBrowserSupportError } from "@/lib/browser-support";
 import { formatBytes } from "@/lib/filenames/image-filenames";
+import { useErrorToast } from "@/hooks/use-error-toast";
 
 type WorkspacePhase = "empty" | "inspecting" | "ready" | "converting" | "complete" | "error";
 type ConversionResult = { blob: Blob; fileName: string; mimeType: string };
@@ -101,6 +105,8 @@ export default function VideoConverterWorkspace() {
   const selectedSupport = encoders?.[outputFormat];
   const exportEnabled = Boolean(selectedSupport?.video && selectedSupport.audio);
 
+  useErrorToast(error, "A videó konvertálása nem sikerült");
+
   const releaseWorker = useCallback(() => {
     workerRef.current?.worker.terminate();
     workerRef.current = undefined;
@@ -122,7 +128,7 @@ export default function VideoConverterWorkspace() {
       if (!inspected.valid) throw new Error(`${inspected.message} ${inspected.suggestion}`);
       const nextOutput = firstSupportedOutput(inspected.encoders);
       if (!nextOutput) {
-        throw new Error("Ebben a böngészőben egyik választható videókimenet sem kódolható. Próbáld friss Chrome-mal vagy Edge-dzsel.");
+        throw new Error(videoConverterBrowserSupportError());
       }
       setMetadata(inspected.metadata);
       setEncoders(inspected.encoders);
@@ -130,7 +136,8 @@ export default function VideoConverterWorkspace() {
       setPhase("ready");
     } catch (reason) {
       setPhase("error");
-      setError(reason instanceof Error ? reason.message : "A videó vizsgálata nem sikerült.");
+      const message = reason instanceof Error ? reason.message : "A videó vizsgálata nem sikerült.";
+      setError(isBrowserSupportError(message) ? videoConverterBrowserSupportError() : message);
     }
   }, [releaseWorker]);
 
@@ -173,7 +180,8 @@ export default function VideoConverterWorkspace() {
         setPhase("ready");
       } else {
         setPhase("error");
-        setError(reason instanceof Error ? reason.message : "A videó konvertálása nem sikerült.");
+        const message = reason instanceof Error ? reason.message : "A videó konvertálása nem sikerült.";
+        setError(isBrowserSupportError(message) ? videoConverterBrowserSupportError() : message);
       }
     }
   }, [exportEnabled, metadata, outputFormat, quality, scalePercent, source]);
@@ -222,7 +230,10 @@ export default function VideoConverterWorkspace() {
         {error && (
           <Alert variant="destructive">
             <AlertTitle>Nem sikerült folytatni</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>
+              {error}
+              {isBrowserSupportError(error) && <BrowserSupportHint />}
+            </AlertDescription>
           </Alert>
         )}
 
@@ -297,7 +308,8 @@ export default function VideoConverterWorkspace() {
                     <div><dt className="text-muted-foreground">Képméret</dt><dd className="font-semibold tabular-nums">{dimensions.width} × {dimensions.height}</dd></div>
                     <div className="col-span-2"><dt className="text-muted-foreground">Várható fájlméret</dt><dd className="mt-1 text-2xl font-semibold tracking-tight tabular-nums">kb. {formatBytes(estimatedBytes)}</dd></div>
                   </dl>
-                  {!exportEnabled && <Alert variant="destructive"><AlertTitle>Ez most nem választható</AlertTitle><AlertDescription>Próbálj másik fájltípust, vagy nyisd meg az eszközt friss Chrome-ban vagy Edge-ben.</AlertDescription></Alert>}
+                  {!exportEnabled && <Alert variant="destructive"><AlertTitle>Ez most nem választható</AlertTitle><AlertDescription>{videoConverterBrowserSupportError()}<BrowserSupportHint /></AlertDescription></Alert>}
+                  {error && <Alert variant="destructive"><AlertTitle>Az átalakítás nem indult el</AlertTitle><AlertDescription>{error}{isBrowserSupportError(error) && <BrowserSupportHint />}</AlertDescription></Alert>}
                   <Button size="lg" disabled={busy || !exportEnabled} onClick={() => void runConversion()}><HugeiconsIcon icon={Film01Icon} data-icon="inline-start" strokeWidth={2} />Átalakítás indítása</Button>
                   {phase === "converting" && <div className="flex flex-col gap-3"><Progress value={progress * 100}><ProgressLabel>Videó készítése</ProgressLabel><ProgressValue /></Progress><Button variant="ghost" size="sm" className="w-fit" onClick={() => workerRef.current?.api.cancel()}><HugeiconsIcon icon={Delete02Icon} data-icon="inline-start" strokeWidth={2} />Megszakítás</Button></div>}
                 </CardContent>
@@ -308,6 +320,7 @@ export default function VideoConverterWorkspace() {
           </div>
         )}
       </div>
+      <Toaster />
     </section>
   );
 }

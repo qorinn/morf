@@ -8,6 +8,13 @@ import { defineConfig } from "astro/config";
 // https://astro.build/config
 export default defineConfig({
   site: "https://morfkit.com",
+  i18n: {
+    locales: ["hu", "en", "de", "es", "fr"],
+    defaultLocale: "hu",
+    routing: {
+      prefixDefaultLocale: false,
+    },
+  },
   redirects: {
     "/video-framekre-bontasa": "/video-kepekre-bontasa",
   },

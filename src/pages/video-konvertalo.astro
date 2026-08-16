@@ -4,13 +4,13 @@ import SiteFooter from "@/components/layout/SiteFooter.astro";
 import SiteHeader from "@/components/layout/SiteHeader.astro";
 import FaqSection from "@/components/sections/FaqSection.astro";
 import PrivacySection from "@/components/sections/PrivacySection.astro";
+import RelatedTools from "@/components/sections/RelatedTools.astro";
 import ToolHero from "@/components/sections/ToolHero.astro";
 import MainLayout from "@/layouts/main.astro";
 
 const privacyItems = [
-  "A videó dekódolása, átméretezése és újrakódolása a saját böngésződben történik.",
-  "A Morf nem tölti fel a forrásvideót, és a kész fájlt sem tárolja szerveren.",
   "A hosszabb videóknál az export a böngésződ memóriáját és processzorát használja.",
+  "Nincs regisztráció, hirdetés vagy napi konvertálási limit.",
 ];
 
 const faqItems = [
@@ -34,9 +34,14 @@ const faqItems = [
     question: "Megmarad a hangsáv?",
     answer: "Igen, ha a böngésződ a forrás hangját dekódolni és a választott kimenet hangkodekjét kódolni tudja. Hang nélküli videónál a kimenet is néma marad.",
   },
+  {
+    question: "Ingyenes, reklámmentes és korlátlan a videó konvertálása?",
+    answer:
+      "Igen. A Morf videó konvertálója ingyenes, nem kér fiókot, és nincs napi feltöltési vagy letöltési limit. A kezelhető videóméretet és az export idejét a saját eszközöd teljesítménye és a böngésződ támogatása befolyásolja.",
+  },
 ];
 
-const seoDescription = "Konvertálj és optimalizálj MP4, MOV, WebM, MKV vagy MPEG-TS videót helyben a böngésződben. Válassz MP4, WebM vagy MOV kimenetet, és csökkentsd a felbontást százalékosan.";
+const seoDescription = "Ingyenes online videó konvertáló és optimalizáló MP4, MOV, WebM, MKV és TS fájlokhoz. Reklámmentes, regisztráció nélküli használat napi limit nélkül, helyi feldolgozással.";
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
@@ -71,27 +76,24 @@ const structuredData = {
 ---
 
 <MainLayout
-  title="Videó konvertáló és optimalizáló online | Morf"
+  title="Ingyenes videó konvertáló és optimalizáló | Morf"
   description={seoDescription}
   canonicalPath="/video-konvertalo"
   structuredData={structuredData}
 >
-  <SiteHeader
-    active="videoConverter"
-    actionHref="#video-converter-workspace"
-    actionLabel="Konvertáló megnyitása"
-    actionShortLabel="Megnyitás"
-  />
+  <SiteHeader active="videoConverter" category="video" />
 
   <main>
     <ToolHero
-      title="Videó konvertáló és optimalizáló"
-      description="Válts MP4, WebM vagy MOV formátumra, csökkentsd a felbontást, és lásd előre a várható fájlméretet. A videód végig nálad marad."
+      title="Videóformátum-konvertáló és optimalizáló"
+      description="Alakíts át MP4, MOV, WebM, MKV és TS videókat, csökkentsd a felbontást és a fájlméretet. Megosztáshoz, weboldalra, e-mailhez vagy telefonon helyfelszabadításhoz."
       primaryAction={{ href: "#video-converter-workspace", label: "Videó konvertálása" }}
       secondaryAction={{ href: "#hogyan-mukodik", label: "Hogyan működik?" }}
     />
 
     <VideoConverterWorkspace client:load />
+
+    <RelatedTools hrefs={["/video-gyorsitas-lassitas", "/video-kepekre-bontasa"]} />
 
     <section id="hogyan-mukodik" class="morf-section-normal scroll-mt-6">
       <div class="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-14 sm:px-6 sm:py-18 lg:px-8">
@@ -108,8 +110,8 @@ const structuredData = {
     </section>
 
     <PrivacySection
-      title="A videód nálad marad"
-      description="A forrásvideó és a kész fájl is a saját böngésződben marad. A Morf nem küldi szerverre a videódat."
+      title="Adatvédelem videókonvertáláskor"
+      description="A videó átméretezése és formátumváltása a böngésződben fut; a Morf nem küldi a fájlt szerverre."
       items={privacyItems}
     />
 

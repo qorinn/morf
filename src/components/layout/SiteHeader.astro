@@ -2,6 +2,7 @@
 import fullLogo from "@/assets/brand/morf-logo-full.svg";
 import minimalLogo from "@/assets/brand/morf-logo-minimal.svg";
 import { buttonVariants } from "@/components/ui/button";
+import type { Locale } from "@/lib/locale";
 
 interface Props {
   active?:
@@ -14,42 +15,44 @@ interface Props {
     | "sharePreview"
     | "privacy"
     | null;
-  actionHref?: string;
-  actionLabel?: string;
-  actionShortLabel?: string;
+  category?: "kepek" | "video" | "web";
+  locale?: Locale;
+  languageHref?: string;
+  languageLabel?: string;
 }
 
 const {
   active = "home",
-  actionHref,
-  actionLabel,
-  actionShortLabel = actionLabel,
+  category,
+  locale = "hu",
+  languageHref,
+  languageLabel,
 } = Astro.props;
 
-const navItems = [
-  { key: "converter", href: "/kep-konvertalo", label: "Képkonvertáló" },
-  {
-    key: "videoFrames",
-    href: "/video-kepekre-bontasa",
-    label: "Videó képekre",
-  },
-  {
-    key: "videoSpeed",
-    href: "/video-gyorsitas-lassitas",
-    label: "Videó gyorsítás",
-  },
-  {
-    key: "videoConverter",
-    href: "/video-konvertalo",
-    label: "Videó konvertáló",
-  },
-  { key: "favicon", href: "/favicon-generator", label: "Favicon generátor" },
-  {
-    key: "sharePreview",
-    href: "/megosztasi-elozet-tervezo",
-    label: "Megosztási előnézet",
-  },
-] as const;
+const copy = locale === "en" ? {
+  announcementStrong: "Work in progress.",
+  announcement: "Morf is still being built and has not been fully tested.",
+  allTools: "All tools",
+  allToolsMobile: "Tools",
+  homeLabel: "Morf home",
+} : {
+  announcementStrong: "Nem kész verzió.",
+  announcement: "A Morf jelenleg még épül, és nincs tesztelve.",
+  allTools: "Összes eszköz",
+  allToolsMobile: "Eszközök",
+  homeLabel: "Morf kezdőlap",
+};
+const categories = locale === "en" ? {
+  kepek: { label: "Image tools", mobileLabel: "Images" },
+  video: { label: "Video tools", mobileLabel: "Video" },
+  web: { label: "Web tools", mobileLabel: "Web" },
+} : {
+  kepek: { label: "Képes eszközök", mobileLabel: "Képek" },
+  video: { label: "Videós eszközök", mobileLabel: "Videó" },
+  web: { label: "Webes eszközök", mobileLabel: "Web" },
+} as const;
+const currentCategory = category ? categories[category] : undefined;
+const homeHref = locale === "en" ? "/en/" : "/";
 ---
 
 <header id="siteHeader">
@@ -61,9 +64,8 @@ const navItems = [
         class="inline-block size-1.5 shrink-0 rounded-full bg-secondary-foreground"
         aria-hidden="true"></span>
       <span>
-        <strong class="font-semibold">Nem kész verzió.</strong>
-        <span class="sm:hidden"> A Morf még nincs tesztelve.</span>
-        <span class="hidden sm:inline"> A Morf jelenleg még épül, és nincs tesztelve.</span>
+        <strong class="font-semibold">{copy.announcementStrong}</strong>
+        <span> {copy.announcement}</span>
       </span>
     </p>
   </div>
@@ -73,9 +75,9 @@ const navItems = [
     aria-label="Fő navigáció"
   >
     <a
-      href="/"
+      href={homeHref}
       class="flex items-center"
-      aria-label="Morf kezdőlap"
+      aria-label={copy.homeLabel}
       aria-current={active === "home" ? "page" : undefined}
     >
       <img
@@ -94,32 +96,27 @@ const navItems = [
       />
     </a>
 
-    <div class="flex items-center gap-2">
-      <div class="hidden items-center gap-1 lg:flex">
-        {
-          navItems.map((item) => (
-            <a
-              href={item.href}
-              aria-current={active === item.key ? "page" : undefined}
-              class={buttonVariants({
-                variant: active === item.key ? "outline" : "ghost",
-                size: "sm",
-              })}
-            >
-              {item.label}
-            </a>
-          ))
-        }
-      </div>
-
+    <div class="flex items-center justify-end gap-1.5 sm:gap-2">
+      <a href={`${homeHref}#eszkozok`} class={buttonVariants({ variant: "ghost", size: "sm" })}>
+        <span class="sm:hidden">{copy.allToolsMobile}</span>
+        <span class="hidden sm:inline">{copy.allTools}</span>
+      </a>
       {
-        actionHref && actionLabel && (
+        currentCategory && (
+          <a href={`${homeHref}#eszkoz-kategoria-${category}`} class={buttonVariants({ variant: "outline", size: "sm" })}>
+            <span class="sm:hidden">{currentCategory.mobileLabel}</span>
+            <span class="hidden sm:inline">{currentCategory.label}</span>
+          </a>
+        )
+      }
+      {
+        languageHref && languageLabel && (
           <a
-            href={actionHref}
-            class={buttonVariants({ variant: "ghost", size: "sm" })}
+            href={languageHref}
+            class={buttonVariants({ variant: "outline", size: "sm" })}
+            aria-label={locale === "en" ? "Switch to Hungarian" : "Váltás angol nyelvre"}
           >
-            <span class="sm:hidden">{actionShortLabel}</span>
-            <span class="hidden sm:inline">{actionLabel}</span>
+            {languageLabel}
           </a>
         )
       }

@@ -4,14 +4,13 @@ import SiteFooter from "@/components/layout/SiteFooter.astro";
 import SiteHeader from "@/components/layout/SiteHeader.astro";
 import FaqSection from "@/components/sections/FaqSection.astro";
 import PrivacySection from "@/components/sections/PrivacySection.astro";
+import RelatedTools from "@/components/sections/RelatedTools.astro";
 import ToolHero from "@/components/sections/ToolHero.astro";
 import VideoFramesGuide from "@/components/sections/VideoFramesGuide.astro";
 import MainLayout from "@/layouts/main.astro";
 
 const privacyItems = [
-  "A videó dekódolása és minden PNG-kép elkészítése a saját böngésződben történik.",
   "A képek ideiglenesen a böngésző helyi, Morf számára elkülönített tárhelyére kerülnek.",
-  "A videó és a képek nem töltődnek fel a Morf szerverére.",
 ];
 
 const faqItems = [
@@ -45,10 +44,15 @@ const faqItems = [
     answer:
       "MP4, MOV és WebM konténereket fogad. A tényleges dekódolhatóság a videó kodekjétől és a böngésződtől is függ; ha egy kodek nem támogatott, a Morf ezt még a feldolgozás előtt jelzi.",
   },
+  {
+    question: "Ingyenes, reklámmentes és korlátlan a videó képekre bontása?",
+    answer:
+      "Igen. Nincs fiók, hirdetés, napi videó- vagy képkockakvóta. A teljes videó feldolgozhatóságát a böngésződ támogatása, a készüléked teljesítménye és a rendelkezésre álló helyi tárhely határozza meg.",
+  },
 ];
 
 const seoDescription =
-  "Bonts MP4, MOV vagy WebM videót teljes felbontású, veszteségmentes PNG képekre helyben, majd optimalizáld őket a Morf képkonvertálójában.";
+  "Bonts MP4, MOV vagy WebM videót teljes felbontású PNG képekre ingyen, reklámmentesen és regisztráció nélkül. A videó helyben marad a böngésződben.";
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
@@ -103,22 +107,17 @@ const structuredData = {
 ---
 
 <MainLayout
-  title="Videó képekre bontása online, PNG-be | Morf"
+  title="Videó képekre bontása online, ingyen PNG-be | Morf"
   description={seoDescription}
   canonicalPath="/video-kepekre-bontasa"
   structuredData={structuredData}
 >
-  <SiteHeader
-    active="videoFrames"
-    actionHref="#video-frame-workspace"
-    actionLabel="Képkészítő megnyitása"
-    actionShortLabel="Megnyitás"
-  />
+  <SiteHeader active="videoFrames" category="video" />
 
   <main>
     <ToolHero
-      title="Videó képekre bontása"
-      description="Bontsd a teljes videót vagy egy kiválasztott részletét képkockákra. Alapból minden eredeti képkocka elkészül, majd egy kattintással átviheted őket optimalizálásra."
+      title="Videóképkocka-exportáló"
+      description="Ments ki MP4, MOV és WebM videóból teljes felbontású PNG képkockákat. Hasznos thumbnailhez, megállított jelenethez, videóelemzéshez vagy képsorozat készítéséhez."
       primaryAction={{
         href: "#video-frame-workspace",
         label: "Képek készítése",
@@ -131,11 +130,13 @@ const structuredData = {
 
     <VideoFrameWorkspace client:load />
 
+    <RelatedTools hrefs={["/kep-konvertalo", "/video-gyorsitas-lassitas"]} />
+
     <VideoFramesGuide />
 
     <PrivacySection
-      title="A videód nálad marad"
-      description="A Morf helyben olvassa a videót, és a PNG-ket is a böngésződ saját tárhelyén készíti el. Nincs feltöltés vagy szerveroldali feldolgozás."
+      title="Adatvédelem videóképkockáknál"
+      description="A videó feldolgozása a böngésződben fut, a Morf pedig nem küldi a forrást szerverre."
       items={privacyItems}
     />
 

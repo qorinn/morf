@@ -9,13 +9,38 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useReducedMotion } from "motion/react";
+import type { Locale } from "@/lib/locale";
 
 import Gravity, { MatterBody } from "@/components/fancy/physics/gravity";
 import { buttonVariants } from "@/components/ui/button";
 import morfPeeking from "../../assets/morf-actions/morf-peeking.webp";
 
-function HomeHeroGravity() {
+interface Props {
+  locale?: Locale;
+}
+
+function HomeHeroGravity({ locale = "hu" }: Props) {
   const shouldReduceMotion = useReducedMotion();
+  const isEnglish = locale === "en";
+  const copy = isEnglish ? {
+    imageConverter: "Image converter",
+    frames: "Video to frames",
+    speed: "Video speed",
+    videoConverter: "Video converter",
+    favicon: "Favicon generator",
+    title: ["Tools for everyday", "digital tasks."],
+    description: "Morf makes common digital tasks simple, free, and private in your browser.",
+    cta: "Explore tools",
+  } : {
+    imageConverter: "Képkonvertáló",
+    frames: "Videó képekre bontása",
+    speed: "Videó gyorsítás",
+    videoConverter: "Videó konvertáló",
+    favicon: "Favicon generátor",
+    title: ["Eszközök a digitális", "mindennapokhoz."],
+    description: "A Morf célja, hogy a gyakori digitális feladatokhoz egyszerű, ingyenes és privát böngészős eszközöket kínáljon.",
+    cta: "Eszközök megnyitása",
+  };
 
   return (
     <section className="morf-section-normal relative h-[max(42rem,calc(100svh-5.75rem))] overflow-hidden sm:h-[max(44rem,calc(100svh-5.75rem))]">
@@ -42,7 +67,7 @@ function HomeHeroGravity() {
               className="size-5"
               aria-hidden="true"
             />
-            Képkonvertáló
+            {copy.imageConverter}
           </a>
         </MatterBody>
 
@@ -63,7 +88,49 @@ function HomeHeroGravity() {
               className="size-5"
               aria-hidden="true"
             />
-            Videó képekre bontása
+            {copy.frames}
+          </a>
+        </MatterBody>
+
+        <MatterBody
+          isDraggable={false}
+          x="43%"
+          y="10%"
+          angle={-1}
+          className="z-10"
+        >
+          <a
+            href="/video-gyorsitas-lassitas"
+            className="bg-card/90 text-card-foreground focus-visible:ring-ring inline-flex items-center gap-2 rounded-4xl border px-4 py-3 text-sm font-semibold whitespace-nowrap shadow-sm transition-colors hover:bg-card focus-visible:ring-3 focus-visible:ring-offset-2 focus-visible:outline-none sm:px-5 sm:py-3.5 sm:text-base"
+          >
+            <HugeiconsIcon
+              icon={Film01Icon}
+              strokeWidth={1.8}
+              className="size-5"
+              aria-hidden="true"
+            />
+            {copy.speed}
+          </a>
+        </MatterBody>
+
+        <MatterBody
+          isDraggable={false}
+          x="47%"
+          y="86%"
+          angle={2}
+          className="z-10"
+        >
+          <a
+            href="/video-konvertalo"
+            className="bg-card/90 text-card-foreground focus-visible:ring-ring inline-flex items-center gap-2 rounded-4xl border px-4 py-3 text-sm font-semibold whitespace-nowrap shadow-sm transition-colors hover:bg-card focus-visible:ring-3 focus-visible:ring-offset-2 focus-visible:outline-none sm:px-5 sm:py-3.5 sm:text-base"
+          >
+            <HugeiconsIcon
+              icon={Film01Icon}
+              strokeWidth={1.8}
+              className="size-5"
+              aria-hidden="true"
+            />
+            {copy.videoConverter}
           </a>
         </MatterBody>
 
@@ -84,7 +151,7 @@ function HomeHeroGravity() {
               className="size-5"
               aria-hidden="true"
             />
-            Favicon generátor
+            {copy.favicon}
           </a>
         </MatterBody>
 
@@ -166,23 +233,24 @@ function HomeHeroGravity() {
       <div className="pointer-events-none relative z-20 mx-auto flex h-full w-full flex-col items-center justify-center gap-7 px-4 py-20 sm:px-6 lg:px-8">
         <div className="mx-auto flex flex-col items-center gap-4 text-center">
           <h1 className="morf-page-heading from-foreground from-25% via-foreground/80 via-60% to-foreground/55 font-heading -mx-[0.05em] -mb-[0.12em] bg-linear-to-b bg-clip-text px-[0.05em] pb-[0.12em] leading-[0.95] font-semibold tracking-[-0.055em] text-transparent text-balance sm:text-[clamp(3.5rem,7.2vw,6.5rem)]">
-            <span className="block">Eszközök a digitális</span>
-            <span className="block">mindennapokhoz.</span>
+            <span className="block">{copy.title[0]}</span>
+            <span className="block">{copy.title[1]}</span>
           </h1>
           <p className="text-muted-foreground max-w-2xl text-lg leading-relaxed sm:text-xl">
-            A Morf célja, hogy a gyakori digitális feladatokhoz egyszerű,
-            ingyenes és privát böngészős eszközöket kínáljon.
+            {copy.description}
           </p>
         </div>
 
-        <div className="pointer-events-auto relative mt-30">
+        <div className="pointer-events-auto relative">
+          {/* 
+          mt-30
           <img
             src={morfPeeking.src}
             className="absolute top-0 right-1/2 left-1/2 h-30 w-auto -translate-x-1/2 -translate-y-full"
             alt=""
-          />
+          /> */}
           <a href="#eszkozok" className={buttonVariants({ size: "lg" })}>
-            Eszközök megnyitása
+            {copy.cta}
           </a>
         </div>
       </div>

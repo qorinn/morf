@@ -3,6 +3,7 @@ import type { HardCut, SpeedCurve, SpeedCurveNode, SpeedPoint, SpeedPreset, Spee
 export const MIN_SPEED = 0.1;
 export const MAX_SPEED = 10;
 export const SPEED_STEP = 0.1;
+const minimumHardJumpGap = 2;
 export const defaultSpeedTransition: SpeedTransition = "ease-in-out";
 
 const speedTransitions: readonly SpeedTransition[] = ["ease-in", "ease-out", "ease-in-out", "linear"] as const;
@@ -231,12 +232,19 @@ export function addHardCut(curve: SpeedCurve, point: Pick<HardCut, "position" | 
   const normalized = normalizeSpeedCurve(curve);
   const position = insertionPosition(normalized.points, point.position);
   if (position === undefined) return normalized;
+  const beforeSpeed = speedAt(normalized, position);
+  const requestedAfterSpeed = snapSpeed(point.afterSpeed);
+  const afterSpeed = Math.abs(requestedAfterSpeed - beforeSpeed) >= minimumHardJumpGap
+    ? requestedAfterSpeed
+    : requestedAfterSpeed >= beforeSpeed
+      ? snapSpeed(beforeSpeed + minimumHardJumpGap <= MAX_SPEED ? beforeSpeed + minimumHardJumpGap : beforeSpeed - minimumHardJumpGap)
+      : snapSpeed(beforeSpeed - minimumHardJumpGap >= MIN_SPEED ? beforeSpeed - minimumHardJumpGap : beforeSpeed + minimumHardJumpGap);
   return normalizeSpeedCurve({
     points: [...normalized.points, {
       kind: "hard-cut",
       position,
-      beforeSpeed: speedAt(normalized, position),
-      afterSpeed: point.afterSpeed,
+      beforeSpeed,
+      afterSpeed,
       incomingTransition: defaultSpeedTransition,
       outgoingTransition: defaultSpeedTransition,
     }],

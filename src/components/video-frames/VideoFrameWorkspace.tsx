@@ -41,6 +41,7 @@ import {
   ProgressValue,
 } from "@/components/ui/progress";
 import { Toaster, toast } from "@/components/ui/toast";
+import { useErrorToast } from "@/hooks/use-error-toast";
 import {
   canSaveFrameSetToDirectory,
   downloadFrameSetAsZipParts,
@@ -217,6 +218,8 @@ export default function VideoFrameWorkspace() {
         )
     : 0;
   const isActive = phase === "extracting";
+
+  useErrorToast(error, "A videó feldolgozása nem sikerült");
 
   const revokePreviews = useCallback((items: PreviewFrame[]) => {
     items.forEach((item) => URL.revokeObjectURL(item.url));

@@ -16,6 +16,8 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Toaster } from "@/components/ui/toast";
+import { useErrorToast } from "@/hooks/use-error-toast";
 import { OgImageDesigner } from "./OgImageDesigner";
 import { AuditAndPreview } from "./SocialPreviewAudit";
 import {
@@ -80,6 +82,8 @@ export function SharePreviewWorkspace() {
   const [checkUrl, setCheckUrl] = useState("");
   const [checkStatus, setCheckStatus] = useState<CheckStatus>("idle");
   const [checkError, setCheckError] = useState("");
+
+  useErrorToast(checkError || undefined, "Az oldal ellenőrzése nem sikerült");
   const [scanData, setScanData] = useState<OpenGraphData | null>(null);
   const [imageInspection, setImageInspection] =
     useState<ImageInspection>(emptyImageInspection);
@@ -179,11 +183,13 @@ export function SharePreviewWorkspace() {
         <div className="mx-auto flex min-h-[42rem] w-full max-w-7xl flex-col items-center justify-center px-4 py-20 text-center sm:px-6 sm:py-24 lg:px-8 lg:py-28">
           <div className="max-w-5xl">
             <h1 className="morf-page-heading font-heading leading-[0.96] font-semibold tracking-[-0.05em] text-balance sm:text-[clamp(3.25rem,7vw,5.5rem)]">
-              Lásd a linket úgy, ahogy mások fogják
+              Ingyenes Open Graph ellenőrző és megosztási előnézet
             </h1>
             <p className="text-muted-foreground mx-auto mt-5 max-w-2xl text-base leading-relaxed text-pretty sm:text-xl">
-              Ellenőrizd a metaadatokat és a platformonkénti megjelenést,
-              mielőtt elküldöd vagy publikálod az oldalt.
+              Nézd meg, hogyan jelenik meg a linked Facebookon, LinkedInen, X-en és más platformokon, mielőtt megosztod. Ingyenes, reklámmentes és regisztráció nélkül használható.
+            </p>
+            <p className="text-muted-foreground mx-auto mt-4 max-w-3xl text-sm leading-relaxed">
+              Nincs napi URL-ellenőrzési limit. A helyi feltöltött kép nem kerül szerverre.
             </p>
           </div>
 
@@ -325,6 +331,7 @@ export function SharePreviewWorkspace() {
         onLocaleChange={setLocale}
         onPageUrlChange={setPageUrl}
       />
+      <Toaster />
     </>
   );
 }

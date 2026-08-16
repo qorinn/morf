@@ -141,3 +141,11 @@ test("a hard cut két vége külön állítható, az időpontjuk együtt mozog",
   assert.ok(samples.some((sample, index) => sample.position === 0.65 && sample.speed === 1.7 && samples[index + 1]?.speed === 0.6));
   assert.equal(speedAt(adjusted, 0.65), 0.6);
 });
+
+test("az új hard jump alapból jól látható függőleges különbséget kap", () => {
+  const curve = addHardCut(defaultSpeedCurve, { position: 0.5, afterSpeed: 1 });
+  const jump = curve.points[1];
+  assert.ok(isHardCut(jump));
+  assert.equal(jump.beforeSpeed, 1);
+  assert.equal(jump.afterSpeed, 3);
+});

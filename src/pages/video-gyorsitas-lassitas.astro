@@ -4,12 +4,11 @@ import SiteFooter from "@/components/layout/SiteFooter.astro";
 import SiteHeader from "@/components/layout/SiteHeader.astro";
 import FaqSection from "@/components/sections/FaqSection.astro";
 import PrivacySection from "@/components/sections/PrivacySection.astro";
+import RelatedTools from "@/components/sections/RelatedTools.astro";
 import ToolHero from "@/components/sections/ToolHero.astro";
 import MainLayout from "@/layouts/main.astro";
 
 const privacyItems = [
-  "A videó, a hangsáv és a sebességgörbe feldolgozása a saját böngésződben fut.",
-  "A Morf nem tölti fel a videódat szerverre, és nem tárolja a kész MP4-et.",
   "A hosszabb export a böngésző teljesítményét és a rendelkezésre álló memóriát használja.",
 ];
 
@@ -39,10 +38,15 @@ const faqItems = [
     answer:
       "A böngésződnek dekódolnia kell a forrás kodekjét, és H.264-et és AAC-t is kell kódolnia. Ha ez nem elérhető, próbáld friss Chrome-mal vagy Edge-dzsel, illetve H.264-es MP4 forrással.",
   },
+  {
+    question: "Ingyenes és korlátlan a videó gyorsítása vagy lassítása?",
+    answer:
+      "Igen. A szerkesztő reklámmentes, nem kér regisztrációt, és nincs napi exportlimit. Hosszú vagy nagy videóknál a feldolgozás idejét és a kezelhető méretet a böngésződ, a memóriád és a géped teljesítménye határozza meg.",
+  },
 ];
 
 const seoDescription =
-  "Gyorsíts vagy lassíts MP4, MOV és WebM videót pontokból szerkeszthető sebességgörbével, teljesen helyben a böngésződben.";
+  "Ingyenes online videó gyorsító és lassító MP4, MOV és WebM fájlokhoz. Szerkeszd a sebességgörbét reklámok, regisztráció és napi limit nélkül, helyben a böngésződben.";
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
@@ -83,27 +87,24 @@ const structuredData = {
 ---
 
 <MainLayout
-  title="Videó gyorsítás és lassítás görbével | Morf"
+  title="Ingyenes videó gyorsító és lassító online | Morf"
   description={seoDescription}
   canonicalPath="/video-gyorsitas-lassitas"
   structuredData={structuredData}
 >
-  <SiteHeader
-    active="videoSpeed"
-    actionHref="#video-speed-workspace"
-    actionLabel="Szerkesztő megnyitása"
-    actionShortLabel="Megnyitás"
-  />
+  <SiteHeader active="videoSpeed" category="video" />
 
   <main>
     <ToolHero
-      title="Videó gyorsítás és lassítás görbével"
-      description="Rajzold meg, hol legyen gyorsabb vagy lassabb a videó. Nézd meg előnézetben, majd töltsd le H.264/AAC MP4-ként — a videó közben nálad marad."
+      title="Videósebesség-görbe szerkesztő"
+      description="Készíts lassított felvételt, felgyorsított montázst vagy tempóváltásos videót MP4, MOV és WebM anyagból. Tartalomkészítéshez, reklámvideóhoz és social videók szerkesztéséhez is használható."
       primaryAction={{ href: "#video-speed-workspace", label: "Videó szerkesztése" }}
       secondaryAction={{ href: "#hogyan-mukodik", label: "Hogyan működik?" }}
     />
 
     <VideoSpeedWorkspace client:load />
+
+    <RelatedTools hrefs={["/video-konvertalo", "/video-kepekre-bontasa"]} />
 
     <section id="hogyan-mukodik" class="morf-section-normal scroll-mt-6">
       <div class="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-14 sm:px-6 sm:py-18 lg:px-8">
@@ -120,8 +121,8 @@ const structuredData = {
     </section>
 
     <PrivacySection
-      title="A videód nálad marad"
-      description="A Morf a videót, a hangsávot és a kész MP4-et is a saját böngésződben dolgozza fel. Nincs feltöltés vagy szerveroldali renderelés."
+      title="Adatvédelem videósebesség-szerkesztésnél"
+      description="A videó és a hangsáv feldolgozása a böngésződben fut, ezért a Morf nem tölti fel őket szerverre."
       items={privacyItems}
     />
 

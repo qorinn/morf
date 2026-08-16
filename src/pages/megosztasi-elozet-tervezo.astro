@@ -3,6 +3,7 @@ import SiteFooter from "@/components/layout/SiteFooter.astro";
 import SiteHeader from "@/components/layout/SiteHeader.astro";
 import FaqSection from "@/components/sections/FaqSection.astro";
 import PrivacySection from "@/components/sections/PrivacySection.astro";
+import RelatedTools from "@/components/sections/RelatedTools.astro";
 import { SharePreviewWorkspace } from "@/components/share-preview/SharePreviewWorkspace";
 import MainLayout from "@/layouts/main.astro";
 
@@ -10,6 +11,7 @@ const privacyItems = [
   "A feltöltött kép csak a böngésződben jelenik meg, a Morf nem tölti fel vagy tárolja.",
   "A meta tagek kódja közvetlenül a böngésződben készül, és csak akkor kerül máshová, ha te kimásolod.",
   "A valódi megosztási képhez a saját, nyilvánosan elérhető képed URL-jét kell megadnod.",
+  "Nincs regisztráció, hirdetés vagy napi ellenőrzési limit.",
 ];
 
 const faqItems = [
@@ -33,23 +35,25 @@ const faqItems = [
     answer:
       "A webhelyeden azonnal az új meta tagek lesznek érvényesek, de a közösségi platformok korábbi előnézetet gyorsítótárból mutathatnak. Publikálás után érdemes az adott platform megosztási hibakeresőjében újra lekérni az URL-t.",
   },
+  {
+    question: "Ingyenes és reklámmentes az Open Graph ellenőrző?",
+    answer:
+      "Igen. A Morf Open Graph ellenőrzője regisztráció és hirdetések nélkül használható, nincs napi URL-ellenőrzési limit. A helyi kép-előnézet a böngésződben marad; a megadott weboldal URL-jét csak te választod ki ellenőrzésre.",
+  },
 ];
 ---
 
 <MainLayout
-  title="Open Graph ellenőrző és megosztási előnézet | Morf"
-  description="Ellenőrizd egy éles oldal Open Graph adatait, javítsd a címet, leírást és megosztási képet, majd másold ki a friss meta tageket."
+  title="Ingyenes Open Graph ellenőrző és előnézet | Morf"
+  description="Ingyenes, reklámmentes Open Graph ellenőrző Facebook, LinkedIn, X, WhatsApp és Discord előnézethez. Nincs regisztráció vagy napi limit."
   canonicalPath="/megosztasi-elozet-tervezo"
 >
-  <SiteHeader
-    active="sharePreview"
-    actionHref="#megosztasi-elozet-tervezo"
-    actionLabel="Oldal ellenőrzése"
-    actionShortLabel="Ellenőrzés"
-  />
+  <SiteHeader active="sharePreview" category="web" />
 
   <main>
     <SharePreviewWorkspace client:load />
+
+    <RelatedTools hrefs={["/favicon-generator", "/kep-konvertalo"]} />
 
     <PrivacySection
       title="A képed nálad marad"

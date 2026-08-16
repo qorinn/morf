@@ -16,10 +16,12 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { useDropzone } from "react-dropzone";
 
 import { FileUploadDropzone } from "@/components/upload/FileUploadDropzone";
+import { BrowserSupportHint } from "@/components/browser-support/BrowserSupportHint";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress";
+import { Toaster } from "@/components/ui/toast";
 import {
   addHardCut,
   addSpeedPoint,
@@ -50,7 +52,9 @@ import {
   type VideoSpeedWorkerHandle,
 } from "@/features/video-speed/worker-client";
 import { downloadFile } from "@/lib/downloads/file-saver";
+import { isBrowserSupportError, videoSpeedBrowserSupportError } from "@/lib/browser-support";
 import { formatBytes } from "@/lib/filenames/image-filenames";
+import { useErrorToast } from "@/hooks/use-error-toast";
 
 type Phase = "empty" | "inspecting" | "ready" | "rendering-audio" | "exporting" | "complete" | "error";
 type FrameScrubState = { targetFrame: number; requestedFrame: number | undefined; seeking: boolean };
@@ -70,6 +74,13 @@ function formatDuration(seconds: number): string {
   const minutes = Math.floor(safe / 60);
   const remainder = safe % 60;
   return `${minutes}:${remainder.toFixed(1).padStart(4, "0")}`;
+}
+
+function isConvertibleSourceFormatError(error: string | undefined) {
+  if (!error) return false;
+  return error.includes("Válassz egyetlen MP4, MOV vagy WebM videót.")
+    || error.includes("Ez a fájltípus nem támogatott.")
+    || error.includes("A videó konténere nem olvasható.");
 }
 
 function formatTimestamp(seconds: number): string {
@@ -240,14 +251,14 @@ function CurveEditor({
           className="aria-pressed:border-primary aria-pressed:bg-muted"
           onClick={() => setAddMode((mode) => mode === "hard-cut" ? "point" : "hard-cut")}
         >
-          Hard cut hozzáadása
+          Hard jump hozzáadása
         </Button>
       </div>
       <svg
         ref={svgRef}
         viewBox={`0 0 ${graph.width} ${graph.height}`}
         className="block aspect-[25/8] h-auto w-full touch-none select-none"
-        aria-label="Sebességgörbe. A függőleges jelző a videó aktuális pozícióját mutatja. Kattintással normál pontot vagy hard cutot adhatsz hozzá."
+        aria-label="Sebességgörbe. A függőleges jelző a videó aktuális pozícióját mutatja. Kattintással normál pontot vagy hard jumpot adhatsz hozzá."
         onPointerMove={changePointFromPointer}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
@@ -362,7 +373,7 @@ function CurveEditor({
               height={graph.height - graph.paddingY * 2}
               tabIndex={disabled ? -1 : 0}
               role="slider"
-              aria-label={`Hard cut időpontja: ${Math.round(point.position * 100)}%. Balra és jobbra mozgatható.`}
+              aria-label={`Hard jump időpontja: ${Math.round(point.position * 100)}%. Balra és jobbra mozgatható.`}
               aria-valuemin={0}
               aria-valuemax={1}
               aria-valuenow={point.position}
@@ -404,8 +415,8 @@ function CurveEditor({
               x2={positionToX(point.position)}
               y1={speedToY(point.beforeSpeed)}
               y2={speedToY(point.afterSpeed)}
-              className="stroke-primary"
-              strokeWidth="5"
+              className={activeIndex === index ? "stroke-ring" : "stroke-primary"}
+              strokeWidth={activeIndex === index ? "7" : "5"}
               pointerEvents="none"
             />
             {(["before", "after"] as const).map((side) => {
@@ -419,11 +430,12 @@ function CurveEditor({
                   r="7"
                   tabIndex={disabled ? -1 : 0}
                   role="slider"
-                  aria-label={`${side === "before" ? "Hard cut előtti" : "Hard cut utáni"} sebesség: ${speed.toFixed(1)}×. Csak fel és le mozgatható.`}
+                  aria-label={`${side === "before" ? "Hard jump előtti" : "Hard jump utáni"} sebesség: ${speed.toFixed(1)}×. Csak fel és le mozgatható.`}
                   aria-valuemin={MIN_SPEED}
                   aria-valuemax={MAX_SPEED}
                   aria-valuenow={speed}
-                  className="fill-card stroke-primary cursor-ns-resize stroke-[4px] outline-none focus-visible:stroke-ring focus-visible:stroke-[5px] disabled:cursor-default"
+                  className={`cursor-ns-resize stroke-[4px] outline-none focus-visible:stroke-ring focus-visible:stroke-[5px] disabled:cursor-default ${activeIndex === index ? "fill-card stroke-ring" : "fill-card stroke-primary"}`}
+                  data-selected={activeIndex === index ? "true" : undefined}
                   onPointerDown={(event) => {
                     if (disabled) return;
                     event.currentTarget.setPointerCapture(event.pointerId);
@@ -542,7 +554,7 @@ function CurveEditor({
                   ))}
                 </div>
                 {isHardCut(activeNode) && (
-                  <p className="text-muted-foreground text-xs">A hard cut bal oldali végéhez fut.</p>
+                  <p className="text-muted-foreground text-xs">A Hard jump bal oldali végéhez fut.</p>
                 )}
               </fieldset>
             )}
@@ -569,7 +581,7 @@ function CurveEditor({
                   ))}
                 </div>
                 {isHardCut(activeNode) && (
-                  <p className="text-muted-foreground text-xs">A hard cut jobb oldali végéből indul.</p>
+                  <p className="text-muted-foreground text-xs">A Hard jump jobb oldali végéből indul.</p>
                 )}
               </fieldset>
             )}
@@ -614,6 +626,8 @@ export default function VideoSpeedWorkspace() {
   const activePreset = curvePresetId(curve);
   const busy = phase === "inspecting" || phase === "rendering-audio" || phase === "exporting";
 
+  useErrorToast(error, "A videó sebességgörbéje nem használható");
+
   const releaseWorker = useCallback(() => {
     workerRef.current?.worker.terminate();
     workerRef.current = undefined;
@@ -643,14 +657,15 @@ export default function VideoSpeedWorkspace() {
       const inspected = await worker.api.inspectVideo(file);
       if (!inspected.valid) throw new Error(`${inspected.message} ${inspected.suggestion}`);
       if (!inspected.canEncode) {
-        throw new Error("Ebben a böngészőben a H.264 MP4-kódolás nem elérhető. Próbáld friss Chrome-ban vagy Edge-ben.");
+        throw new Error(videoSpeedBrowserSupportError());
       }
       setMetadata(inspected.metadata);
       setPhase("ready");
     } catch (reason) {
       setMetadata(undefined);
       setPhase("error");
-      setError(reason instanceof Error ? reason.message : "A videó vizsgálata nem sikerült.");
+      const message = reason instanceof Error ? reason.message : "A videó vizsgálata nem sikerült.";
+      setError(isBrowserSupportError(message) ? videoSpeedBrowserSupportError() : message);
     }
   }, [clearResult, releaseWorker]);
 
@@ -940,7 +955,8 @@ export default function VideoSpeedWorkspace() {
         setPhase("ready");
       } else {
         setPhase("error");
-        setError(reason instanceof Error ? reason.message : "Az export nem sikerült.");
+        const message = reason instanceof Error ? reason.message : "Az export nem sikerült.";
+        setError(isBrowserSupportError(message) ? videoSpeedBrowserSupportError() : message);
       }
     } finally {
       exportAbortRef.current = undefined;
@@ -979,7 +995,19 @@ export default function VideoSpeedWorkspace() {
         {error && (
           <Alert variant="destructive">
             <AlertTitle>Nem sikerült folytatni</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>
+              {error}
+              {isBrowserSupportError(error) && <BrowserSupportHint />}
+              {isConvertibleSourceFormatError(error) && (
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <span>Másik formátumú videót próbálnál?</span>
+                  <Button variant="outline" size="sm" render={<a href="/video-konvertalo" />}>
+                    Videó konvertáló
+                    <HugeiconsIcon icon={ArrowRight01Icon} data-icon="inline-end" strokeWidth={2} />
+                  </Button>
+                </div>
+              )}
+            </AlertDescription>
           </Alert>
         )}
 
@@ -1121,6 +1149,7 @@ export default function VideoSpeedWorkspace() {
                     <HugeiconsIcon icon={Film01Icon} data-icon="inline-start" strokeWidth={2} />
                     MP4 exportálása
                   </Button>
+                  {error && <Alert variant="destructive"><AlertTitle>Az export nem indult el</AlertTitle><AlertDescription>{error}{isBrowserSupportError(error) && <BrowserSupportHint />}</AlertDescription></Alert>}
                   {busy && (
                     <div className="flex flex-col gap-2">
                       <Progress value={exportProgress * 100}><ProgressLabel>{phase === "rendering-audio" ? "Hang feldolgozása" : "MP4 kódolása"}</ProgressLabel><ProgressValue /></Progress>
@@ -1148,6 +1177,7 @@ export default function VideoSpeedWorkspace() {
           </div>
         )}
       </div>
+      <Toaster />
     </section>
   );
 }

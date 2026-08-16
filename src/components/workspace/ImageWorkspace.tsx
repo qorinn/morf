@@ -62,6 +62,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Toaster, toast } from "@/components/ui/toast";
+import { useErrorToast } from "@/hooks/use-error-toast";
 import {
   DndJobList,
   DndNewGroupTarget,
@@ -287,6 +288,8 @@ function StandardImageWorkspace({
     [],
   );
   const [canImportDirectory, setCanImportDirectory] = useState(false);
+
+  useErrorToast(workspaceError, "A képfeldolgozás nem sikerült");
   const fixedBarsRef = useRef<HTMLDivElement>(null);
   const batchRunRef = useRef(false);
   const activeWorkers = useRef(new Map<string, Worker>());

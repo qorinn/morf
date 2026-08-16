@@ -1,0 +1,134 @@
+---
+import SiteFooter from "@/components/layout/SiteFooter.astro";
+import SiteHeader from "@/components/layout/SiteHeader.astro";
+import MainLayout from "@/layouts/main.astro";
+import { Cancel01Icon, CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+
+const tools = [
+  {
+    name: "Képkonvertáló",
+    description: "Képek átalakítása és tömörítése.",
+    chrome: true,
+    edge: true,
+    firefox: true,
+    safari: true,
+  },
+  {
+    name: "Favicon generátor",
+    description: "Faviconcsomag készítése képből.",
+    chrome: true,
+    edge: true,
+    firefox: true,
+    safari: true,
+  },
+  {
+    name: "Megosztási előnézet",
+    description: "Open Graph adatok ellenőrzése és képtervező.",
+    chrome: true,
+    edge: true,
+    firefox: true,
+    safari: true,
+  },
+  {
+    name: "Videó képekre bontása",
+    description: "Képkockák mentése videóból.",
+    chrome: true,
+    edge: true,
+    firefox: false,
+    safari: false,
+  },
+  {
+    name: "Videó gyorsítás és lassítás",
+    description: "Sebességgörbe, előnézet és MP4-export.",
+    chrome: true,
+    edge: true,
+    firefox: false,
+    safari: false,
+  },
+  {
+    name: "Videó konvertáló",
+    description: "Videó átméretezése és új formátumba mentése.",
+    chrome: true,
+    edge: true,
+    firefox: false,
+    safari: false,
+  },
+];
+
+const browserColumns = [
+  { key: "chrome", label: "Chrome" },
+  { key: "edge", label: "Edge" },
+  { key: "firefox", label: "Firefox" },
+  { key: "safari", label: "Safari" },
+] as const;
+---
+
+<MainLayout
+  title="Böngészőtámogatás | Morf"
+  description="Nézd meg, melyik Morf eszköz használható Chrome-ban, Edge-ben, Firefoxban és Safariban."
+  canonicalPath="/bongeszo-tamogatas"
+>
+  <SiteHeader active={null} />
+
+  <main>
+    <section class="morf-section-normal">
+      <div class="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
+        <header class="flex max-w-3xl flex-col gap-4">
+          <p class="text-primary text-sm font-semibold tracking-wide uppercase">Böngészőtámogatás</p>
+          <h1 class="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">Melyik böngészőben működik az eszköz?</h1>
+          <p class="text-muted-foreground text-base leading-relaxed sm:text-lg">A képes eszközök a legtöbb modern böngészőben használhatók. A videós feldolgozáshoz a Morfnak olyan böngészőfunkciókra is szüksége van, amelyek jelenleg a friss Chrome-ban és Edge-ben a legmegbízhatóbbak.</p>
+        </header>
+
+        <section class="border-border bg-muted/45 max-w-3xl rounded-3xl border p-5 sm:p-6" aria-labelledby="ajanlott-bongeszo">
+          <h2 id="ajanlott-bongeszo" class="font-heading text-xl font-semibold">Videós eszközökhöz ezt ajánljuk</h2>
+          <p class="text-muted-foreground mt-2 leading-relaxed">Használj friss Chrome-ot vagy Edge-et. Ezek Chromium-alapú böngészők, és a Morf helyi videófeldolgozásához szükséges kódolási funkciókat jelenleg ezek támogatják a legteljesebben.</p>
+        </section>
+
+        <section aria-labelledby="tamogatasi-tabla" class="overflow-hidden rounded-3xl border border-border">
+          <div class="border-border border-b px-5 py-5 sm:px-6">
+            <h2 id="tamogatasi-tabla" class="font-heading text-2xl font-semibold">Eszközönkénti támogatás</h2>
+            <p class="text-muted-foreground mt-1 text-sm leading-relaxed">A jelölés a Morf jelenlegi, teljes munkafolyamatára vonatkozik: feltöltés, feldolgozás és letöltés.</p>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[45rem] text-left text-sm">
+              <thead class="bg-muted/55 text-muted-foreground">
+                <tr>
+                  <th scope="col" class="px-5 py-4 font-medium sm:px-6">Eszköz</th>
+                  {browserColumns.map((browser) => <th scope="col" class="px-4 py-4 text-center font-medium">{browser.label}</th>)}
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border">
+                {tools.map((tool) => (
+                  <tr>
+                    <th scope="row" class="px-5 py-4 font-medium sm:px-6">
+                      <span class="block text-foreground">{tool.name}</span>
+                      <span class="text-muted-foreground mt-1 block font-normal leading-relaxed">{tool.description}</span>
+                    </th>
+                    {browserColumns.map((browser) => (
+                      <td class="px-4 py-4 text-center">
+                        {tool[browser.key] ? (
+                          <span class="inline-flex size-8 items-center justify-center rounded-full bg-primary/12 text-primary" aria-label={`${browser.label}: támogatott`} title="Támogatott">
+                            <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-5" strokeWidth={2.2} aria-hidden="true" />
+                          </span>
+                        ) : (
+                          <span class="inline-flex size-8 items-center justify-center rounded-full bg-destructive/10 text-destructive" aria-label={`${browser.label}: jelenleg nem támogatott`} title="Jelenleg nem támogatott">
+                            <HugeiconsIcon icon={Cancel01Icon} className="size-5" strokeWidth={2.2} aria-hidden="true" />
+                          </span>
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <p class="text-muted-foreground max-w-3xl text-sm leading-relaxed">A támogatást a böngésző verziója, az eszközöd és a videóban használt kodek is befolyásolhatja. Ha egy videófájl nem nyílik meg, próbáld meg H.264-es MP4-ként, friss Chrome-ban vagy Edge-ben.</p>
+      </div>
+    </section>
+  </main>
+
+  <SiteFooter />
+</MainLayout>
