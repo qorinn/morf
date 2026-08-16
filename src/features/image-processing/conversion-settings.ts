@@ -10,6 +10,7 @@ import {
   type PresetId,
 } from "../../lib/presets/image-presets.ts";
 import { formatBytes } from "../../lib/filenames/image-filenames.ts";
+import type { Locale } from "../../lib/locale.ts";
 
 const activeStatuses: FileJobStatus[] = [
   "loading-engine",
@@ -91,20 +92,22 @@ export function shouldProcessJobForSettings(
 
 export function getConversionModeLabel(
   settings: ImageConversionSettings,
+  locale: Locale = "hu",
 ): string {
-  if (settings.lossless) return "veszteségmentes";
+  if (settings.lossless) return locale === "en" ? "lossless" : "veszteségmentes";
   if (settings.maxFileSizeKb !== null) {
     return `≤ ${formatBytes(settings.maxFileSizeKb * 1024)}`;
   }
-  if (settings.outputFormat === "png") return "veszteségmentes tömörítés";
+  if (settings.outputFormat === "png") return locale === "en" ? "lossless compression" : "veszteségmentes tömörítés";
   return `${settings.quality}%`;
 }
 
 export function getConversionResolutionLabel(
   settings: ImageConversionSettings,
+  locale: Locale = "hu",
 ): string {
   return settings.lossless
-    ? "eredeti felbontás"
+    ? locale === "en" ? "original resolution" : "eredeti felbontás"
     : `${settings.maxWidth}×${settings.maxHeight} px`;
 }
 

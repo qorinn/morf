@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { imageConverterMessages } from "../../i18n/image-converter.ts";
 
 export const imageRecipeSchema = z.object({
   schemaVersion: z.literal(1),
@@ -37,10 +38,10 @@ export type ImagePreset = {
 const rawPresets: ImagePreset[] = [
   {
     id: "general",
-    description: "Eredeti felbontású, veszteségmentes WebP kimenet.",
+    description: imageConverterMessages.hu.presets.general.description,
     recipe: {
       schemaVersion: 1,
-      name: "Általános",
+      name: imageConverterMessages.hu.presets.general.name,
       outputFormat: "webp",
       resize: { maxWidth: 1920, maxHeight: 1920, keepAspectRatio: true },
       quality: 100,
@@ -51,10 +52,10 @@ const rawPresets: ImagePreset[] = [
   },
   {
     id: "website",
-    description: "WebP kimenet, webes megjelenítéshez igazított méret.",
+    description: imageConverterMessages.hu.presets.website.description,
     recipe: {
       schemaVersion: 1,
-      name: "Weboldalhoz",
+      name: imageConverterMessages.hu.presets.website.name,
       outputFormat: "webp",
       resize: { maxWidth: 1920, maxHeight: 1920, keepAspectRatio: true },
       quality: 80,
@@ -65,10 +66,10 @@ const rawPresets: ImagePreset[] = [
   },
   {
     id: "webshop",
-    description: "Részletgazdag, egységes méretű termékképekhez.",
+    description: imageConverterMessages.hu.presets.webshop.description,
     recipe: {
       schemaVersion: 1,
-      name: "Webshop termékképhez",
+      name: imageConverterMessages.hu.presets.webshop.name,
       outputFormat: "webp",
       resize: { maxWidth: 1600, maxHeight: 1600, keepAspectRatio: true },
       quality: 85,
@@ -79,10 +80,10 @@ const rawPresets: ImagePreset[] = [
   },
   {
     id: "social",
-    description: "Nagy felbontású, széles körben kompatibilis közösségi kép.",
+    description: imageConverterMessages.hu.presets.social.description,
     recipe: {
       schemaVersion: 1,
-      name: "Közösségi médiához",
+      name: imageConverterMessages.hu.presets.social.name,
       outputFormat: "jpeg",
       resize: { maxWidth: 1920, maxHeight: 1920, keepAspectRatio: true },
       quality: 85,
@@ -93,10 +94,10 @@ const rawPresets: ImagePreset[] = [
   },
   {
     id: "email",
-    description: "Kisebb, könnyebben továbbítható JPEG melléklet.",
+    description: imageConverterMessages.hu.presets.email.description,
     recipe: {
       schemaVersion: 1,
-      name: "E-mail melléklethez",
+      name: imageConverterMessages.hu.presets.email.name,
       outputFormat: "jpeg",
       resize: { maxWidth: 1600, maxHeight: 1600, keepAspectRatio: true },
       quality: 75,
@@ -107,10 +108,10 @@ const rawPresets: ImagePreset[] = [
   },
   {
     id: "custom",
-    description: "Saját formátum-, méret- és minőségbeállítás.",
+    description: imageConverterMessages.hu.presets.custom.description,
     recipe: {
       schemaVersion: 1,
-      name: "Egyedi beállítás",
+      name: imageConverterMessages.hu.presets.custom.name,
       outputFormat: "webp",
       resize: { maxWidth: 1920, maxHeight: 1920, keepAspectRatio: true },
       quality: 80,

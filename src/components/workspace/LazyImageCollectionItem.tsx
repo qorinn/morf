@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/tooltip";
 import type { LazyImageCollection } from "@/features/lazy-image-collections/types";
 import { formatBytes } from "@/lib/filenames/image-filenames";
+import type { ImageConverterMessages } from "@/i18n/image-converter";
+import { useWorkspaceI18n } from "@/components/workspace/WorkspaceI18nProvider";
 
 type Props = {
   collection: LazyImageCollection;
@@ -32,6 +34,8 @@ export function LazyImageCollectionItem({
   onCancel,
   onRetry,
 }: Props) {
+  const { messages } = useWorkspaceI18n<ImageConverterMessages>();
+  const copy = messages.workspace;
   const [isGroupInfoOpen, setIsGroupInfoOpen] = useState(false);
   const isActive = [
     "loading-engine",
@@ -41,13 +45,13 @@ export function LazyImageCollectionItem({
   ].includes(collection.status);
   const statusLabel =
     collection.status === "completed"
-      ? "Kész"
+      ? copy.status.completed
       : collection.status === "error"
-        ? "Hiba"
+        ? copy.status.error
         : isActive
-          ? "Feldolgozás"
+          ? copy.status.processing
           : collection.status === "cancelled"
-            ? "Megszakítva"
+            ? copy.status.cancelled
             : null;
 
   return (
@@ -65,7 +69,7 @@ export function LazyImageCollectionItem({
             {collection.name}
           </p>
           <p className="text-muted-foreground mt-0.5 text-xs">
-            {collection.sourceLabel} · {collection.itemCount} kép ·{" "}
+            {collection.sourceLabel} · {collection.itemCount} {copy.collection.imageCount} ·{" "}
             {formatBytes(collection.totalBytes)}
           </p>
         </div>
@@ -93,7 +97,7 @@ export function LazyImageCollectionItem({
               strokeWidth={2}
               aria-hidden="true"
             />
-            Nagy képcsoport
+            {copy.collection.largeGroup}
           </TooltipTrigger>
           <TooltipContent
             side="top"
@@ -101,10 +105,9 @@ export function LazyImageCollectionItem({
             sideOffset={8}
             className="max-w-72 flex-col items-start gap-1 px-3 py-3 text-left whitespace-normal"
           >
-            <p className="font-medium">Sok kép, egyetlen csoportban</p>
+            <p className="font-medium">{copy.collection.largeGroupTitle}</p>
             <p className="text-background/80 leading-relaxed">
-              A Morf nem nyitja meg egyszerre az összes képet, hanem sorban
-              halad rajtuk. Így sok kép sem lassítja le feleslegesen az oldalt.
+              {copy.collection.largeGroupDescription}
             </p>
           </TooltipContent>
         </Tooltip>
@@ -116,7 +119,7 @@ export function LazyImageCollectionItem({
           aria-label={`${collection.name} folyamata`}
         >
           <ProgressLabel>
-            Konvertálás · {collection.completedCount} / {collection.itemCount}
+            {copy.collection.conversion} · {collection.completedCount} / {collection.itemCount}
           </ProgressLabel>
         </Progress>
       )}
@@ -142,7 +145,7 @@ export function LazyImageCollectionItem({
                 data-icon="inline-start"
                 aria-hidden="true"
               />
-              Megszakítás
+              {copy.collection.cancel}
             </Button>
           )}
           {(collection.status === "error" ||
@@ -160,7 +163,7 @@ export function LazyImageCollectionItem({
                 data-icon="inline-start"
                 aria-hidden="true"
               />
-              Újrapróbálás
+              {copy.collection.retry}
             </Button>
           )}
         </div>

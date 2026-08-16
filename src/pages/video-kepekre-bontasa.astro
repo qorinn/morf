@@ -112,7 +112,7 @@ const structuredData = {
   canonicalPath="/video-kepekre-bontasa"
   structuredData={structuredData}
 >
-  <SiteHeader active="videoFrames" category="video" />
+  <SiteHeader active="videoFrames" category="video" route="videoFrames" />
 
   <main>
     <ToolHero
@@ -130,7 +130,7 @@ const structuredData = {
 
     <VideoFrameWorkspace client:load />
 
-    <RelatedTools hrefs={["/kep-konvertalo", "/video-gyorsitas-lassitas"]} />
+    <RelatedTools routeIds={["imageConverter", "videoSpeed"]} />
 
     <VideoFramesGuide />
 

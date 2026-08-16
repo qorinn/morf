@@ -1,6 +1,6 @@
 ---
 import "../styles/global.css";
-import { localeMetadata, type Locale } from "@/lib/locale";
+import { defaultLocale, localeMetadata, type Locale } from "@/lib/locale";
 
 interface Props {
   title?: string;
@@ -20,7 +20,7 @@ const {
   canonicalPath = Astro.url.pathname,
   structuredData,
   robots = "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
-  locale = "hu",
+  locale = defaultLocale,
   alternateLocales = [],
 } = Astro.props;
 const localeMeta = localeMetadata[locale];
@@ -28,8 +28,11 @@ const title = titleProp ?? content?.title ?? "Morf";
 const canonicalUrl = Astro.site
   ? new URL(canonicalPath, Astro.site).href
   : canonicalPath;
-const structuredDataJson = structuredData
-  ? JSON.stringify(structuredData).replaceAll("<", "\\u003c")
+const localizedStructuredData = structuredData
+  ? { ...structuredData, inLanguage: structuredData.inLanguage ?? localeMeta.htmlLang }
+  : undefined;
+const structuredDataJson = localizedStructuredData
+  ? JSON.stringify(localizedStructuredData).replaceAll("<", "\\u003c")
   : undefined;
 ---
 
@@ -48,6 +51,20 @@ const structuredDataJson = structuredData
           href={Astro.site ? new URL(alternate.path, Astro.site).href : alternate.path}
         />
       ))
+    }
+    {
+      alternateLocales.find((alternate) => alternate.locale === defaultLocale) && (
+        <link
+          rel="alternate"
+          hreflang="x-default"
+          href={Astro.site
+            ? new URL(
+                alternateLocales.find((alternate) => alternate.locale === defaultLocale)!.path,
+                Astro.site,
+              ).href
+            : alternateLocales.find((alternate) => alternate.locale === defaultLocale)!.path}
+        />
+      )
     }
     {Astro.site && <link rel="sitemap" href="/sitemap-index.xml" />}
     <meta name="description" content={description} />

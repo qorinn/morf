@@ -8,10 +8,12 @@ import PrivacySection from "@/components/sections/PrivacySection.astro";
 import RelatedTools from "@/components/sections/RelatedTools.astro";
 import ToolHero from "@/components/sections/ToolHero.astro";
 import MainLayout from "@/layouts/main.astro";
+import { getImageConverterMessages } from "@/i18n/image-converter";
+import { getLocalizedRoute, getRouteAlternates } from "@/lib/localized-routes";
 
-const privacyItems = [
-  "Az előnézetek csak addig maradnak meg, amíg az oldalon dolgozol.",
-];
+const locale = "hu" as const;
+const copy = getImageConverterMessages(locale);
+const privacyItems = copy.page.privacy.items;
 
 const faqItems = [
   {
@@ -146,40 +148,43 @@ const structuredData = {
 <MainLayout
   title={seoTitle}
   description={seoDescription}
-  canonicalPath="/kep-konvertalo"
+  locale={locale}
+  canonicalPath={getLocalizedRoute("imageConverter", locale)}
+  alternateLocales={getRouteAlternates("imageConverter")}
   structuredData={structuredData}
 >
-  <SiteHeader active="converter" category="kepek" />
+  <SiteHeader active="converter" category="kepek" locale={locale} route="imageConverter" />
 
   <main>
     <ToolHero
-      title="Képformátum-konvertáló és képoptimalizáló"
-      description="JPG, PNG, WebP, AVIF, HEIC és HEIF képek átalakításához, tömörítéséhez és átméretezéséhez. Jó választás webshopképekhez, weboldalhoz, e-mailhez és iPhone-fotók JPG-be mentéséhez."
-      primaryAction={{ href: "#workspace", label: "Képek konvertálása" }}
+      locale={locale}
+      title={copy.page.hero.title}
+      description={copy.page.hero.description}
+      primaryAction={{ href: "#workspace", label: copy.page.hero.primaryAction }}
       secondaryAction={{
         href: "#konvertalas-utmutato",
-        label: "Hogyan működik?",
+        label: copy.page.hero.secondaryAction,
       }}
     />
 
-    <ImageWorkspace client:load />
+    <ImageWorkspace client:load locale={locale} />
 
-    <RelatedTools hrefs={["/favicon-generator", "/video-kepekre-bontasa"]} />
+    <RelatedTools routeIds={["faviconGenerator", "videoFrames"]} />
 
     <ImageConverterGuide />
 
     <PrivacySection
-      title="Adatvédelem képkonvertáláskor"
-      description="A képfeldolgozás a böngésződben fut, ezért nem kell feltöltened a fájlokat a Morf szerverére."
+      title={copy.page.privacy.title}
+      description={copy.page.privacy.description}
       items={privacyItems}
     />
 
     <FaqSection
-      title="Képkonvertálás, röviden"
-      description="Válaszok a többképes konvertálásról, a JPG, PNG, WebP, AVIF és HEIC formátumokról, a célfájlméretről, a veszteségmentes módról és a helyi feldolgozásról."
+      title={copy.page.faq.title}
+      description={copy.page.faq.description}
       items={faqItems}
     />
   </main>
 
-  <SiteFooter />
+  <SiteFooter locale={locale} />
 </MainLayout>

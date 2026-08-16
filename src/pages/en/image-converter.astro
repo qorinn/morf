@@ -1,0 +1,51 @@
+---
+import ImageWorkspace from "@/components/workspace/ImageWorkspace";
+import SiteFooter from "@/components/layout/SiteFooter.astro";
+import SiteHeader from "@/components/layout/SiteHeader.astro";
+import FaqSection from "@/components/sections/FaqSection.astro";
+import PrivacySection from "@/components/sections/PrivacySection.astro";
+import ToolHero from "@/components/sections/ToolHero.astro";
+import MainLayout from "@/layouts/main.astro";
+import { getImageConverterMessages } from "@/i18n/image-converter";
+import { getLocalizedRoute, getRouteAlternates } from "@/lib/localized-routes";
+
+const locale = "en" as const;
+const copy = getImageConverterMessages(locale);
+const faqItems = [
+  { question: "Which image formats can I convert?", answer: "You can add JPG, PNG, WebP, AVIF and HEIC/HEIF still images. Output can be JPG, PNG, WebP or AVIF. Morf checks the file content, not only its extension." },
+  { question: "Can I convert several images at once?", answer: "Yes. Create separate configuration groups when images need different formats, dimensions, quality or target sizes, then process all included groups in one run." },
+  { question: "Can I convert a whole image folder?", answer: "In supported browsers, you can add a folder and its subfolders as one group. Morf processes the images in sequence, which is easier on memory for large collections." },
+  { question: "How can I reduce an image below a target file size?", answer: "Enable the maximum file size setting and enter a limit in KB. Morf finds the highest quality that fits the limit and reduces resolution further when needed." },
+  { question: "Is the image converter free to use?", answer: "Yes. There is no registration, advertising, daily file limit or download limit. The amount you can process at once depends on your browser memory and device performance." },
+  { question: "Do my images get uploaded?", answer: "No. Conversion runs locally in your browser. Your selected files stay on your device while you work." },
+];
+const seoTitle = "Free online image converter: JPG, PNG, WebP | Morf";
+const seoDescription = "Convert, compress and resize JPG, PNG, WebP, AVIF, HEIC and HEIF images for free. No registration, ads or daily limit. Files stay on your device.";
+const canonicalPath = getLocalizedRoute("imageConverter", locale);
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "@id": `${canonicalPath}#application`,
+  name: "Morf image converter",
+  description: seoDescription,
+  applicationCategory: "MultimediaApplication",
+  operatingSystem: "Web",
+  isAccessibleForFree: true,
+};
+---
+
+<MainLayout locale={locale} title={seoTitle} description={seoDescription} canonicalPath={canonicalPath} alternateLocales={getRouteAlternates("imageConverter")} structuredData={structuredData}>
+  <SiteHeader active="converter" category="kepek" locale={locale} route="imageConverter" />
+  <main>
+    <ToolHero
+      locale={locale}
+      title={copy.page.hero.title}
+      description={copy.page.hero.description}
+      primaryAction={{ href: "#workspace", label: copy.page.hero.primaryAction }}
+    />
+    <ImageWorkspace client:load locale={locale} />
+    <PrivacySection title={copy.page.privacy.title} description={copy.page.privacy.description} items={copy.page.privacy.items} eyebrow="Privacy" />
+    <FaqSection title={copy.page.faq.title} description={copy.page.faq.description} items={faqItems} id="faq" />
+  </main>
+  <SiteFooter locale={locale} />
+</MainLayout>

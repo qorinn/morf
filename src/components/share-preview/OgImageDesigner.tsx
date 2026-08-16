@@ -1,4 +1,10 @@
-import { type CSSProperties, type RefObject, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type RefObject,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
@@ -2255,6 +2261,15 @@ function Artwork({
   );
 }
 
+function filenameFromUrl(url: string) {
+  try {
+    const { pathname } = new URL(url);
+    return pathname.split("/").filter(Boolean).pop() || url;
+  } catch {
+    return url;
+  }
+}
+
 function slugify(value: string) {
   return (
     value
@@ -2388,6 +2403,7 @@ export function OgImageDesigner({
   onPageTypeChange,
   onLocaleChange,
   onPageUrlChange,
+  scannedImage,
 }: {
   title: string;
   description: string;
@@ -2405,6 +2421,7 @@ export function OgImageDesigner({
   onPageTypeChange: (value: string) => void;
   onLocaleChange: (value: string) => void;
   onPageUrlChange: (value: string) => void;
+  scannedImage?: { url: string; token: number } | null;
 }) {
   const [template, setTemplate] = useState<TemplateId>("editorial");
   const [editorTab, setEditorTab] = useState<EditorTab>("image");
@@ -2444,6 +2461,14 @@ export function OgImageDesigner({
   const quoteAuthorInputRef = useRef<HTMLInputElement>(null);
   const artworkRef = useRef<SVGSVGElement>(null);
   const templateStripRef = useRef<HTMLDivElement>(null);
+
+  // A token változása jelzi az új sikeres lekérdezést; enélkül minden
+  // renderelés felülírná a felhasználó saját kiválasztott képét.
+  useEffect(() => {
+    if (!scannedImage?.url) return;
+    setImage(scannedImage.url);
+    setImageName(filenameFromUrl(scannedImage.url));
+  }, [scannedImage?.token]);
 
   function loadImage(file: File | undefined) {
     if (!file || !file.type.startsWith("image/")) return;
@@ -2934,6 +2959,26 @@ export function OgImageDesigner({
                     <FieldDescription>
                       PNG, JPG vagy WebP. Ez csak a megosztási kép tartalmát
                       módosítja.
+                    </FieldDescription>
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="og-image-source-url">
+                      Vagy add meg a kép URL-jét
+                    </FieldLabel>
+                    <Input
+                      id="og-image-source-url"
+                      type="url"
+                      value={image.startsWith("data:") ? "" : image}
+                      onChange={(event) => {
+                        setImage(event.target.value);
+                        setImageName(filenameFromUrl(event.target.value));
+                      }}
+                      placeholder="https://pelda.hu/kep.jpg"
+                    />
+                    <FieldDescription>
+                      Egy publikus kép URL-je is használható feltöltés
+                      helyett — ez felülírja a fentebb kiválasztott fájlt.
                     </FieldDescription>
                   </Field>
 

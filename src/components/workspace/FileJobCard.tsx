@@ -25,6 +25,8 @@ import type {
 } from "@/features/image-processing/types";
 import { calculateSaving, formatBytes } from "@/lib/filenames/image-filenames";
 import { cn } from "@/lib/utils";
+import type { ImageConverterMessages } from "@/i18n/image-converter";
+import { useWorkspaceI18n } from "@/components/workspace/WorkspaceI18nProvider";
 import { imageJobDndType } from "@/components/workspace/DndJobList";
 
 type FileJobCardProps = {
@@ -41,16 +43,18 @@ type FileJobCardProps = {
   dragDisabled: boolean;
 };
 
-const statusLabels: Record<FileJobStatus, string> = {
+function getStatusLabels(copy: ImageConverterMessages["workspace"]): Record<FileJobStatus, string> {
+  return {
   queued: "",
-  "loading-engine": "Motor betöltése",
-  decoding: "Beolvasás",
-  processing: "Átméretezés",
-  encoding: "Kódolás",
-  completed: "Kész",
-  cancelled: "Megszakítva",
-  error: "Hiba",
-};
+  "loading-engine": copy.status.loadingEngine,
+  decoding: copy.status.decoding,
+  processing: copy.status.processing,
+  encoding: copy.status.encoding,
+  completed: copy.status.completed,
+  cancelled: copy.status.cancelled,
+  error: copy.status.error,
+  };
+}
 
 const activeStatuses: FileJobStatus[] = [
   "loading-engine",
@@ -90,6 +94,9 @@ export function FileJobCard({
   selectionDisabled,
   dragDisabled,
 }: FileJobCardProps) {
+  const { messages } = useWorkspaceI18n<ImageConverterMessages>();
+  const copy = messages.workspace;
+  const statusLabels = getStatusLabels(copy);
   const [previewFailed, setPreviewFailed] = useState(
     job.inputFormat === "heic",
   );
@@ -143,8 +150,8 @@ export function FileJobCard({
         aria-pressed={isSelected}
         aria-disabled={selectionUnavailable || undefined}
         aria-label={`${job.file.name}: ${
-          isSelected ? "kijelölés megszüntetése" : "kijelölés"
-        } csoportművelethez`}
+          isSelected ? copy.fileCard.deselect : copy.fileCard.select
+        } ${copy.fileCard.forGroupActions}`}
         className="border-foreground/20 border bg-card ring-0 [--card-spacing:--spacing(2)] data-[selected=true]:border-ring data-[selected=true]:bg-primary/5 data-[selected=true]:ring-2 data-[selected=true]:ring-ring/20"
         onClick={(event) => {
           if (isCardSelectionClick(event.target, event.currentTarget)) {
@@ -165,10 +172,10 @@ export function FileJobCard({
               data-dnd-handle
               role="button"
               tabIndex={dragDisabled || isActive ? -1 : 0}
-              aria-label={`${job.file.name} áthelyezése`}
+              aria-label={`${job.file.name} ${copy.fileCard.move}`}
               aria-disabled={dragDisabled || isActive || undefined}
               className="text-muted-foreground row-span-2 flex size-5 cursor-grab touch-none items-center justify-center self-center active:cursor-grabbing aria-disabled:cursor-not-allowed"
-              title="Áthelyezési fogantyú"
+              title={copy.fileCard.moveHandle}
               onClick={(event) => event.stopPropagation()}
             >
               <HugeiconsIcon
@@ -229,7 +236,7 @@ export function FileJobCard({
                 data-disabled={isActive || undefined}
               >
                 <InputGroupInput
-                  aria-label={`${job.file.name} új fájlneve`}
+                  aria-label={`${job.file.name} ${copy.fileCard.outputName}`}
                   value={job.outputBaseName}
                   maxLength={80}
                   spellCheck={false}
@@ -244,8 +251,8 @@ export function FileJobCard({
                     type="button"
                     size="icon-sm"
                     variant="ghost"
-                    aria-label={`${job.file.name} letöltése`}
-                    title="Letöltés"
+                    aria-label={`${job.file.name} ${copy.fileCard.download}`}
+                    title={copy.fileCard.download}
                     onClick={() => onDownload(job.id)}
                   >
                     <HugeiconsIcon
@@ -260,7 +267,7 @@ export function FileJobCard({
                   type="button"
                   size="icon-sm"
                   variant="ghost"
-                  aria-label={`${job.file.name} duplikálása`}
+                  aria-label={`${job.file.name} ${copy.fileCard.duplicate}`}
                   disabled={selectionDisabled || isActive}
                   onClick={() => onDuplicate(job.id)}
                 >
@@ -277,7 +284,7 @@ export function FileJobCard({
           {isActive && (
             <Progress
               value={job.progress}
-              aria-label={`${job.file.name} feldolgozása`}
+              aria-label={`${job.file.name} ${copy.fileCard.processing}`}
             >
               <ProgressLabel>{statusLabels[job.status]}</ProgressLabel>
               <ProgressValue />
@@ -293,7 +300,7 @@ export function FileJobCard({
                 <span className="text-muted-foreground text-xs tabular-nums">
                   {formatBytes(job.file.size)} → {formatBytes(job.result.size)}
                   {saving !== undefined && saving >= 0
-                    ? ` · ${saving}% megtakarítás`
+                    ? ` · ${saving}% ${copy.fileCard.saving}`
                     : ""}
                 </span>
               )}
@@ -305,8 +312,8 @@ export function FileJobCard({
               group.settings.lossless) && (
               <p className="text-muted-foreground truncate text-xs tabular-nums">
                 {group.settings.maxFileSizeKb !== null
-                  ? `Célméret: ≤ ${formatBytes(group.settings.maxFileSizeKb * 1024)}`
-                  : "Veszteségmentes feldolgozás"}
+                  ? `${copy.fileCard.targetSize}: ≤ ${formatBytes(group.settings.maxFileSizeKb * 1024)}`
+                  : copy.fileCard.losslessProcessing}
               </p>
             )}
 

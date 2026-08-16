@@ -1,4 +1,7 @@
 ---
+import { imageConverterMessages } from "@/i18n/image-converter";
+
+const copy = imageConverterMessages.hu.guide;
 const capabilities = [
   {
     title: "Képek csoportba rendezése",
@@ -102,7 +105,7 @@ const workflowSteps = [
           id="kep-konvertalo-funkciok-title"
           class="font-heading text-4xl font-semibold tracking-[-0.035em] text-balance sm:text-5xl"
         >
-          Több mint formátumváltás: teljes képexport egy munkafelületen
+          {copy.title}
         </h2>
       </div>
       <div
@@ -132,7 +135,7 @@ const workflowSteps = [
         <h3
           class="font-heading text-2xl font-semibold tracking-tight sm:text-3xl"
         >
-          Mit tud a Morf képkonvertáló eszköze?
+          {copy.capabilitiesTitle}
         </h3>
       </div>
       <dl class="mt-10 grid gap-x-12 md:grid-cols-2">
@@ -164,7 +167,7 @@ const workflowSteps = [
             id="csoportos-konvertalas-title"
             class="font-heading text-2xl font-semibold tracking-tight text-balance sm:text-3xl"
           >
-            Lépésről lépésre
+            {copy.stepsTitle}
           </h3>
           <p
             class="text-dark-section-muted mt-5 text-base leading-relaxed sm:text-lg"
@@ -208,7 +211,7 @@ const workflowSteps = [
           id="formatumok-title"
           class="font-heading text-2xl font-semibold tracking-tight sm:text-3xl"
         >
-          Melyik képformátumot mikor érdemes választani?
+          {copy.formatsTitle}
         </h3>
         <p
           class="text-muted-foreground mt-5 max-w-2xl text-base leading-relaxed text-pretty sm:text-lg"
@@ -228,11 +231,11 @@ const workflowSteps = [
           </caption>
           <thead class="bg-muted/60">
             <tr>
-              <th class="px-4 py-3 font-medium sm:px-5">Formátum</th>
-              <th class="px-4 py-3 font-medium sm:px-5">Bemenet</th>
-              <th class="px-4 py-3 font-medium sm:px-5">Kimenet</th>
+              <th class="px-4 py-3 font-medium sm:px-5">{copy.formatTable.format}</th>
+              <th class="px-4 py-3 font-medium sm:px-5">{copy.formatTable.input}</th>
+              <th class="px-4 py-3 font-medium sm:px-5">{copy.formatTable.output}</th>
               <th class="px-4 py-3 font-medium sm:px-5">
-                Ajánlott felhasználás
+                {copy.formatTable.useCase}
               </th>
             </tr>
           </thead>
@@ -265,7 +268,7 @@ const workflowSteps = [
           id="felhasznalasi-modok-title"
           class="font-heading text-2xl font-semibold tracking-tight text-balance sm:text-3xl"
         >
-          Mikor lehet hasznos egy csoportos online képkonvertáló?
+          {copy.useCasesTitle}
         </h3>
       </header>
       <div class="grid gap-x-8 sm:grid-cols-2">

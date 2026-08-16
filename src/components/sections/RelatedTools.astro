@@ -2,20 +2,31 @@
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
-import { tools } from "@/data/tool-catalog";
+import { getTools } from "@/data/tool-catalog";
+import { commonMessages } from "@/i18n/common";
+import { getMessages } from "@/i18n/types";
+import type { Locale } from "@/lib/locale";
+import { getLocalizedRoute, type LocalizedRouteId } from "@/lib/localized-routes";
 
 interface Props {
-  hrefs: string[];
+  hrefs?: string[];
+  routeIds?: LocalizedRouteId[];
   title?: string;
   description?: string;
+  locale?: Locale;
 }
 
 const {
-  hrefs,
-  title = "Kapcsolódó eszközök",
-  description = "Ezek az eszközök gyakran a következő lépést jelentik ugyanebben a munkában.",
+  hrefs = [],
+  routeIds,
+  locale = "hu",
 } = Astro.props;
-const relatedTools = hrefs
+const copy = getMessages(commonMessages, locale);
+const title = Astro.props.title ?? copy.relatedTools.title;
+const description = Astro.props.description ?? copy.relatedTools.description;
+const tools = getTools(locale);
+const relatedHrefs = routeIds?.map((route) => getLocalizedRoute(route, locale)) ?? hrefs;
+const relatedTools = relatedHrefs
   .map((href) => tools.find((tool) => tool.href === href))
   .filter((tool): tool is (typeof tools)[number] => Boolean(tool));
 ---

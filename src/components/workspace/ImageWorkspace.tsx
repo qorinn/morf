@@ -63,6 +63,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Toaster, toast } from "@/components/ui/toast";
 import { useErrorToast } from "@/hooks/use-error-toast";
+import { getImageConverterMessages, type ImageConverterMessages } from "@/i18n/image-converter";
+import type { Locale } from "@/lib/locale";
 import {
   DndJobList,
   DndNewGroupTarget,
@@ -72,6 +74,7 @@ import {
 import { FileJobCard } from "@/components/workspace/FileJobCard";
 import { LazyImageCollectionItem } from "@/components/workspace/LazyImageCollectionItem";
 import { WorkspaceSettings } from "@/components/workspace/WorkspaceSettings";
+import { WorkspaceI18nProvider, useWorkspaceI18n } from "@/components/workspace/WorkspaceI18nProvider";
 import {
   createDndGroupOrdersFromItems,
   createDndJobItems,
@@ -123,7 +126,7 @@ import {
   type SaveCapabilities,
   type SaveableFile,
 } from "@/lib/downloads";
-import { imagePresets, imageRecipeSchema } from "@/lib/presets/image-presets";
+import { imageRecipeSchema } from "@/lib/presets/image-presets";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 
 type DropError = {
@@ -195,7 +198,7 @@ function getConcurrency(): number {
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 1 : 2;
 }
 
-function getCompletedFile(job: FileJob): SaveableFile | undefined {
+function getCompletedFile(job: FileJob, description: string): SaveableFile | undefined {
   if (!job.result) return undefined;
 
   return {
@@ -205,13 +208,13 @@ function getCompletedFile(job: FileJob): SaveableFile | undefined {
       job.result.format,
     ),
     mimeType: job.result.mimeType,
-    description: "Kép",
+    description,
   };
 }
 
-function getCompletedFiles(jobs: FileJob[]): SaveableFile[] {
+function getCompletedFiles(jobs: FileJob[], description: string): SaveableFile[] {
   return jobs.flatMap((job) => {
-    const file = getCompletedFile(job);
+    const file = getCompletedFile(job, description);
     return file ? [file] : [];
   });
 }
@@ -223,6 +226,9 @@ type StandardImageWorkspaceProps = {
 function StandardImageWorkspace({
   initialFrameSetId,
 }: StandardImageWorkspaceProps) {
+  const { locale, messages } = useWorkspaceI18n<ImageConverterMessages>();
+  const copy = messages.workspace;
+  const ui = copy.ui;
   const jobs = useWorkspaceStore((state) => state.jobs);
   const groups = useWorkspaceStore((state) => state.groups);
   const activeGroupId = useWorkspaceStore((state) => state.activeGroupId);
@@ -289,7 +295,7 @@ function StandardImageWorkspace({
   );
   const [canImportDirectory, setCanImportDirectory] = useState(false);
 
-  useErrorToast(workspaceError, "A képfeldolgozás nem sikerült");
+  useErrorToast(workspaceError, messages.processingErrors["encode-failed"].message);
   const fixedBarsRef = useRef<HTMLDivElement>(null);
   const batchRunRef = useRef(false);
   const activeWorkers = useRef(new Map<string, Worker>());
@@ -300,6 +306,15 @@ function StandardImageWorkspace({
   const lazyCollectionsRef = useRef<LazyImageCollection[]>([]);
   const lazyControllers = useRef(new Map<string, AbortController>());
   const importedFrameSetRef = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (locale !== "en") return;
+
+    groups.forEach((group) => {
+      const match = /^(\d+)\. csoport$/u.exec(group.name);
+      if (match) renameGroup(group.id, ui.defaultGroupName(Number(match[1])));
+    });
+  }, [groups, locale, renameGroup, ui]);
 
   useEffect(() => {
     lazyCollectionsRef.current = lazyCollections;
@@ -342,19 +357,19 @@ function StandardImageWorkspace({
       setActiveGroup(groupId);
       toast.add({
         type: "success",
-        title: "Mappa képcsoportként importálva",
-        description: `${collection.itemCount} kép került a(z) „${directory.name}” csoportba.`,
+        title: copy.importFolderSuccess,
+        description: `${ui.imageCount(collection.itemCount)} · ${directory.name}`,
       });
     } catch (error) {
       if (!isFilePickerCancellation(error)) {
         setWorkspaceError(
           error instanceof Error
             ? error.message
-            : "A mappa importálása nem sikerült.",
+            : ui.folderImportFailed,
         );
       }
     }
-  }, [getOrCreateCollectionGroup, isBatchActive, setActiveGroup]);
+  }, [copy.importFolderSuccess, getOrCreateCollectionGroup, isBatchActive, setActiveGroup, ui]);
 
   useEffect(() => {
     setCanImportDirectory(canImportLazyDirectory());
@@ -373,7 +388,9 @@ function StandardImageWorkspace({
       .then((draft) => {
         if (cancelled) return;
         importedFrameSetRef.current = initialFrameSetId;
-        const groupId = getOrCreateCollectionGroup("Videóból készült képek");
+        const groupId = getOrCreateCollectionGroup(
+          locale === "en" ? "Frames from video" : "Videóból készült képek",
+        );
         setLazyCollections((current) => [...current, { ...draft, groupId }]);
         setActiveGroup(groupId);
       })
@@ -382,7 +399,7 @@ function StandardImageWorkspace({
           setWorkspaceError(
             error instanceof Error
               ? error.message
-              : "A helyi képkészlet már nem érhető el.",
+              : ui.localCollectionUnavailable,
           );
         }
       });
@@ -390,7 +407,7 @@ function StandardImageWorkspace({
     return () => {
       cancelled = true;
     };
-  }, [getOrCreateCollectionGroup, initialFrameSetId, setActiveGroup]);
+  }, [getOrCreateCollectionGroup, initialFrameSetId, locale, setActiveGroup]);
 
   const groupIds = useMemo(() => groups.map((group) => group.id), [groups]);
   const workspaceDndItems = useMemo(
@@ -547,9 +564,8 @@ function StandardImageWorkspace({
       if (!recipeResult.success) {
         failJob(job.id, {
           category: "invalid-settings",
-          message: "A feldolgozási beállítások nem érvényesek.",
-          suggestion:
-            "Ellenőrizd a felbontás-, minőség- és fájlméretértékeket.",
+          message: messages.processingErrors["invalid-settings"].message,
+          suggestion: ui.invalidSettingsSuggestion,
           detail: recipeResult.error.message,
         });
         return;
@@ -565,7 +581,7 @@ function StandardImageWorkspace({
         const cancellation = new Promise<never>((_, reject) => {
           cancelRejectors.current.set(job.id, () =>
             reject(
-              new DOMException("A feldolgozás megszakítva.", "AbortError"),
+              new DOMException(messages.processingErrors.cancelled.message, "AbortError"),
             ),
           );
         });
@@ -614,7 +630,7 @@ function StandardImageWorkspace({
         );
       } catch (error) {
         if (!cancelledJobs.current.has(job.id)) {
-          failJob(job.id, createProcessingError(error));
+          failJob(job.id, createProcessingError(error, locale));
         }
       } finally {
         handle?.worker.terminate();
@@ -623,7 +639,7 @@ function StandardImageWorkspace({
         cancelledJobs.current.delete(job.id);
       }
     },
-    [completeJob, failJob, setJobStatus, updateJob],
+    [completeJob, failJob, locale, setJobStatus, updateJob],
   );
 
   const processOneLazyCollection = useCallback(
@@ -725,7 +741,7 @@ function StandardImageWorkspace({
     if (batchRunRef.current) return;
     if (typeof Worker === "undefined" || typeof WebAssembly === "undefined") {
       setWorkspaceError(
-        "Ez a böngésző nem támogatja a szükséges helyi worker- és WebAssembly-feldolgozást.",
+        ui.browserUnsupported,
       );
       return;
     }
@@ -817,8 +833,8 @@ function StandardImageWorkspace({
       if (completedJobCount + completedLazyCount > 0) {
         toast.add({
           type: "success",
-          title: "Elkészültek a fájlok",
-          description: `${completedJobCount + completedLazyCount} kép elkészült.`,
+          title: copy.filesCompleted,
+          description: ui.completedToast(completedJobCount + completedLazyCount),
         });
       }
     } finally {
@@ -844,8 +860,8 @@ function StandardImageWorkspace({
       duplicateJob(id);
       toast.add({
         type: "success",
-        title: "Kép duplikálva",
-        description: "A másolat ugyanebbe a konfigurációs csoportba került.",
+        title: ui.duplicateTitle,
+        description: ui.duplicateDescription,
       });
     },
     [duplicateJob],
@@ -857,9 +873,9 @@ function StandardImageWorkspace({
       .jobs.find((candidate) => candidate.id === id);
     if (!job) return;
 
-    const file = getCompletedFile(job);
+    const file = getCompletedFile(job, ui.imageDescription);
     if (file) downloadFile(file);
-  }, []);
+  }, [ui.imageDescription]);
 
   const removeSelected = useCallback(() => {
     const removedCount = removeSelectedJobs();
@@ -867,8 +883,8 @@ function StandardImageWorkspace({
 
     toast.add({
       type: "success",
-      title: "Kijelölt képek törölve",
-      description: `${removedCount} kép eltávolítva a listából.`,
+      title: ui.deletedTitle,
+      description: ui.deletedDescription(removedCount),
     });
   }, [removeSelectedJobs]);
 
@@ -936,7 +952,7 @@ function StandardImageWorkspace({
 
   const downloadAllFiles = useCallback(() => {
     void runSaveAction("files-download", async () => {
-      const files = getCompletedFiles(useWorkspaceStore.getState().jobs);
+      const files = getCompletedFiles(useWorkspaceStore.getState().jobs, ui.imageDescription);
       downloadFiles(files);
       for (const collection of lazyCollectionsRef.current) {
         if (collection.status !== "completed" || !collection.outputManifest) {
@@ -945,11 +961,11 @@ function StandardImageWorkspace({
         await downloadLazyOutputFiles(collection.outputManifest, () => {});
       }
     });
-  }, [runSaveAction]);
+  }, [runSaveAction, ui.imageDescription]);
 
   const saveAllFilesAs = useCallback(() => {
     void runSaveAction("files-as", async () => {
-      const files = getCompletedFiles(useWorkspaceStore.getState().jobs);
+      const files = getCompletedFiles(useWorkspaceStore.getState().jobs, ui.imageDescription);
       const collections = lazyCollectionsRef.current.filter(
         (collection) =>
           collection.status === "completed" && collection.outputManifest,
@@ -963,11 +979,11 @@ function StandardImageWorkspace({
       }
       await saveFileSequenceToChosenDirectory(iterateAllCompletedFiles());
     });
-  }, [runSaveAction]);
+  }, [runSaveAction, ui.imageDescription]);
 
   const downloadZip = useCallback(() => {
     void runSaveAction("zip-download", async () => {
-      const files = getCompletedFiles(useWorkspaceStore.getState().jobs);
+      const files = getCompletedFiles(useWorkspaceStore.getState().jobs, ui.imageDescription);
       if (files.length > 0) {
         await downloadFilesAsZip(files, "morf-kepek.zip");
       }
@@ -982,14 +998,14 @@ function StandardImageWorkspace({
         );
       }
     });
-  }, [runSaveAction]);
+  }, [runSaveAction, ui.imageDescription]);
 
   const saveZipAs = useCallback(() => {
     void runSaveAction("zip-as", async () => {
-      const files = getCompletedFiles(useWorkspaceStore.getState().jobs);
+      const files = getCompletedFiles(useWorkspaceStore.getState().jobs, ui.imageDescription);
       await saveFilesAsZip(files, "morf-kepek.zip");
     });
-  }, [runSaveAction]);
+  }, [runSaveAction, ui.imageDescription]);
 
   useEffect(() => {
     setSaveCapabilities(getSaveCapabilities());
@@ -1110,10 +1126,10 @@ function StandardImageWorkspace({
     groups.every((group) => group.shouldProcess) && groups.length > 0;
   const groupItems = [
     ...groups.map((group) => ({
-      label: `${group.name} · ${group.settings.outputFormat.toUpperCase()} · ${getConversionModeLabel(group.settings)}`,
+      label: `${group.name} · ${group.settings.outputFormat.toUpperCase()} · ${getConversionModeLabel(group.settings, locale)}`,
       value: group.id,
     })),
-    { label: "Új közös csoport", value: newGroupTarget },
+    { label: ui.newSharedGroup, value: newGroupTarget },
   ];
   const representativeJob =
     jobs.find(isActiveJob) ??
@@ -1133,30 +1149,27 @@ function StandardImageWorkspace({
   const mascotCopy = useMemo(() => {
     if (isBatchActive) {
       return {
-        title: "Morf dolgozik",
-        message:
-          "A feldolgozás helyben fut. Ne zárd be és ne frissítsd az oldalt.",
+        title: ui.processingTitle,
+        message: ui.processingMessage,
       };
     }
     if (representativeStatus === "error") {
       return {
-        title: "Egy képnek segítség kell",
-        message:
-          "A hiba alatt találsz visszaállítható következő lépést és újrapróbálási lehetőséget.",
+        title: ui.errorTitle,
+        message: ui.errorMessage,
       };
     }
     if (completedCount > 0) {
       return {
-        title: "Elkészültek a fájlok",
-        message: `${completedCount} kép letölthető. Az eredményeket külön vagy egy ZIP-ben is elmentheted.`,
+        title: copy.filesCompleted,
+        message: ui.completedMessage(completedCount),
       };
     }
     return {
-      title: "Kezdésre kész",
-      message:
-        "Húzz be vagy tallózz képeket, rendezd őket csoportokba, állítsd be a konfigurációt, majd indítsd el a konvertálást.",
+      title: ui.readyTitle,
+      message: ui.readyMessage,
     };
-  }, [completedCount, isBatchActive, representativeStatus]);
+  }, [completedCount, isBatchActive, representativeStatus, ui]);
   return (
     <section
       id="workspace"
@@ -1179,7 +1192,7 @@ function StandardImageWorkspace({
 
         {workspaceError && (
           <Alert variant="destructive">
-            <AlertTitle>Nem sikerült befejezni a műveletet</AlertTitle>
+            <AlertTitle>{ui.workspaceErrorTitle}</AlertTitle>
             <AlertDescription>{workspaceError}</AlertDescription>
           </Alert>
         )}
@@ -1199,15 +1212,13 @@ function StandardImageWorkspace({
               <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                 <div className="flex flex-col gap-1">
                   <h3 className="font-heading text-2xl font-medium">
-                    Csoportok
+                    {ui.groupsTitle}
                   </h3>
                   <p
                     className="text-muted-foreground text-sm"
                     aria-live="polite"
                   >
-                    {totalInputCount} kép · {groups.length} csoport ·{" "}
-                    {selectedCount} kijelölve · {processIncludedCount}{" "}
-                    konvertálásra · {completedCount} kész · {failedCount} hibás
+                    {ui.groupSummary(totalInputCount, groups.length, selectedCount, processIncludedCount, completedCount, failedCount)}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -1224,7 +1235,7 @@ function StandardImageWorkspace({
                         data-icon="inline-start"
                         aria-hidden="true"
                       />
-                      Mappa importálása
+                      {ui.importFolder}
                     </Button>
                   )}
                   {jobs.length > 0 && (
@@ -1237,7 +1248,7 @@ function StandardImageWorkspace({
                         }
                         onClick={() => setAllJobsSelected(true)}
                       >
-                        Mind kijelölése
+                        {ui.selectAll}
                       </Button>
                       <Button
                         type="button"
@@ -1245,7 +1256,7 @@ function StandardImageWorkspace({
                         disabled={isBatchActive || selectedCount === 0}
                         onClick={() => setAllJobsSelected(false)}
                       >
-                        Kijelölés törlése
+                        {ui.clearSelection}
                       </Button>
                       <Button
                         type="button"
@@ -1253,7 +1264,7 @@ function StandardImageWorkspace({
                         disabled={isBatchActive}
                         onClick={clearJobs}
                       >
-                        Lista törlése
+                        {ui.clearList}
                       </Button>
                     </>
                   )}
@@ -1274,9 +1285,7 @@ function StandardImageWorkspace({
                       return job ? [job] : [];
                     });
                     const presetName =
-                      imagePresets.find(
-                        (preset) => preset.id === group.settings.presetId,
-                      )?.recipe.name ?? "Egyedi";
+                      messages.presets[group.settings.presetId].name;
                     const groupCollections = lazyCollections.filter(
                       (collection) => collection.groupId === group.id,
                     );
@@ -1291,7 +1300,7 @@ function StandardImageWorkspace({
                       <GroupDropzone
                         key={group.id}
                         groupId={group.id}
-                        ariaLabel={`Képek hozzáadása a(z) ${group.name} csoporthoz`}
+                        ariaLabel={`${ui.addImages}: ${group.name}`}
                         disabled={isBatchActive}
                         onFiles={addFilesToGroup}
                       >
@@ -1305,7 +1314,7 @@ function StandardImageWorkspace({
                             tabIndex={isBatchActive ? -1 : 0}
                             aria-pressed={activeGroupId === group.id}
                             aria-disabled={isBatchActive || undefined}
-                            aria-label={`${group.name} konfigurációs csoport kiválasztása`}
+                            aria-label={`${group.name}: ${ui.groupsTitle}`}
                             className={cn(
                               "border-foreground/20 relative min-h-96 border bg-card shadow-none ring-0 [--card-spacing:--spacing(3)] data-[selected=true]:border-ring data-[selected=true]:ring-2 data-[selected=true]:ring-ring/20 lg:h-[32rem]",
                               isDragActive && "border-ring ring-2 ring-ring/20",
@@ -1341,7 +1350,7 @@ function StandardImageWorkspace({
                                     id={`process-group-${group.id}`}
                                     checked={group.shouldProcess}
                                     disabled={isBatchActive}
-                                    aria-label={`${group.name} konvertálása`}
+                                    aria-label={`${copy.startConversion}: ${group.name}`}
                                     onCheckedChange={(checked) =>
                                       setGroupProcessing(
                                         group.id,
@@ -1351,7 +1360,7 @@ function StandardImageWorkspace({
                                   />
                                   <Input
                                     className="font-heading hover:border-border/60 focus-visible:bg-background border-transparent bg-transparent px-1 text-base font-medium shadow-none"
-                                    aria-label={`${group.name} csoport nevének módosítása`}
+                                    aria-label={`${group.name}: ${ui.groupMenu}`}
                                     value={group.name}
                                     maxLength={60}
                                     disabled={isBatchActive}
@@ -1363,7 +1372,7 @@ function StandardImageWorkspace({
                                       const name = event.target.value.trim();
                                       renameGroup(
                                         group.id,
-                                        name || "Névtelen csoport",
+                                        name || ui.unnamedGroup,
                                       );
                                     }}
                                   />
@@ -1377,16 +1386,14 @@ function StandardImageWorkspace({
                                   </Badge>
                                   <Badge variant="outline">
                                     {group.settings.lossless
-                                      ? getConversionResolutionLabel(
-                                          group.settings,
-                                        )
-                                      : `max. ${getConversionResolutionLabel(group.settings)}`}
+                                      ? getConversionResolutionLabel(group.settings, locale)
+                                      : `max. ${getConversionResolutionLabel(group.settings, locale)}`}
                                   </Badge>
                                   <Badge variant="outline">
-                                    {getConversionModeLabel(group.settings)}
+                                    {getConversionModeLabel(group.settings, locale)}
                                   </Badge>
                                   <Badge variant="outline">
-                                    {groupImageCount} kép
+                                    {ui.imageCount(groupImageCount)}
                                   </Badge>
                                 </div>
                               </div>
@@ -1395,8 +1402,8 @@ function StandardImageWorkspace({
                                   type="button"
                                   size="icon-sm"
                                   variant="ghost"
-                                  aria-label={`Képek hozzáadása a(z) ${group.name} csoporthoz`}
-                                  title="Képek hozzáadása"
+                                  aria-label={`${ui.addImages}: ${group.name}`}
+                                  title={ui.addImages}
                                   disabled={isBatchActive}
                                   onClick={(event) => {
                                     event.stopPropagation();
@@ -1418,8 +1425,8 @@ function StandardImageWorkspace({
                                         variant="ghost"
                                       />
                                     }
-                                    aria-label={`${group.name} csoport menüje`}
-                                    title="Csoportmenü"
+                                    aria-label={`${ui.groupMenu}: ${group.name}`}
+                                    title={ui.groupMenu}
                                     disabled={isBatchActive}
                                     onClick={(event) => event.stopPropagation()}
                                   >
@@ -1442,7 +1449,7 @@ function StandardImageWorkspace({
                                           strokeWidth={2}
                                           aria-hidden="true"
                                         />
-                                        Csoport törlése
+                                        {ui.deleteGroup}
                                       </DropdownMenuItem>
                                     </DropdownMenuGroup>
                                   </DropdownMenuContent>
@@ -1470,7 +1477,7 @@ function StandardImageWorkspace({
 
                                 <DndJobList
                                   groupId={group.id}
-                                  ariaLabel={`${group.name} képei`}
+                                  ariaLabel={ui.groupImages(group.name)}
                                   disabled={isBatchActive}
                                   className={cn(
                                     groupImageCount === 0
@@ -1487,8 +1494,8 @@ function StandardImageWorkspace({
                                     >
                                       <p className="text-muted-foreground text-sm">
                                         {isDragActive
-                                          ? "Engedd el a képeket"
-                                          : "Húzd ide a képeket"}
+                                          ? ui.releaseImages
+                                          : ui.dropImages}
                                       </p>
                                       <Button
                                         type="button"
@@ -1504,10 +1511,10 @@ function StandardImageWorkspace({
                                           data-icon="inline-start"
                                           aria-hidden="true"
                                         />
-                                        Képek kiválasztása
+                                        {ui.chooseImages}
                                       </Button>
                                       <p className="text-muted-foreground text-xs">
-                                        JPG, PNG, WebP, AVIF vagy HEIC/HEIF
+                                        {ui.supportedFormats}
                                       </p>
                                     </div>
                                   ) : (
@@ -1548,10 +1555,10 @@ function StandardImageWorkspace({
                                   </span>
                                   <div className="flex flex-col gap-1">
                                     <p className="font-heading text-base font-medium">
-                                      Engedd el a képeket
+                                      {ui.releaseImages}
                                     </p>
                                     <p className="text-muted-foreground text-sm">
-                                      Ebbe a csoportba kerülnek.
+                                      {ui.droppedInGroup}
                                     </p>
                                   </div>
                                 </div>
@@ -1565,7 +1572,7 @@ function StandardImageWorkspace({
 
                   <GroupDropzone
                     groupId={newGroupTarget}
-                    ariaLabel="Képek kiválasztása új csoporthoz"
+                    ariaLabel={ui.chooseImagesForNewGroup}
                     disabled={isBatchActive}
                     onFiles={async (files) => addFilesToNewGroup(files)}
                   >
@@ -1577,7 +1584,7 @@ function StandardImageWorkspace({
                             role="button"
                             tabIndex={isBatchActive ? -1 : 0}
                             aria-disabled={isBatchActive || undefined}
-                            aria-label="Új csoport létrehozása"
+                            aria-label={ui.createNewGroup}
                             className={cn(
                               "border-foreground/20 h-full min-h-96 border border-dashed shadow-none [--card-spacing:--spacing(3)] bg-transparent hover:bg-card/50 lg:h-[32rem]",
                               (isDragActive || isDndActive) &&
@@ -1619,17 +1626,17 @@ function StandardImageWorkspace({
                               <div className="flex flex-col gap-1">
                                 <p className="font-heading text-lg font-medium">
                                   {isDndActive
-                                    ? "Engedd el a képet"
+                                    ? ui.releaseImage
                                     : isDragActive
-                                      ? "Engedd el a képeket"
-                                      : "Új csoport"}
+                                      ? ui.releaseImages
+                                      : ui.newGroup}
                                 </p>
                                 <p className="text-muted-foreground max-w-56 text-sm">
                                   {isDndActive
-                                    ? "Új csoport készül ezzel a képpel."
+                                    ? ui.newGroupWithImage
                                     : isDragActive
-                                      ? "Új csoport készül ezekkel a képekkel."
-                                      : "Kattints a létrehozáshoz. Az aktív csoport beállításaiból indul."}
+                                      ? ui.newGroupWithImages
+                                      : ui.newGroupDescription}
                                 </p>
                               </div>
                               <Button
@@ -1647,7 +1654,7 @@ function StandardImageWorkspace({
                                   data-icon="inline-start"
                                   aria-hidden="true"
                                 />
-                                Képek tallózása
+                                {ui.browseImages}
                               </Button>
                             </CardContent>
                           </Card>
@@ -1683,16 +1690,16 @@ function StandardImageWorkspace({
               <Card
                 size="sm"
                 role="region"
-                aria-label="Kijelölt képek műveletei"
+                aria-label={ui.groupActions}
                 className="pointer-events-auto mx-4 self-center shadow-lg [--card-spacing:--spacing(2)] [background:var(--card)] sm:w-[min(calc(100%-2rem),64rem)]"
               >
                 <CardContent className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <span className="shrink-0 text-sm font-medium">
-                    {selectedCount} kép kijelölve
+                    {ui.selectedImages(selectedCount)}
                   </span>
                   <Field className="min-w-0 sm:w-64 sm:flex-none">
                     <FieldLabel htmlFor="bulk-group-target" className="sr-only">
-                      Közös célcsoport
+                      {ui.targetGroup}
                     </FieldLabel>
                     <Select
                       items={groupItems}
@@ -1703,7 +1710,7 @@ function StandardImageWorkspace({
                       }
                     >
                       <SelectTrigger id="bulk-group-target">
-                        <SelectValue placeholder="Áthelyezés ide…" />
+                        <SelectValue placeholder={ui.moveTo} />
                       </SelectTrigger>
                       <SelectContent
                         side="top"
@@ -1750,7 +1757,7 @@ function StandardImageWorkspace({
                         setBulkTargetGroupId("");
                       }}
                     >
-                      Áthelyezés
+                      {ui.move}
                     </Button>
                     <Button
                       type="button"
@@ -1777,7 +1784,7 @@ function StandardImageWorkspace({
                         setBulkTargetGroupId("");
                       }}
                     >
-                      Minden kép külön csoportba
+                      {ui.separateGroups}
                     </Button>
                     <Button
                       type="button"
@@ -1792,7 +1799,7 @@ function StandardImageWorkspace({
                         data-icon="inline-start"
                         aria-hidden="true"
                       />
-                      Kijelöltek törlése
+                      {ui.deleteSelected}
                     </Button>
                   </div>
                 </CardContent>
@@ -1805,8 +1812,7 @@ function StandardImageWorkspace({
                   className="text-muted-foreground shrink-0 text-sm tabular-nums"
                   aria-live="polite"
                 >
-                  {processableCount} várakozik · {completedCount} kész ·{" "}
-                  {failedCount} hibás
+                  {ui.queueSummary(processableCount, completedCount, failedCount)}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Button
@@ -1816,8 +1822,8 @@ function StandardImageWorkspace({
                     onClick={() => setAllJobsProcessing(!allGroupsIncluded)}
                   >
                     {allGroupsIncluded
-                      ? "Összes csoport kihagyása"
-                      : "Összes csoport konvertálása"}
+                      ? ui.skipAllGroups
+                      : ui.convertAllGroups}
                   </Button>
                   <Button
                     type="button"
@@ -1831,8 +1837,8 @@ function StandardImageWorkspace({
                       aria-hidden="true"
                     />
                     {isBatchActive
-                      ? "Feldolgozás…"
-                      : `Konvertálás indítása (${processableCount})`}
+                      ? ui.processing
+                      : `${copy.startConversion} (${processableCount})`}
                   </Button>
                   {completedCount > 0 && (
                     <>
@@ -1849,8 +1855,8 @@ function StandardImageWorkspace({
                           aria-hidden="true"
                         />
                         {activeSaveAction === "files-download"
-                          ? "Mentés…"
-                          : "Mentés"}
+                          ? ui.saving
+                          : copy.save}
                       </Button>
                       {saveCapabilities.directory && (
                         <Button
@@ -1865,7 +1871,7 @@ function StandardImageWorkspace({
                             data-icon="inline-start"
                             aria-hidden="true"
                           />
-                          Mentés másként
+                          {ui.saveAs}
                         </Button>
                       )}
                       <Button
@@ -1881,8 +1887,8 @@ function StandardImageWorkspace({
                           aria-hidden="true"
                         />
                         {activeSaveAction === "zip-download"
-                          ? "ZIP készítése…"
-                          : "Mentés ZIP-be"}
+                          ? ui.creatingZip
+                          : copy.saveToZip}
                       </Button>
                       {saveCapabilities.file && completedLazyCount === 0 && (
                         <Button
@@ -1898,8 +1904,8 @@ function StandardImageWorkspace({
                             aria-hidden="true"
                           />
                           {activeSaveAction === "zip-as"
-                            ? "ZIP készítése…"
-                            : "Mentés másként ZIP-be"}
+                            ? ui.creatingZip
+                            : ui.saveZipAs}
                         </Button>
                       )}
                     </>
@@ -1915,11 +1921,15 @@ function StandardImageWorkspace({
   );
 }
 
-export default function ImageWorkspace() {
+interface ImageWorkspaceProps {
+  locale?: Locale;
+}
+
+export default function ImageWorkspace({ locale = "hu" }: ImageWorkspaceProps) {
   const [frameSetId] = useState(() => {
     if (typeof window === "undefined") return "";
     return new URLSearchParams(window.location.search).get("frameSet") ?? "";
   });
 
-  return <StandardImageWorkspace initialFrameSetId={frameSetId} />;
+  return <WorkspaceI18nProvider locale={locale} messages={getImageConverterMessages(locale)}><StandardImageWorkspace initialFrameSetId={frameSetId} /></WorkspaceI18nProvider>;
 }
