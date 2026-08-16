@@ -620,6 +620,7 @@ type ArtworkProps = {
   gridKicker: string;
   gridFooter: string;
   launchCampaign: string;
+  launchCampaignColor: string;
   launchOffer: string;
   quoteAuthor: string;
   quoteAuthorImage: string;
@@ -652,6 +653,7 @@ function Artwork({
   gridKicker,
   gridFooter,
   launchCampaign,
+  launchCampaignColor,
   launchOffer,
   quoteAuthor,
   quoteAuthorImage,
@@ -661,22 +663,7 @@ function Artwork({
 }: ArtworkProps) {
   const { canvas: background, surface, accent, text, glow } = palette;
   const softText = `${text}12`;
-  const safeTitle = title || "A megosztási kép címe";
-  const safeDescription =
-    description || "Rövid, konkrét kiegészítő üzenet az oldalról.";
-  const safeEyebrow = eyebrow || "Webhely neve";
-  const safeCta = cta || "Tudj meg többet";
-  const safeDealBadge = dealBadge || "Kiemelt ajánlat";
-  const safeDealRating = dealRating || "4,97 (155 értékelés)";
-  const safeDealPrice = dealPrice || "69 000 Ft / egyszeri díj";
-  const safeVaultStatus = vaultStatus || "Követés aktív";
-  const safeVaultLabel = vaultLabel || "Biztonságos tár";
-  const safeGridKicker = gridKicker || "Kiemelt kreatív";
-  const safeGridFooter = gridFooter || "Kiegészítő";
-  const safeLaunchCampaign = launchCampaign || "Kiemelt kampány";
-  const safeLaunchOffer = launchOffer || "Egyedi ajánlat";
-  const safeQuoteAuthor = quoteAuthor || "Szerző neve";
-  const safeEditorialBadge = editorialBadge || "Kiemelt tartalom";
+  const safeLaunchCampaignColor = launchCampaignColor || "#264BB3";
   const imageElement = image ? (
     <img
       src={image}
@@ -758,73 +745,83 @@ function Artwork({
                   zIndex: 2,
                 }}
               >
-                <p
-                  style={{
-                    ...textReset,
-                    marginTop: 80,
-                    fontSize: 29,
-                    fontWeight: 800,
-                  }}
-                >
-                  {safeEyebrow}
-                </p>
-                <div>
-                  <span
-                    style={{
-                      display: "inline-block",
-                      marginTop: 68,
-                      borderRadius: 999,
-                      padding: "8px 17px",
-                      background: glow,
-                      color: "#10B981",
-                      fontSize: 20,
-                      fontWeight: 750,
-                    }}
-                  >
-                    {safeEditorialBadge}
-                  </span>
-                  <h3
-                    style={{
-                      ...textReset,
-                      ...clamp(3),
-                      marginTop: 24,
-                      maxWidth: 575,
-                      fontSize: 52,
-                      lineHeight: 1.12,
-                      letterSpacing: "-0.045em",
-                      fontWeight: 850,
-                    }}
-                  >
-                    {safeTitle}
-                  </h3>
+                {eyebrow && (
                   <p
                     style={{
                       ...textReset,
-                      ...clamp(3),
-                      marginTop: 18,
-                      maxWidth: 570,
-                      fontSize: 18,
-                      lineHeight: 1.35,
-                      opacity: 0.6,
+                      marginTop: 80,
+                      fontSize: 29,
+                      fontWeight: 800,
                     }}
                   >
-                    {safeDescription}
+                    {eyebrow}
                   </p>
+                )}
+                <div>
+                  {editorialBadge && (
+                    <span
+                      style={{
+                        display: "inline-block",
+                        marginTop: 68,
+                        borderRadius: 999,
+                        padding: "8px 17px",
+                        background: glow,
+                        color: "#10B981",
+                        fontSize: 20,
+                        fontWeight: 750,
+                      }}
+                    >
+                      {editorialBadge}
+                    </span>
+                  )}
+                  {title && (
+                    <h3
+                      style={{
+                        ...textReset,
+                        ...clamp(3),
+                        marginTop: 24,
+                        maxWidth: 575,
+                        fontSize: 52,
+                        lineHeight: 1.12,
+                        letterSpacing: "-0.045em",
+                        fontWeight: 850,
+                      }}
+                    >
+                      {title}
+                    </h3>
+                  )}
+                  {description && (
+                    <p
+                      style={{
+                        ...textReset,
+                        ...clamp(3),
+                        marginTop: 18,
+                        maxWidth: 570,
+                        fontSize: 18,
+                        lineHeight: 1.35,
+                        opacity: 0.6,
+                      }}
+                    >
+                      {description}
+                    </p>
+                  )}
                 </div>
-                <span
-                  style={{
-                    alignSelf: "flex-start",
-                    marginTop: 24,
-                    borderRadius: 8,
-                    padding: "14px 24px",
-                    background: accent,
-                    color: background,
-                    fontSize: 19,
-                    fontWeight: 800,
-                  }}
-                >
-                  {safeCta}
-                </span>
+                {cta && (
+                  <span
+                    style={{
+                      alignSelf: "flex-start",
+                      marginTop: 24,
+                      borderRadius: 8,
+                      padding: "14px 24px",
+                      background: accent,
+                      color: background,
+                      fontSize: 19,
+                      fontWeight: 800,
+                    }}
+                  >
+                    {cta}
+                  </span>
+                )}
               </div>
               <div style={{ position: "relative", background: surface }}>
                 <span
@@ -893,54 +890,62 @@ function Artwork({
                   justifyContent: "center",
                 }}
               >
-                <p
-                  style={{
-                    ...textReset,
-                    color: accent,
-                    fontSize: 20,
-                    fontWeight: 800,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                  }}
-                >
-                  {safeEyebrow}
-                </p>
-                <h3
-                  style={{
-                    ...textReset,
-                    ...clamp(3),
-                    marginTop: 30,
-                    fontSize: 54,
-                    lineHeight: 1.03,
-                    letterSpacing: "-0.04em",
-                    fontWeight: 850,
-                  }}
-                >
-                  {safeTitle}
-                </h3>
-                <p
-                  style={{
-                    ...textReset,
-                    ...clamp(3),
-                    marginTop: 22,
-                    fontSize: 22,
-                    lineHeight: 1.4,
-                    opacity: 0.62,
-                  }}
-                >
-                  {safeDescription}
-                </p>
-                <p
-                  style={{
-                    ...textReset,
-                    marginTop: 34,
-                    color: accent,
-                    fontSize: 20,
-                    fontWeight: 800,
-                  }}
-                >
-                  {safeCta} →
-                </p>
+                {eyebrow && (
+                  <p
+                    style={{
+                      ...textReset,
+                      color: accent,
+                      fontSize: 20,
+                      fontWeight: 800,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                    }}
+                  >
+                    {eyebrow}
+                  </p>
+                )}
+                {title && (
+                  <h3
+                    style={{
+                      ...textReset,
+                      ...clamp(3),
+                      marginTop: 30,
+                      fontSize: 54,
+                      lineHeight: 1.03,
+                      letterSpacing: "-0.04em",
+                      fontWeight: 850,
+                    }}
+                  >
+                    {title}
+                  </h3>
+                )}
+                {description && (
+                  <p
+                    style={{
+                      ...textReset,
+                      ...clamp(3),
+                      marginTop: 22,
+                      fontSize: 22,
+                      lineHeight: 1.4,
+                      opacity: 0.62,
+                    }}
+                  >
+                    {description}
+                  </p>
+                )}
+                {cta && (
+                  <p
+                    style={{
+                      ...textReset,
+                      marginTop: 34,
+                      color: accent,
+                      fontSize: 20,
+                      fontWeight: 800,
+                    }}
+                  >
+                    {cta} →
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -966,43 +971,49 @@ function Artwork({
                   boxShadow: `0 22px 60px ${glow}88`,
                 }}
               >
-                <p
-                  style={{
-                    ...textReset,
-                    color: accent,
-                    fontSize: 20,
-                    fontWeight: 800,
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  {safeEyebrow}
-                </p>
-                <h3
-                  style={{
-                    ...textReset,
-                    ...clamp(4),
-                    fontSize: 54,
-                    lineHeight: 1.02,
-                    letterSpacing: "-0.045em",
-                    fontWeight: 850,
-                  }}
-                >
-                  {safeTitle}
-                </h3>
-                <span
-                  style={{
-                    alignSelf: "flex-start",
-                    borderRadius: 999,
-                    padding: "12px 19px",
-                    background: accent,
-                    color: text,
-                    fontSize: 18,
-                    fontWeight: 800,
-                  }}
-                >
-                  {safeCta}
-                </span>
+                {eyebrow && (
+                  <p
+                    style={{
+                      ...textReset,
+                      color: accent,
+                      fontSize: 20,
+                      fontWeight: 800,
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {eyebrow}
+                  </p>
+                )}
+                {title && (
+                  <h3
+                    style={{
+                      ...textReset,
+                      ...clamp(4),
+                      fontSize: 54,
+                      lineHeight: 1.02,
+                      letterSpacing: "-0.045em",
+                      fontWeight: 850,
+                    }}
+                  >
+                    {title}
+                  </h3>
+                )}
+                {cta && (
+                  <span
+                    style={{
+                      alignSelf: "flex-start",
+                      borderRadius: 999,
+                      padding: "12px 19px",
+                      background: accent,
+                      color: text,
+                      fontSize: 18,
+                      fontWeight: 800,
+                    }}
+                  >
+                    {cta}
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -1021,36 +1032,40 @@ function Artwork({
                   position: "relative",
                 }}
               >
-                <p
-                  style={{
-                    ...textReset,
-                    position: "absolute",
-                    top: 213,
-                    left: 93,
-                    fontFamily: "Courier New, monospace",
-                    fontSize: 26,
-                    fontWeight: 500,
-                  }}
-                >
-                  {safeEyebrow}
-                </p>
-                <h3
-                  style={{
-                    ...textReset,
-                    ...clamp(3),
-                    position: "absolute",
-                    top: 287,
-                    left: 93,
-                    width: 425,
-                    fontFamily: "Courier New, monospace",
-                    fontSize: 31,
-                    lineHeight: 1.1,
-                    letterSpacing: "-0.025em",
-                    fontWeight: 800,
-                  }}
-                >
-                  {safeTitle}
-                </h3>
+                {eyebrow && (
+                  <p
+                    style={{
+                      ...textReset,
+                      position: "absolute",
+                      top: 213,
+                      left: 93,
+                      fontFamily: "Courier New, monospace",
+                      fontSize: 26,
+                      fontWeight: 500,
+                    }}
+                  >
+                    {eyebrow}
+                  </p>
+                )}
+                {title && (
+                  <h3
+                    style={{
+                      ...textReset,
+                      ...clamp(3),
+                      position: "absolute",
+                      top: 287,
+                      left: 93,
+                      width: 425,
+                      fontFamily: "Courier New, monospace",
+                      fontSize: 31,
+                      lineHeight: 1.1,
+                      letterSpacing: "-0.025em",
+                      fontWeight: 800,
+                    }}
+                  >
+                    {title}
+                  </h3>
+                )}
                 <div
                   style={{
                     position: "absolute",
@@ -1083,34 +1098,38 @@ function Artwork({
                       />
                     )}
                   </div>
-                  <p
+                  {quoteAuthor && (
+                    <p
+                      style={{
+                        ...textReset,
+                        fontFamily: "Courier New, monospace",
+                        fontSize: 20,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {quoteAuthor}
+                    </p>
+                  )}
+                </div>
+                {cta && (
+                  <span
                     style={{
-                      ...textReset,
+                      position: "absolute",
+                      zIndex: 2,
+                      top: 506,
+                      left: 474,
+                      padding: "13px 40px",
+                      background: text,
+                      color: background,
                       fontFamily: "Courier New, monospace",
                       fontSize: 20,
                       fontWeight: 500,
+                      whiteSpace: "nowrap",
                     }}
                   >
-                    {safeQuoteAuthor}
-                  </p>
-                </div>
-                <span
-                  style={{
-                    position: "absolute",
-                    zIndex: 2,
-                    top: 506,
-                    left: 474,
-                    padding: "13px 40px",
-                    background: text,
-                    color: background,
-                    fontFamily: "Courier New, monospace",
-                    fontSize: 20,
-                    fontWeight: 500,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {safeCta}
-                </span>
+                    {cta}
+                  </span>
+                )}
               </div>
               <div style={{ overflow: "hidden", background: glow }}>
                 {imageElement}
@@ -1136,42 +1155,48 @@ function Artwork({
                   zIndex: 2,
                 }}
               >
-                <p
-                  style={{
-                    ...textReset,
-                    fontSize: 20,
-                    fontWeight: 800,
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  {safeEyebrow}
-                </p>
-                <h3
-                  style={{
-                    ...textReset,
-                    ...clamp(3),
-                    maxWidth: 690,
-                    fontSize: 58,
-                    lineHeight: 1.01,
-                    letterSpacing: "-0.05em",
-                    fontWeight: 850,
-                  }}
-                >
-                  {safeTitle}
-                </h3>
-                <span
-                  style={{
-                    alignSelf: "flex-start",
-                    border: `3px solid ${text}`,
-                    borderRadius: 10,
-                    padding: "11px 18px",
-                    fontSize: 18,
-                    fontWeight: 800,
-                  }}
-                >
-                  {safeCta}
-                </span>
+                {eyebrow && (
+                  <p
+                    style={{
+                      ...textReset,
+                      fontSize: 20,
+                      fontWeight: 800,
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {eyebrow}
+                  </p>
+                )}
+                {title && (
+                  <h3
+                    style={{
+                      ...textReset,
+                      ...clamp(3),
+                      maxWidth: 690,
+                      fontSize: 58,
+                      lineHeight: 1.01,
+                      letterSpacing: "-0.05em",
+                      fontWeight: 850,
+                    }}
+                  >
+                    {title}
+                  </h3>
+                )}
+                {cta && (
+                  <span
+                    style={{
+                      alignSelf: "flex-start",
+                      border: `3px solid ${text}`,
+                      borderRadius: 10,
+                      padding: "11px 18px",
+                      fontSize: 18,
+                      fontWeight: 800,
+                    }}
+                  >
+                    {cta}
+                  </span>
+                )}
               </div>
               <div style={{ display: "grid", gridTemplateRows: "38% 62%" }}>
                 <div
@@ -1215,83 +1240,95 @@ function Artwork({
                   flexDirection: "column",
                 }}
               >
-                <p
-                  style={{
-                    ...textReset,
-                    marginTop: 68,
-                    fontSize: 32,
-                    fontWeight: 800,
-                  }}
-                >
-                  {safeEyebrow}
-                </p>
+                {eyebrow && (
+                  <p
+                    style={{
+                      ...textReset,
+                      marginTop: 68,
+                      fontSize: 32,
+                      fontWeight: 800,
+                    }}
+                  >
+                    {eyebrow}
+                  </p>
+                )}
                 <div>
+                  {launchCampaign && (
+                    <span
+                      style={{
+                        display: "inline-block",
+                        marginTop: 56,
+                        borderRadius: 999,
+                        padding: "8px 18px",
+                        background: glow,
+                        color: safeLaunchCampaignColor,
+                        fontSize: 20,
+                        fontWeight: 800,
+                      }}
+                    >
+                      {launchCampaign}
+                    </span>
+                  )}
+                  {title && (
+                    <h3
+                      style={{
+                        ...textReset,
+                        ...clamp(2),
+                        marginTop: 44,
+                        fontSize: 48,
+                        lineHeight: 0.98,
+                        letterSpacing: "-0.05em",
+                        fontWeight: 800,
+                      }}
+                    >
+                      {title}
+                    </h3>
+                  )}
+                  {description && (
+                    <p
+                      style={{
+                        ...textReset,
+                        ...clamp(3),
+                        marginTop: 46,
+                        fontSize: 19,
+                        lineHeight: 1.35,
+                        opacity: 0.68,
+                      }}
+                    >
+                      {description}
+                    </p>
+                  )}
+                  {launchOffer && (
+                    <p
+                      style={{
+                        ...textReset,
+                        ...clamp(2),
+                        marginTop: 4,
+                        fontSize: 19,
+                        lineHeight: 1.28,
+                        fontWeight: 800,
+                      }}
+                    >
+                      {launchOffer}
+                    </p>
+                  )}
+                </div>
+                {cta && (
                   <span
                     style={{
-                      display: "inline-block",
-                      marginTop: 56,
+                      alignSelf: "flex-start",
+                      marginTop: 10,
                       borderRadius: 999,
-                      padding: "8px 18px",
-                      background: glow,
-                      color: "#264BB3",
-                      fontSize: 20,
+                      padding: "14px 27px",
+                      background: accent,
+                      color: background,
+                      fontSize: 19,
                       fontWeight: 800,
                     }}
                   >
-                    {safeLaunchCampaign}
+                    {cta} →
                   </span>
-                  <h3
-                    style={{
-                      ...textReset,
-                      ...clamp(2),
-                      marginTop: 44,
-                      fontSize: 48,
-                      lineHeight: 0.98,
-                      letterSpacing: "-0.05em",
-                      fontWeight: 800,
-                    }}
-                  >
-                    {safeTitle}
-                  </h3>
-                  <p
-                    style={{
-                      ...textReset,
-                      ...clamp(3),
-                      marginTop: 46,
-                      fontSize: 19,
-                      lineHeight: 1.35,
-                      opacity: 0.68,
-                    }}
-                  >
-                    {safeDescription}
-                  </p>
-                  <p
-                    style={{
-                      ...textReset,
-                      ...clamp(2),
-                      marginTop: 4,
-                      fontSize: 19,
-                      lineHeight: 1.28,
-                      fontWeight: 800,
-                    }}
-                  >
-                    {safeLaunchOffer}
-                  </p>
-                </div>
-                <span
-                  style={{
-                    alignSelf: "flex-start",
-                    marginTop: 10,
-                    borderRadius: 999,
-                    padding: "14px 27px",
-                    background: accent,
-                    color: background,
-                    fontSize: 19,
-                    fontWeight: 800,
-                  }}
-                >
-                  {safeCta} →
-                </span>
+                )}
               </div>
               <div
                 style={{
@@ -1326,46 +1363,52 @@ function Artwork({
                   zIndex: 2,
                 }}
               >
-                <span
-                  style={{
-                    display: "inline-block",
-                    borderRadius: 999,
-                    padding: "8px 16px",
-                    background: surface,
-                    color: text,
-                    fontSize: 18,
-                    fontWeight: 700,
-                  }}
-                >
-                  {safeEyebrow}
-                </span>
-                <h3
-                  style={{
-                    ...textReset,
-                    ...clamp(2),
-                    margin: "27px auto 22px",
-                    maxWidth: 740,
-                    fontSize: 48,
-                    lineHeight: 1.04,
-                    letterSpacing: "-0.045em",
-                    fontWeight: 850,
-                  }}
-                >
-                  {safeTitle}
-                </h3>
-                <p
-                  style={{
-                    ...textReset,
-                    ...clamp(2),
-                    margin: "0 auto",
-                    maxWidth: 850,
-                    fontSize: 23,
-                    lineHeight: 1.22,
-                    opacity: 0.72,
-                  }}
-                >
-                  {safeDescription}
-                </p>
+                {eyebrow && (
+                  <span
+                    style={{
+                      display: "inline-block",
+                      borderRadius: 999,
+                      padding: "8px 16px",
+                      background: surface,
+                      color: text,
+                      fontSize: 18,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {eyebrow}
+                  </span>
+                )}
+                {title && (
+                  <h3
+                    style={{
+                      ...textReset,
+                      ...clamp(2),
+                      margin: "27px auto 22px",
+                      maxWidth: 740,
+                      fontSize: 48,
+                      lineHeight: 1.04,
+                      letterSpacing: "-0.045em",
+                      fontWeight: 850,
+                    }}
+                  >
+                    {title}
+                  </h3>
+                )}
+                {description && (
+                  <p
+                    style={{
+                      ...textReset,
+                      ...clamp(2),
+                      margin: "0 auto",
+                      maxWidth: 850,
+                      fontSize: 23,
+                      lineHeight: 1.22,
+                      opacity: 0.72,
+                    }}
+                  >
+                    {description}
+                  </p>
+                )}
               </div>
               <div
                 style={{
@@ -1436,24 +1479,26 @@ function Artwork({
                   background: accent,
                 }}
               />
-              <h3
-                style={{
-                  ...textReset,
-                  ...clamp(2),
-                  position: "absolute",
-                  zIndex: 1,
-                  top: 220,
-                  left: 120,
-                  right: 120,
-                  textAlign: "center",
-                  fontSize: 60,
-                  lineHeight: 1.08,
-                  letterSpacing: "-0.055em",
-                  fontWeight: 400,
-                }}
-              >
-                {safeTitle}
-              </h3>
+              {title && (
+                <h3
+                  style={{
+                    ...textReset,
+                    ...clamp(2),
+                    position: "absolute",
+                    zIndex: 1,
+                    top: 220,
+                    left: 120,
+                    right: 120,
+                    textAlign: "center",
+                    fontSize: 60,
+                    lineHeight: 1.08,
+                    letterSpacing: "-0.055em",
+                    fontWeight: 400,
+                  }}
+                >
+                  {title}
+                </h3>
+              )}
               <div
                 style={{
                   position: "absolute",
@@ -1499,20 +1544,22 @@ function Artwork({
               >
                 {imageElement}
               </div>
-              <p
-                style={{
-                  ...textReset,
-                  position: "absolute",
-                  right: 98,
-                  bottom: 174,
-                  zIndex: 3,
-                  fontSize: 29,
-                  fontWeight: 400,
-                  letterSpacing: "-0.03em",
-                }}
-              >
-                {safeCta} →
-              </p>
+              {cta && (
+                <p
+                  style={{
+                    ...textReset,
+                    position: "absolute",
+                    right: 98,
+                    bottom: 174,
+                    zIndex: 3,
+                    fontSize: 29,
+                    fontWeight: 400,
+                    letterSpacing: "-0.03em",
+                  }}
+                >
+                  {cta} →
+                </p>
+              )}
             </div>
           )}
 
@@ -1579,44 +1626,50 @@ function Artwork({
                   justifyContent: "center",
                 }}
               >
-                <p
-                  style={{
-                    ...textReset,
-                    color: accent,
-                    fontSize: 20,
-                    fontWeight: 800,
-                  }}
-                >
-                  {safeEyebrow}
-                </p>
-                <h3
-                  style={{
-                    ...textReset,
-                    ...clamp(3),
-                    marginTop: 30,
-                    color: accent,
-                    fontSize: 53,
-                    lineHeight: 1.02,
-                    letterSpacing: "-0.05em",
-                    fontWeight: 850,
-                  }}
-                >
-                  {safeTitle}
-                </h3>
-                <span
-                  style={{
-                    alignSelf: "flex-start",
-                    marginTop: 32,
-                    borderRadius: 8,
-                    padding: "13px 22px",
-                    background: accent,
-                    color: background,
-                    fontSize: 20,
-                    fontWeight: 800,
-                  }}
-                >
-                  {safeCta}
-                </span>
+                {eyebrow && (
+                  <p
+                    style={{
+                      ...textReset,
+                      color: accent,
+                      fontSize: 20,
+                      fontWeight: 800,
+                    }}
+                  >
+                    {eyebrow}
+                  </p>
+                )}
+                {title && (
+                  <h3
+                    style={{
+                      ...textReset,
+                      ...clamp(3),
+                      marginTop: 30,
+                      color: accent,
+                      fontSize: 53,
+                      lineHeight: 1.02,
+                      letterSpacing: "-0.05em",
+                      fontWeight: 850,
+                    }}
+                  >
+                    {title}
+                  </h3>
+                )}
+                {cta && (
+                  <span
+                    style={{
+                      alignSelf: "flex-start",
+                      marginTop: 32,
+                      borderRadius: 8,
+                      padding: "13px 22px",
+                      background: accent,
+                      color: background,
+                      fontSize: 20,
+                      fontWeight: 800,
+                    }}
+                  >
+                    {cta}
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -1648,40 +1701,44 @@ function Artwork({
                   textAlign: "center",
                 }}
               >
-                <p
-                  style={{
-                    ...textReset,
-                    position: "absolute",
-                    top: 250,
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    borderRadius: 999,
-                    padding: "7px 16px",
-                    background: surface,
-                    color: background,
-                    fontSize: 18,
-                    fontWeight: 700,
-                  }}
-                >
-                  {safeEyebrow}
-                </p>
-                <h3
-                  style={{
-                    ...textReset,
-                    ...clamp(2),
-                    position: "absolute",
-                    top: 312,
-                    left: "50%",
-                    width: 560,
-                    transform: "translateX(-50%)",
-                    fontSize: 43,
-                    lineHeight: 1.06,
-                    letterSpacing: "-0.045em",
-                    fontWeight: 500,
-                  }}
-                >
-                  {safeTitle}
-                </h3>
+                {eyebrow && (
+                  <p
+                    style={{
+                      ...textReset,
+                      position: "absolute",
+                      top: 250,
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      borderRadius: 999,
+                      padding: "7px 16px",
+                      background: surface,
+                      color: background,
+                      fontSize: 18,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {eyebrow}
+                  </p>
+                )}
+                {title && (
+                  <h3
+                    style={{
+                      ...textReset,
+                      ...clamp(2),
+                      position: "absolute",
+                      top: 312,
+                      left: "50%",
+                      width: 560,
+                      transform: "translateX(-50%)",
+                      fontSize: 43,
+                      lineHeight: 1.06,
+                      letterSpacing: "-0.045em",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {title}
+                  </h3>
+                )}
                 <span
                   style={{
                     display: "grid",
@@ -1741,33 +1798,37 @@ function Artwork({
                   justifyContent: "center",
                 }}
               >
-                <h3
-                  style={{
-                    ...textReset,
-                    ...clamp(3),
-                    marginTop: 90,
-                    fontSize: 55,
-                    lineHeight: 1.07,
-                    letterSpacing: "-0.045em",
-                    fontWeight: 800,
-                  }}
-                >
-                  {safeTitle}
-                </h3>
-                <span
-                  style={{
-                    alignSelf: "flex-start",
-                    marginTop: 84,
-                    borderRadius: 5,
-                    padding: "13px 31px",
-                    background: accent,
-                    color: background,
-                    fontSize: 19,
-                    fontWeight: 800,
-                  }}
-                >
-                  {safeCta}
-                </span>
+                {title && (
+                  <h3
+                    style={{
+                      ...textReset,
+                      ...clamp(3),
+                      marginTop: 90,
+                      fontSize: 55,
+                      lineHeight: 1.07,
+                      letterSpacing: "-0.045em",
+                      fontWeight: 800,
+                    }}
+                  >
+                    {title}
+                  </h3>
+                )}
+                {cta && (
+                  <span
+                    style={{
+                      alignSelf: "flex-start",
+                      marginTop: 84,
+                      borderRadius: 5,
+                      padding: "13px 31px",
+                      background: accent,
+                      color: background,
+                      fontSize: 19,
+                      fontWeight: 800,
+                    }}
+                  >
+                    {cta}
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -1802,45 +1863,51 @@ function Artwork({
                   }}
                 >
                   <div>
-                    <span
-                      style={{
-                        display: "inline-block",
-                        borderRadius: 7,
-                        padding: "8px 12px",
-                        background: text,
-                        color: background,
-                        fontSize: 15,
-                        fontWeight: 800,
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      {safeDealBadge}
-                    </span>
-                    <h3
-                      style={{
-                        ...textReset,
-                        ...clamp(2),
-                        marginTop: 28,
-                        fontSize: 60,
-                        lineHeight: 0.98,
-                        letterSpacing: "-0.06em",
-                        fontWeight: 900,
-                      }}
-                    >
-                      {safeTitle}
-                    </h3>
-                    <p
-                      style={{
-                        ...textReset,
-                        ...clamp(3),
-                        marginTop: 18,
-                        fontSize: 20,
-                        lineHeight: 1.35,
-                        opacity: 0.72,
-                      }}
-                    >
-                      {safeDescription}
-                    </p>
+                    {dealBadge && (
+                      <span
+                        style={{
+                          display: "inline-block",
+                          borderRadius: 7,
+                          padding: "8px 12px",
+                          background: text,
+                          color: background,
+                          fontSize: 15,
+                          fontWeight: 800,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {dealBadge}
+                      </span>
+                    )}
+                    {title && (
+                      <h3
+                        style={{
+                          ...textReset,
+                          ...clamp(2),
+                          marginTop: 28,
+                          fontSize: 60,
+                          lineHeight: 0.98,
+                          letterSpacing: "-0.06em",
+                          fontWeight: 900,
+                        }}
+                      >
+                        {title}
+                      </h3>
+                    )}
+                    {description && (
+                      <p
+                        style={{
+                          ...textReset,
+                          ...clamp(3),
+                          marginTop: 18,
+                          fontSize: 20,
+                          lineHeight: 1.35,
+                          opacity: 0.72,
+                        }}
+                      >
+                        {description}
+                      </p>
+                    )}
                     <div
                       style={{
                         height: 10,
@@ -1848,17 +1915,19 @@ function Artwork({
                         background: `${text}20`,
                       }}
                     />
-                    <p
-                      style={{
-                        ...textReset,
-                        marginTop: 28,
-                        fontSize: 19,
-                        fontWeight: 750,
-                      }}
-                    >
-                      <span style={{ color: "#FFAC28" }}>★</span>{" "}
-                      {safeDealRating}
-                    </p>
+                    {dealRating && (
+                      <p
+                        style={{
+                          ...textReset,
+                          marginTop: 28,
+                          fontSize: 19,
+                          fontWeight: 750,
+                        }}
+                      >
+                        <span style={{ color: "#FFAC28" }}>★</span>{" "}
+                        {dealRating}
+                      </p>
+                    )}
                   </div>
                   <div
                     style={{
@@ -1868,22 +1937,26 @@ function Artwork({
                       gap: 18,
                     }}
                   >
-                    <span style={{ fontSize: 27, fontWeight: 850 }}>
-                      {safeDealPrice}
-                    </span>
-                    <span
-                      style={{
-                        flexShrink: 0,
-                        borderRadius: 8,
-                        padding: "13px 18px",
-                        background: text,
-                        color: background,
-                        fontSize: 20,
-                        fontWeight: 800,
-                      }}
-                    >
-                      {safeCta}
-                    </span>
+                    {dealPrice && (
+                      <span style={{ fontSize: 27, fontWeight: 850 }}>
+                        {dealPrice}
+                      </span>
+                    )}
+                    {cta && (
+                      <span
+                        style={{
+                          flexShrink: 0,
+                          borderRadius: 8,
+                          padding: "13px 18px",
+                          background: text,
+                          color: background,
+                          fontSize: 20,
+                          fontWeight: 800,
+                        }}
+                      >
+                        {cta}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div
@@ -1919,30 +1992,34 @@ function Artwork({
                   borderLeft: `14px solid ${accent}`,
                 }}
               >
-                <p
-                  style={{
-                    ...textReset,
-                    marginTop: 78,
-                    fontSize: 31,
-                    fontWeight: 800,
-                  }}
-                >
-                  {safeEyebrow}
-                </p>
-                <div>
-                  <h3
+                {eyebrow && (
+                  <p
                     style={{
                       ...textReset,
-                      ...clamp(2),
-                      marginTop: 80,
-                      fontSize: 54,
-                      lineHeight: 1.04,
-                      letterSpacing: "-0.055em",
+                      marginTop: 78,
+                      fontSize: 31,
                       fontWeight: 800,
                     }}
                   >
-                    {safeTitle}
-                  </h3>
+                    {eyebrow}
+                  </p>
+                )}
+                <div>
+                  {title && (
+                    <h3
+                      style={{
+                        ...textReset,
+                        ...clamp(2),
+                        marginTop: 80,
+                        fontSize: 54,
+                        lineHeight: 1.04,
+                        letterSpacing: "-0.055em",
+                        fontWeight: 800,
+                      }}
+                    >
+                      {title}
+                    </h3>
+                  )}
                   <div
                     style={{
                       height: 2,
@@ -1950,79 +2027,87 @@ function Artwork({
                       background: `${text}33`,
                     }}
                   />
-                  <p
+                  {description && (
+                    <p
+                      style={{
+                        ...textReset,
+                        ...clamp(3),
+                        fontSize: 18,
+                        lineHeight: 1.35,
+                        opacity: 0.8,
+                      }}
+                    >
+                      {description}
+                    </p>
+                  )}
+                </div>
+                {cta && (
+                  <span
                     style={{
-                      ...textReset,
-                      ...clamp(3),
-                      fontSize: 18,
-                      lineHeight: 1.35,
-                      opacity: 0.8,
+                      alignSelf: "flex-start",
+                      marginTop: 82,
+                      padding: "17px 32px",
+                      background: accent,
+                      color: background,
+                      fontSize: 19,
+                      fontWeight: 900,
+                      textTransform: "uppercase",
                     }}
                   >
-                    {safeDescription}
-                  </p>
-                </div>
-                <span
-                  style={{
-                    alignSelf: "flex-start",
-                    marginTop: 82,
-                    padding: "17px 32px",
-                    background: accent,
-                    color: background,
-                    fontSize: 19,
-                    fontWeight: 900,
-                    textTransform: "uppercase",
-                  }}
-                >
-                  {safeCta}
-                </span>
+                    {cta}
+                  </span>
+                )}
               </div>
               <div
                 style={{
                   position: "relative",
                 }}
               >
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 48,
-                    left: 44,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 14,
-                    color: accent,
-                    fontSize: 22,
-                    fontWeight: 850,
-                    textTransform: "uppercase",
-                    zIndex: 2,
-                  }}
-                >
+                {vaultStatus && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 48,
+                      left: 44,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 14,
+                      color: accent,
+                      fontSize: 22,
+                      fontWeight: 850,
+                      textTransform: "uppercase",
+                      zIndex: 2,
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: "50%",
+                        background: accent,
+                      }}
+                    />
+                    {vaultStatus}
+                  </div>
+                )}
+                {vaultLabel && (
                   <span
                     style={{
-                      width: 16,
-                      height: 16,
-                      borderRadius: "50%",
+                      position: "absolute",
+                      top: 88,
+                      left: 54,
+                      padding: "12px 16px",
                       background: accent,
+                      color: background,
+                      fontSize: 21,
+                      fontWeight: 900,
+                      textTransform: "uppercase",
+                      zIndex: 2,
                     }}
-                  />
-                  {safeVaultStatus}
-                </div>
-                <span
-                  style={{
-                    position: "absolute",
-                    top: 88,
-                    left: 54,
-                    padding: "12px 16px",
-                    background: accent,
-                    color: background,
-                    fontSize: 21,
-                    fontWeight: 900,
-                    textTransform: "uppercase",
-                    zIndex: 2,
-                  }}
-                >
-                  {safeVaultLabel}
-                </span>
+                  >
+                    {vaultLabel}
+                  </span>
+                )}
                 <div
                   style={{
                     position: "absolute",
@@ -2062,18 +2147,20 @@ function Artwork({
                 backgroundSize: "540px 430px",
               }}
             >
-              <p
-                style={{
-                  ...textReset,
-                  position: "absolute",
-                  top: 42,
-                  left: 90,
-                  fontSize: 26,
-                  fontWeight: 800,
-                }}
-              >
-                {safeEyebrow}
-              </p>
+              {eyebrow && (
+                <p
+                  style={{
+                    ...textReset,
+                    position: "absolute",
+                    top: 42,
+                    left: 90,
+                    fontSize: 26,
+                    fontWeight: 800,
+                  }}
+                >
+                  {eyebrow}
+                </p>
+              )}
               {[
                 [60, 100],
                 [600, 100],
@@ -2103,61 +2190,71 @@ function Artwork({
                   width: 525,
                 }}
               >
-                <p style={{ ...textReset, fontSize: 20, fontWeight: 800 }}>
-                  {safeGridKicker}
-                </p>
-                <h3
-                  style={{
-                    ...textReset,
-                    ...clamp(3),
-                    marginTop: 28,
-                    fontSize: 53,
-                    lineHeight: 0.97,
-                    letterSpacing: "-0.055em",
-                    fontWeight: 850,
-                  }}
-                >
-                  {safeTitle}
-                </h3>
-                <p
-                  style={{
-                    ...textReset,
-                    ...clamp(3),
-                    marginTop: 48,
-                    fontSize: 19,
-                    lineHeight: 1.35,
-                    opacity: 0.76,
-                  }}
-                >
-                  {safeDescription}
-                </p>
+                {gridKicker && (
+                  <p style={{ ...textReset, fontSize: 20, fontWeight: 800 }}>
+                    {gridKicker}
+                  </p>
+                )}
+                {title && (
+                  <h3
+                    style={{
+                      ...textReset,
+                      ...clamp(3),
+                      marginTop: 28,
+                      fontSize: 53,
+                      lineHeight: 0.97,
+                      letterSpacing: "-0.055em",
+                      fontWeight: 850,
+                    }}
+                  >
+                    {title}
+                  </h3>
+                )}
+                {description && (
+                  <p
+                    style={{
+                      ...textReset,
+                      ...clamp(3),
+                      marginTop: 48,
+                      fontSize: 19,
+                      lineHeight: 1.35,
+                      opacity: 0.76,
+                    }}
+                  >
+                    {description}
+                  </p>
+                )}
               </div>
-              <span
-                style={{
-                  position: "absolute",
-                  bottom: 24,
-                  left: 90,
-                  borderRadius: 999,
-                  padding: "14px 24px",
-                  background: text,
-                  color: background,
-                  fontSize: 19,
-                  fontWeight: 800,
-                }}
-              >
-                {safeCta}
-              </span>
-              <span
-                style={{
-                  position: "absolute",
-                  right: 90,
-                  bottom: 34,
-                  fontSize: 23,
-                  fontWeight: 800,
-                }}
-              >
-                {safeGridFooter}
-              </span>
+              {cta && (
+                <span
+                  style={{
+                    position: "absolute",
+                    bottom: 24,
+                    left: 90,
+                    borderRadius: 999,
+                    padding: "14px 24px",
+                    background: text,
+                    color: background,
+                    fontSize: 19,
+                    fontWeight: 800,
+                  }}
+                >
+                  {cta}
+                </span>
+              )}
+              {gridFooter && (
+                <span
+                  style={{
+                    position: "absolute",
+                    right: 90,
+                    bottom: 34,
+                    fontSize: 23,
+                    fontWeight: 800,
+                  }}
+                >
+                  {gridFooter}
+                </span>
+              )}
               <div
                 style={{
                   position: "absolute",
@@ -2211,47 +2308,53 @@ function Artwork({
                   paddingTop: 149,
                 }}
               >
-                <p
-                  style={{
-                    ...textReset,
-                    display: "inline-block",
-                    alignSelf: "flex-start",
-                    borderRadius: 999,
-                    padding: "8px 16px",
-                    background: `${text}12`,
-                    fontSize: 18,
-                    fontWeight: 700,
-                  }}
-                >
-                  {safeEyebrow}
-                </p>
-                <h3
-                  style={{
-                    ...textReset,
-                    ...clamp(3),
-                    marginTop: 28,
-                    fontSize: 55,
-                    lineHeight: 1.08,
-                    letterSpacing: "-0.05em",
-                    fontWeight: 850,
-                  }}
-                >
-                  {safeTitle}
-                </h3>
-                <span
-                  style={{
-                    alignSelf: "flex-start",
-                    marginTop: 40,
-                    borderRadius: 999,
-                    padding: "14px 24px",
-                    background: accent,
-                    color: background,
-                    fontSize: 19,
-                    fontWeight: 800,
-                  }}
-                >
-                  {safeCta}
-                </span>
+                {eyebrow && (
+                  <p
+                    style={{
+                      ...textReset,
+                      display: "inline-block",
+                      alignSelf: "flex-start",
+                      borderRadius: 999,
+                      padding: "8px 16px",
+                      background: `${text}12`,
+                      fontSize: 18,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {eyebrow}
+                  </p>
+                )}
+                {title && (
+                  <h3
+                    style={{
+                      ...textReset,
+                      ...clamp(3),
+                      marginTop: 28,
+                      fontSize: 55,
+                      lineHeight: 1.08,
+                      letterSpacing: "-0.05em",
+                      fontWeight: 850,
+                    }}
+                  >
+                    {title}
+                  </h3>
+                )}
+                {cta && (
+                  <span
+                    style={{
+                      alignSelf: "flex-start",
+                      marginTop: 40,
+                      borderRadius: 999,
+                      padding: "14px 24px",
+                      background: accent,
+                      color: background,
+                      fontSize: 19,
+                      fontWeight: 800,
+                    }}
+                  >
+                    {cta}
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -2259,6 +2362,50 @@ function Artwork({
       </foreignObject>
     </svg>
   );
+}
+
+function svgToDataUrl(svg: string) {
+  const bytes = new TextEncoder().encode(svg);
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return `data:image/svg+xml;charset=utf-8;base64,${btoa(binary)}`;
+}
+
+async function fetchImageAsDataUrl(url: string): Promise<string> {
+  const response = await fetch(`/api/image-fetch?url=${encodeURIComponent(url)}`);
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null);
+    throw new Error(payload?.error || "A kép nem tölthető le.");
+  }
+  const blob = await response.blob();
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") resolve(reader.result);
+      else reject(new Error("A kép nem alakítható át."));
+    };
+    reader.onerror = () => reject(new Error("A kép nem olvasható be."));
+    reader.readAsDataURL(blob);
+  });
+}
+
+// A távoli kép-URL-eket data URL-re cseréli a klónozott SVG-ben exportálás
+// előtt, különben a <canvas> "tainted" lesz, és a PNG-mentés csendben
+// meghiúsul (crossOrigin nélkül betöltött kép nem olvasható ki canvasból).
+async function inlineRemoteImages(root: SVGSVGElement) {
+  const images = Array.from(root.querySelectorAll("img")).filter((img) =>
+    /^https?:\/\//i.test(img.getAttribute("src") ?? ""),
+  );
+  if (images.length === 0) return;
+
+  const cache = new Map<string, string>();
+  for (const img of images) {
+    const src = img.getAttribute("src")!;
+    if (!cache.has(src)) {
+      cache.set(src, await fetchImageAsDataUrl(src));
+    }
+    img.setAttribute("src", cache.get(src)!);
+  }
 }
 
 function filenameFromUrl(url: string) {
@@ -2440,6 +2587,7 @@ export function OgImageDesigner({
   const [gridKicker, setGridKicker] = useState("UX/UI designer ügynökség");
   const [gridFooter, setGridFooter] = useState("Kiegészítő");
   const [launchCampaign, setLaunchCampaign] = useState("Kiemelt kampány");
+  const [launchCampaignColor, setLaunchCampaignColor] = useState("#264BB3");
   const [launchOffer, setLaunchOffer] = useState("Egyedi ajánlat");
   const [quoteAuthor, setQuoteAuthor] = useState("Szerző neve");
   const [quoteAuthorImage, setQuoteAuthorImage] = useState("");
@@ -2454,6 +2602,7 @@ export function OgImageDesigner({
   const [exportState, setExportState] = useState<
     "idle" | "exporting" | "error"
   >("idle");
+  const [exportErrorMessage, setExportErrorMessage] = useState("");
   const [copyState, setCopyState] = useState<"idle" | "copied" | "error">(
     "idle",
   );
@@ -2497,7 +2646,7 @@ export function OgImageDesigner({
   async function exportPng() {
     if (!artworkRef.current) return;
     setExportState("exporting");
-    let svgUrl = "";
+    setExportErrorMessage("");
 
     try {
       const clone = artworkRef.current.cloneNode(true) as SVGSVGElement;
@@ -2507,13 +2656,14 @@ export function OgImageDesigner({
       clone
         .querySelector("foreignObject > div")
         ?.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+      await inlineRemoteImages(clone);
 
       const serialized = new XMLSerializer().serializeToString(clone);
-      svgUrl = URL.createObjectURL(
-        new Blob([serialized], { type: "image/svg+xml;charset=utf-8" }),
-      );
+      // Chrome "tainted"-nek jelöli a canvast, ha egy foreignObject-et
+      // tartalmazó SVG-t blob: URL-ként töltünk be <img>-be — base64 data
+      // URI-ként betöltve ez a védelem nem lép életbe.
       const rasterImage = new Image();
-      rasterImage.src = svgUrl;
+      rasterImage.src = svgToDataUrl(serialized);
       await rasterImage.decode();
 
       const canvas = document.createElement("canvas");
@@ -2539,10 +2689,9 @@ export function OgImageDesigner({
       link.click();
       setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
       setExportState("idle");
-    } catch {
+    } catch (error) {
+      setExportErrorMessage(error instanceof Error ? error.message : "");
       setExportState("error");
-    } finally {
-      if (svgUrl) URL.revokeObjectURL(svgUrl);
     }
   }
 
@@ -2562,6 +2711,7 @@ export function OgImageDesigner({
     gridKicker,
     gridFooter,
     launchCampaign,
+    launchCampaignColor,
     launchOffer,
     quoteAuthor,
     quoteAuthorImage,
@@ -2682,13 +2832,13 @@ export function OgImageDesigner({
                       </FieldLabel>
                       <CharacterHint
                         current={imageDescription.length}
-                        limit={120}
+                        limit={160}
                       />
                     </div>
                     <Textarea
                       id="og-image-content-description"
                       value={imageDescription}
-                      maxLength={180}
+                      maxLength={240}
                       rows={3}
                       onChange={(event) =>
                         setImageDescription(event.target.value)
@@ -2849,6 +2999,11 @@ export function OgImageDesigner({
                           onChange={(event) => setLaunchOffer(event.target.value)}
                         />
                       </Field>
+                      <ColorControl
+                        label="Kampánycímke szövegszíne"
+                        value={launchCampaignColor}
+                        onChange={setLaunchCampaignColor}
+                      />
                     </div>
                   )}
 
@@ -3255,8 +3410,9 @@ export function OgImageDesigner({
                 role="alert"
                 className="border-t px-5 py-3 text-sm text-destructive"
               >
-                A PNG export nem sikerült. Próbálj másik helyben feltöltött
-                képet.
+                {exportErrorMessage
+                  ? `A PNG export nem sikerült: ${exportErrorMessage}`
+                  : "A PNG export nem sikerült. Próbálj másik helyben feltöltött képet."}
               </p>
             )}
 
