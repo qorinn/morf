@@ -2,6 +2,9 @@
 import { buttonVariants } from "@/components/ui/button";
 import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { commonMessages } from "@/i18n/common";
+import { getMessages } from "@/i18n/types";
+import type { Locale } from "@/lib/locale";
 
 interface Action {
   href: string;
@@ -13,15 +16,12 @@ interface Props {
   description: string;
   primaryAction: Action;
   secondaryAction?: Action;
+  locale?: Locale;
 }
 
-const { title, description, primaryAction, secondaryAction } = Astro.props;
-const benefits = [
-  "Ingyenes",
-  "Reklámmentes",
-  "Regisztráció nélkül",
-  "Napi limit nélkül",
-];
+const { title, description, primaryAction, secondaryAction, locale = "hu" } = Astro.props;
+const copy = getMessages(commonMessages, locale);
+const benefits = copy.benefits;
 ---
 
 <section class="morf-section-normal">
@@ -55,7 +55,7 @@ const benefits = [
         )
       }
     </div>
-    <ul class="text-muted-foreground flex max-w-3xl flex-wrap justify-center gap-x-4 gap-y-2 text-sm" aria-label="Általános előnyök">
+    <ul class="text-muted-foreground flex max-w-3xl flex-wrap justify-center gap-x-4 gap-y-2 text-sm" aria-label={copy.toolHero.benefitsLabel}>
       {benefits.map((benefit) => (
         <li class="flex items-center gap-1.5 whitespace-nowrap">
           <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-4 text-primary" strokeWidth={2} aria-hidden="true" />

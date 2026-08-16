@@ -81,7 +81,7 @@ const structuredData = {
   canonicalPath="/video-konvertalo"
   structuredData={structuredData}
 >
-  <SiteHeader active="videoConverter" category="video" />
+  <SiteHeader active="videoConverter" category="video" route="videoConverter" />
 
   <main>
     <ToolHero
@@ -93,7 +93,7 @@ const structuredData = {
 
     <VideoConverterWorkspace client:load />
 
-    <RelatedTools hrefs={["/video-gyorsitas-lassitas", "/video-kepekre-bontasa"]} />
+    <RelatedTools routeIds={["videoSpeed", "videoFrames"]} />
 
     <section id="hogyan-mukodik" class="morf-section-normal scroll-mt-6">
       <div class="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-14 sm:px-6 sm:py-18 lg:px-8">

@@ -2,7 +2,10 @@
 import fullLogo from "@/assets/brand/morf-logo-full.svg";
 import minimalLogo from "@/assets/brand/morf-logo-minimal.svg";
 import { buttonVariants } from "@/components/ui/button";
-import type { Locale } from "@/lib/locale";
+import { commonMessages } from "@/i18n/common";
+import { getMessages } from "@/i18n/types";
+import { getLocalizedPath, type Locale } from "@/lib/locale";
+import { getLanguageSwitchTarget, getLocalizedRoute, type LocalizedRouteId } from "@/lib/localized-routes";
 
 interface Props {
   active?:
@@ -17,6 +20,7 @@ interface Props {
     | null;
   category?: "kepek" | "video" | "web";
   locale?: Locale;
+  route?: LocalizedRouteId;
   languageHref?: string;
   languageLabel?: string;
 }
@@ -25,34 +29,19 @@ const {
   active = "home",
   category,
   locale = "hu",
+  route,
   languageHref,
   languageLabel,
 } = Astro.props;
 
-const copy = locale === "en" ? {
-  announcementStrong: "Work in progress.",
-  announcement: "Morf is still being built and has not been fully tested.",
-  allTools: "All tools",
-  allToolsMobile: "Tools",
-  homeLabel: "Morf home",
-} : {
-  announcementStrong: "Nem kész verzió.",
-  announcement: "A Morf jelenleg még épül, és nincs tesztelve.",
-  allTools: "Összes eszköz",
-  allToolsMobile: "Eszközök",
-  homeLabel: "Morf kezdőlap",
-};
-const categories = locale === "en" ? {
-  kepek: { label: "Image tools", mobileLabel: "Images" },
-  video: { label: "Video tools", mobileLabel: "Video" },
-  web: { label: "Web tools", mobileLabel: "Web" },
-} : {
-  kepek: { label: "Képes eszközök", mobileLabel: "Képek" },
-  video: { label: "Videós eszközök", mobileLabel: "Videó" },
-  web: { label: "Webes eszközök", mobileLabel: "Web" },
-} as const;
+const common = getMessages(commonMessages, locale);
+const copy = common.header;
+const categories = copy.categories;
 const currentCategory = category ? categories[category] : undefined;
-const homeHref = locale === "en" ? "/en/" : "/";
+const homeHref = route === "home" ? getLocalizedRoute("home", locale) : getLocalizedPath(locale);
+const switchTarget = route ? getLanguageSwitchTarget(route, locale) : undefined;
+const resolvedLanguageHref = languageHref ?? switchTarget?.href;
+const resolvedLanguageLabel = languageLabel ?? switchTarget?.locale.toUpperCase();
 ---
 
 <header id="siteHeader">
@@ -72,7 +61,7 @@ const homeHref = locale === "en" ? "/en/" : "/";
 
   <nav
     class="mx-auto flex w-full max-w-7xl items-center justify-between px-4 pt-5 sm:px-6 lg:px-8"
-    aria-label="Fő navigáció"
+    aria-label={copy.mainNavigationLabel}
   >
     <a
       href={homeHref}
@@ -110,13 +99,13 @@ const homeHref = locale === "en" ? "/en/" : "/";
         )
       }
       {
-        languageHref && languageLabel && (
+        resolvedLanguageHref && resolvedLanguageLabel && (
           <a
-            href={languageHref}
+            href={resolvedLanguageHref}
             class={buttonVariants({ variant: "outline", size: "sm" })}
-            aria-label={locale === "en" ? "Switch to Hungarian" : "Váltás angol nyelvre"}
+            aria-label={copy.switchLanguage}
           >
-            {languageLabel}
+            {resolvedLanguageLabel}
           </a>
         )
       }

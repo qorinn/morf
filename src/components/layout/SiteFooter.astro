@@ -1,29 +1,20 @@
 ---
+import { commonMessages } from "@/i18n/common";
+import { getTools } from "@/data/tool-catalog";
+import { getMessages } from "@/i18n/types";
 import type { Locale } from "@/lib/locale";
+import { getLocalizedRoute } from "@/lib/localized-routes";
 
 interface Props {
   locale?: Locale;
 }
 
 const { locale = "hu" } = Astro.props;
-const copy = locale === "en" ? {
-  madeBy: "Made by:",
-  navLabel: "Footer navigation",
-  home: "Home",
-  imageConverter: "Image converter",
-  faviconGenerator: "Favicon generator",
-  browserSupport: "Browser support",
-  privacy: "Privacy",
-} : {
-  madeBy: "Készítette:",
-  navLabel: "Lábléc navigáció",
-  home: "Főoldal",
-  imageConverter: "Képkonvertáló",
-  faviconGenerator: "Favicon generátor",
-  browserSupport: "Böngészőtámogatás",
-  privacy: "Adatvédelem",
-};
-const homeHref = locale === "en" ? "/en/" : "/";
+const common = getMessages(commonMessages, locale);
+const homeHref = getLocalizedRoute("home", locale);
+const catalog = getTools(locale);
+const imageConverter = catalog.find((tool) => tool.id === "imageConverter");
+const faviconGenerator = catalog.find((tool) => tool.id === "faviconGenerator");
 ---
 
 <footer
@@ -32,7 +23,7 @@ const homeHref = locale === "en" ? "/en/" : "/";
   <div class="flex flex-col gap-1">
     <p>© {new Date().getFullYear()} Morf</p>
     <p>
-      {copy.madeBy}{" "}
+      {common.footer.madeBy}{" "}
       <a
         class="hover:text-foreground rounded-sm underline-offset-4 transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
         href="https://www.paladi-web.hu/"
@@ -42,20 +33,16 @@ const homeHref = locale === "en" ? "/en/" : "/";
     </p>
   </div>
 
-  <nav class="flex flex-wrap gap-x-5 gap-y-2" aria-label={copy.navLabel}>
-    <a class="hover:text-foreground transition-colors" href={homeHref}>{copy.home}</a>
-    <a class="hover:text-foreground transition-colors" href="/kep-konvertalo"
-      >{copy.imageConverter}</a
-    >
-    <a class="hover:text-foreground transition-colors" href="/favicon-generator"
-      >{copy.faviconGenerator}</a
-    >
-    <a class="hover:text-foreground transition-colors" href="/bongeszo-tamogatas"
-      >{copy.browserSupport}</a
+  <nav class="flex flex-wrap gap-x-5 gap-y-2" aria-label={common.footer.navLabel}>
+    <a class="hover:text-foreground transition-colors" href={homeHref}>{common.navigation.home}</a>
+    {imageConverter && <a class="hover:text-foreground transition-colors" href={imageConverter.href}>{imageConverter.title}</a>}
+    {faviconGenerator && <a class="hover:text-foreground transition-colors" href={faviconGenerator.href}>{faviconGenerator.title}</a>}
+    <a class="hover:text-foreground transition-colors" href={getLocalizedRoute("browserSupport", locale)}
+      >{common.navigation.browserSupport}</a
     >
     <a
       class="hover:text-foreground transition-colors"
-      href="/adatvedelmi-tajekoztato">{copy.privacy}</a
+      href={getLocalizedRoute("privacy", locale)}>{common.navigation.privacy}</a
     >
   </nav>
 </footer>

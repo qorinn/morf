@@ -5,6 +5,7 @@ import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/comp
 import MainLayout from "@/layouts/main.astro";
 import { getHomeCopy, type HomeToolId } from "@/i18n/home";
 import type { Locale } from "@/lib/locale";
+import { getLocalizedRoute } from "@/lib/localized-routes";
 import { ArrowRight02Icon, BrowserIcon, FileZipIcon, Film01Icon, Image02Icon, Resize01Icon, Share01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import HomeHeroGravity from "./HomeHeroGravity";
@@ -15,9 +16,9 @@ const { locale } = Astro.props;
 const copy = getHomeCopy(locale);
 const isEnglish = locale === "en";
 const tools: Array<{ id: HomeToolId; href: string; icon: typeof Image02Icon; category: "images" | "video" | "web" }> = [
-  { id: "imageConverter", href: "/kep-konvertalo", icon: Image02Icon, category: "images" },
-  { id: "imageOptimizer", href: "/kep-konvertalo", icon: FileZipIcon, category: "images" },
-  { id: "imageResizer", href: "/kep-konvertalo", icon: Resize01Icon, category: "images" },
+  { id: "imageConverter", href: getLocalizedRoute("imageConverter", locale), icon: Image02Icon, category: "images" },
+  { id: "imageOptimizer", href: getLocalizedRoute("imageConverter", locale), icon: FileZipIcon, category: "images" },
+  { id: "imageResizer", href: getLocalizedRoute("imageConverter", locale), icon: Resize01Icon, category: "images" },
   { id: "videoFrames", href: "/video-kepekre-bontasa", icon: Film01Icon, category: "video" },
   { id: "videoSpeed", href: "/video-gyorsitas-lassitas", icon: Film01Icon, category: "video" },
   { id: "videoConverter", href: "/video-konvertalo", icon: Film01Icon, category: "video" },
@@ -25,12 +26,12 @@ const tools: Array<{ id: HomeToolId; href: string; icon: typeof Image02Icon; cat
   { id: "favicon", href: "/favicon-generator", icon: BrowserIcon, category: "web" },
 ];
 const categories = ["images", "video", "web"] as const;
-const canonicalPath = isEnglish ? "/en/" : "/";
-const alternateLocales = [{ locale: "hu", path: "/" }, { locale: "en", path: "/en/" }] as const;
+const canonicalPath = getLocalizedRoute("home", locale);
+const alternateLocales = [{ locale: "hu", path: getLocalizedRoute("home", "hu") }, { locale: "en", path: getLocalizedRoute("home", "en") }] as const;
 ---
 
 <MainLayout locale={locale} title={copy.title} description={copy.description} canonicalPath={canonicalPath} alternateLocales={[...alternateLocales]}>
-  <SiteHeader active="home" locale={locale} languageHref={isEnglish ? "/" : "/en/"} languageLabel={isEnglish ? "HU" : "EN"} />
+  <SiteHeader active="home" locale={locale} route="home" />
   <main class="overflow-clip">
     <HomeHeroGravity client:load locale={locale} />
     <section id="eszkozok" aria-labelledby="eszkozok-title" class="mx-auto flex w-full max-w-7xl scroll-mt-6 flex-col gap-8 px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24">

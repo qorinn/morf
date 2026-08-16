@@ -48,7 +48,7 @@ const faqItems = [
   description="Készíts favicon.ico, PNG, Apple Touch és PWA ikoncsomagot ingyen, reklámmentesen, regisztráció nélkül. A képed nem kerül szerverre."
   canonicalPath="/favicon-generator"
 >
-  <SiteHeader active="favicon" category="web" />
+  <SiteHeader active="favicon" category="web" route="faviconGenerator" />
 
   <main>
     <ToolHero
@@ -66,7 +66,7 @@ const faqItems = [
 
     <FaviconWorkspace client:load />
 
-    <RelatedTools hrefs={["/kep-konvertalo", "/megosztasi-elozet-tervezo"]} />
+    <RelatedTools routeIds={["imageConverter", "sharePreview"]} />
 
     <FaviconPackageGuide />
 

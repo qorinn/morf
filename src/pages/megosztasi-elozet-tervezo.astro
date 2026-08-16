@@ -48,12 +48,12 @@ const faqItems = [
   description="Ingyenes, reklámmentes Open Graph ellenőrző Facebook, LinkedIn, X, WhatsApp és Discord előnézethez. Nincs regisztráció vagy napi limit."
   canonicalPath="/megosztasi-elozet-tervezo"
 >
-  <SiteHeader active="sharePreview" category="web" />
+  <SiteHeader active="sharePreview" category="web" route="sharePreview" />
 
   <main>
     <SharePreviewWorkspace client:load />
 
-    <RelatedTools hrefs={["/favicon-generator", "/kep-konvertalo"]} />
+    <RelatedTools routeIds={["faviconGenerator", "imageConverter"]} />
 
     <PrivacySection
       title="A képed nálad marad"

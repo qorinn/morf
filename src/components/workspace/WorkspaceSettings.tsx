@@ -31,6 +31,8 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { ImageFormat } from "@/features/image-processing/types";
 import { imagePresets, type PresetId } from "@/lib/presets/image-presets";
 import { cn } from "@/lib/utils";
+import type { ImageConverterMessages } from "@/i18n/image-converter";
+import { useWorkspaceI18n } from "@/components/workspace/WorkspaceI18nProvider";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 
 type WorkspaceSettingsProps = {
@@ -46,12 +48,6 @@ const presetIcons = {
   custom: Settings02Icon,
 } satisfies Record<PresetId, typeof BrowserIcon>;
 
-const presetItems = imagePresets.map((preset) => ({
-  icon: presetIcons[preset.id],
-  label: preset.recipe.name,
-  value: preset.id,
-}));
-
 const outputFormats: Array<{ value: ImageFormat; label: string }> = [
   { value: "jpeg", label: "JPG" },
   { value: "png", label: "PNG" },
@@ -66,6 +62,13 @@ function clampNumber(value: string, min: number, max: number): number {
 }
 
 export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
+  const { locale, messages } = useWorkspaceI18n<ImageConverterMessages>();
+  const copy = messages.workspace;
+  const presetItems = imagePresets.map((preset) => ({
+    icon: presetIcons[preset.id],
+    label: messages.presets[preset.id].name,
+    value: preset.id,
+  }));
   const groups = useWorkspaceStore((state) => state.groups);
   const activeGroupId = useWorkspaceStore((state) => state.activeGroupId);
   const applyPresetToGroup = useWorkspaceStore(
@@ -77,9 +80,6 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
   const activeGroup =
     groups.find((group) => group.id === activeGroupId) ?? groups[0];
   const settings = activeGroup.settings;
-  const activePreset = imagePresets.find(
-    (preset) => preset.id === settings.presetId,
-  );
   const qualityDisabled =
     settings.outputFormat === "png" ||
     settings.maxFileSizeKb !== null ||
@@ -90,13 +90,13 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
       <div>
         <CardTitle>{activeGroup.name}</CardTitle>
         <CardDescription>
-          A kijelölt csoport konvertálási beállításai.
+          {copy.selectedGroupSettings}
         </CardDescription>
       </div>
 
       <Field data-disabled={disabled || undefined}>
         <FieldLabel htmlFor={`morf-preset-${activeGroup.id}`}>
-          Felhasználási cél
+          {copy.usagePurpose}
         </FieldLabel>
         <Select
           items={presetItems}
@@ -144,12 +144,14 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
             </SelectGroup>
           </SelectContent>
         </Select>
-        <FieldDescription>{activePreset?.description}</FieldDescription>
+        <FieldDescription>
+          {messages.presets[settings.presetId].description}
+        </FieldDescription>
       </Field>
 
       <Field data-disabled={disabled || undefined}>
         <FieldLabel id={`output-format-label-${activeGroup.id}`}>
-          Kimeneti formátum
+          {copy.outputFormat}
         </FieldLabel>
         <ToggleGroup
           aria-labelledby={`output-format-label-${activeGroup.id}`}
@@ -206,12 +208,12 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
           />
           <FieldContent>
             <FieldLabel htmlFor={`lossless-${activeGroup.id}`}>
-              Veszteségmentes mód
+              {copy.lossless}
             </FieldLabel>
             <FieldDescription>
               {settings.outputFormat === "jpeg"
-                ? "A JPG nem támogat valódi veszteségmentes kódolást, ezért ennél a formátumnál a legmagasabb elérhető minőséget használja."
-                : "Az eredeti felbontást megtartja, és veszteségmentesen kódol."}
+                ? copy.losslessJpeg
+                : copy.losslessOther}
             </FieldDescription>
           </FieldContent>
         </Field>
@@ -228,7 +230,7 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
             <FieldGroup className="grid gap-4 sm:grid-cols-2">
               <Field data-disabled={disabled || settings.lossless || undefined}>
                 <FieldLabel htmlFor={`max-width-${activeGroup.id}`}>
-                  Max. szélesség
+                  {copy.maxWidth}
                 </FieldLabel>
                 <Input
                   id={`max-width-${activeGroup.id}`}
@@ -247,7 +249,7 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
               </Field>
               <Field data-disabled={disabled || settings.lossless || undefined}>
                 <FieldLabel htmlFor={`max-height-${activeGroup.id}`}>
-                  Max. magasság
+                  {copy.maxHeight}
                 </FieldLabel>
                 <Input
                   id={`max-height-${activeGroup.id}`}
@@ -282,7 +284,7 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
                   <FieldLabel
                     htmlFor={`max-file-size-enabled-${activeGroup.id}`}
                   >
-                    Maximum fájlméret
+                    {copy.maxFileSize}
                   </FieldLabel>
                 </FieldContent>
               </div>
@@ -300,7 +302,7 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
                     settings.lossless ||
                     settings.maxFileSizeKb === null
                   }
-                  aria-label="Maximum fájlméret kilobájtban"
+                  aria-label={`${copy.maxFileSize} ${copy.ui.kilobytes}`}
                   onChange={(event) =>
                     updateGroupSettings(activeGroup.id, {
                       maxFileSizeKb: clampNumber(
@@ -317,11 +319,11 @@ export function WorkspaceSettings({ disabled }: WorkspaceSettingsProps) {
 
             <Field data-disabled={disabled || qualityDisabled || undefined}>
               <FieldLabel htmlFor={`quality-number-${activeGroup.id}`}>
-                Minőség
+                {copy.outputQuality}
               </FieldLabel>
               <div className="flex items-center gap-4">
                 <Slider
-                  aria-label={`${activeGroup.name} kimeneti minősége`}
+                  aria-label={`${activeGroup.name} ${copy.outputQuality.toLocaleLowerCase(locale)}`}
                   min={1}
                   max={100}
                   step={1}

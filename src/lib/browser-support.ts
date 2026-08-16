@@ -1,3 +1,7 @@
+import { commonMessages } from "../i18n/common.ts";
+import { getMessages } from "../i18n/types.ts";
+import type { Locale } from "./locale.ts";
+
 const browserSupportPhrases = [
   "jelenlegi böngésződben",
   "ebben a böngészőben",
@@ -9,12 +13,12 @@ const browserSupportPhrases = [
   "type error",
 ];
 
-export function videoSpeedBrowserSupportError() {
-  return "Sajnálom. A videó sebességgörbe nem támogatott a jelenlegi böngésződben. Próbáld meg egy friss Chromium-alapú böngészőben, például Chrome-ban vagy Edge-ben.";
+export function videoSpeedBrowserSupportError(locale: Locale = "hu") {
+  return getMessages(commonMessages, locale).browserSupport.videoSpeedError;
 }
 
-export function videoConverterBrowserSupportError() {
-  return "Sajnálom. A videó konvertáló nem támogatott a jelenlegi böngésződben. Próbáld meg egy friss Chromium-alapú böngészőben, például Chrome-ban vagy Edge-ben.";
+export function videoConverterBrowserSupportError(locale: Locale = "hu") {
+  return getMessages(commonMessages, locale).browserSupport.videoConverterError;
 }
 
 export function isBrowserSupportError(message: string | undefined) {
