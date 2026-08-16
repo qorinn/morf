@@ -34,6 +34,10 @@ const localizedStructuredData = structuredData
 const structuredDataJson = localizedStructuredData
   ? JSON.stringify(localizedStructuredData).replaceAll("<", "\\u003c")
   : undefined;
+const ogImageUrl = Astro.site
+  ? new URL("/og-image.webp", Astro.site).href
+  : "/og-image.webp";
+const ogImageAlt = "Morf — ingyenes eszköztár. Nem mentjük el a fájlodat. Soha.";
 ---
 
 <html lang={localeMeta.htmlLang}>
@@ -84,9 +88,16 @@ const structuredDataJson = localizedStructuredData
         />
       )
     }
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:type" content="image/webp" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={ogImageAlt} />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
+    <meta name="twitter:image:alt" content={ogImageAlt} />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
     {
