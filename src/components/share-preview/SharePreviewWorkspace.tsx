@@ -1,4 +1,4 @@
-import { type SubmitEvent, useState } from "react";
+import { type SubmitEvent, useEffect, useRef, useState } from "react";
 import {
   Alert02Icon,
   ArrowRight01Icon,
@@ -100,6 +100,20 @@ export function SharePreviewWorkspace() {
   const [siteName, setSiteName] = useState("Morf");
   const [pageType, setPageType] = useState("website");
   const [locale, setLocale] = useState("hu_HU");
+  const [scannedImage, setScannedImage] = useState<{
+    url: string;
+    token: number;
+  } | null>(null);
+  const resultsRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (checkStatus === "success") {
+      resultsRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  }, [checkStatus]);
   const previewData: OpenGraphData = {
     pageUrl,
     pageTitle: title,
@@ -138,13 +152,19 @@ export function SharePreviewWorkspace() {
     setCheckStatus("loading");
 
     try {
-      const response = await fetch(requestedUrl.href);
-      if (!response.ok)
-        throw new Error(`A szerver ${response.status} választ adott.`);
+      const response = await fetch(
+        `/api/og-fetch?url=${encodeURIComponent(requestedUrl.href)}`,
+      );
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || `A szerver ${response.status} választ adott.`);
+      }
 
-      const html = await response.text();
-      const document = new DOMParser().parseFromString(html, "text/html");
-      const data = readOpenGraphData(document, requestedUrl);
+      const document = new DOMParser().parseFromString(
+        payload.html,
+        "text/html",
+      );
+      const data = readOpenGraphData(document, new URL(payload.url));
       const inspectedImage = await inspectImage(data.ogImage);
 
       setScanData(data);
@@ -159,16 +179,17 @@ export function SharePreviewWorkspace() {
       );
       setPageType(data.ogType === "article" ? "article" : "website");
       setLocale(data.ogLocale || "hu_HU");
+      if (data.ogImage) {
+        setScannedImage({ url: data.ogImage, token: Date.now() });
+      }
       setCheckStatus("success");
     } catch (error) {
       setCheckStatus("error");
       setImageInspection(emptyImageInspection);
       setCheckError(
-        error instanceof TypeError
-          ? "A böngésző nem fér hozzá ehhez az oldalhoz. Más domainnél ezt gyakran a CORS-szabály korlátozza; backend nélkül csak az ezt engedélyező oldalak vizsgálhatók közvetlenül."
-          : error instanceof Error
-            ? error.message
-            : "Az oldal ellenőrzése nem sikerült.",
+        error instanceof Error
+          ? error.message
+          : "Az oldal ellenőrzése nem sikerült.",
       );
     }
   }
@@ -306,7 +327,7 @@ export function SharePreviewWorkspace() {
       </section>
 
       {checkStatus === "success" && scanData && (
-        <section className="morf-section-normal">
+        <section ref={resultsRef} className="morf-section-normal">
           <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-28">
             <AuditAndPreview data={previewData} items={auditItems} />
           </div>
@@ -330,6 +351,7 @@ export function SharePreviewWorkspace() {
         onPageTypeChange={setPageType}
         onLocaleChange={setLocale}
         onPageUrlChange={setPageUrl}
+        scannedImage={scannedImage}
       />
       <Toaster />
     </>
