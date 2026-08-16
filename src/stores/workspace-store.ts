@@ -76,6 +76,7 @@ type WorkspaceState = {
   ) => void;
   failJob: (id: string, error: FileJobError) => void;
   setJobStatus: (id: string, status: FileJobStatus, progress?: number) => void;
+  prepareJobsForProcessing: (ids: string[]) => void;
   retryJob: (id: string) => void;
   removeJob: (id: string) => void;
   removeSelectedJobs: () => number;
@@ -188,10 +189,7 @@ function updateGroupConfiguration(
         ? { ...candidate, settings: { ...settings } }
         : candidate,
     ),
-    jobs: resetJobsForConversionChange(
-      state.jobs,
-      (job) => job.groupId === groupId,
-    ),
+    jobs: state.jobs,
   };
 }
 
@@ -624,6 +622,15 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
           : job,
       ),
     })),
+  prepareJobsForProcessing: (ids) =>
+    set((state) => {
+      const selectedIds = new Set(ids);
+      return {
+        jobs: resetJobsForConversionChange(state.jobs, (job) =>
+          selectedIds.has(job.id),
+        ),
+      };
+    }),
   retryJob: (id) =>
     set((state) => ({
       jobs: state.jobs.map((job) => {

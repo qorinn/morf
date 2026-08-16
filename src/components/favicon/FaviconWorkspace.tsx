@@ -27,6 +27,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Toaster } from "@/components/ui/toast";
 import { RECOMMENDED_SOURCE_DIMENSION } from "@/features/favicon-generator/config";
 import { slugifyProjectName } from "@/features/favicon-generator/package-content";
 import {
@@ -49,6 +50,7 @@ import type {
   ManifestSettings,
 } from "@/features/favicon-generator/types";
 import { createFaviconWorker } from "@/features/favicon-generator/worker-client";
+import { useErrorToast } from "@/hooks/use-error-toast";
 import {
   downloadFile,
   getSaveCapabilities,
@@ -138,6 +140,9 @@ export default function FaviconWorkspace() {
   const [result, setResult] = useState<FaviconGenerateResult>();
   const [archiveBlob, setArchiveBlob] = useState<Blob>();
   const [canSaveAs, setCanSaveAs] = useState(false);
+
+  useErrorToast(sourceError, "A képet nem tudjuk használni");
+  useErrorToast(generationError, "A favicon nem készült el");
   const cropGetterRef = useRef<CropCanvasGetter | undefined>(undefined);
   const sourceRef = useRef<FaviconSource | undefined>(undefined);
   const previewsRef = useRef<PreviewUrls>({});
@@ -623,6 +628,7 @@ export default function FaviconWorkspace() {
           <AlertDescription>{sourceError}</AlertDescription>
         </Alert>
       )}
+      <Toaster />
     </section>
   );
 }

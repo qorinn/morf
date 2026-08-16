@@ -1,0 +1,151 @@
+---
+import VideoFrameWorkspace from "@/components/video-frames/VideoFrameWorkspace";
+import SiteFooter from "@/components/layout/SiteFooter.astro";
+import SiteHeader from "@/components/layout/SiteHeader.astro";
+import FaqSection from "@/components/sections/FaqSection.astro";
+import PrivacySection from "@/components/sections/PrivacySection.astro";
+import RelatedTools from "@/components/sections/RelatedTools.astro";
+import ToolHero from "@/components/sections/ToolHero.astro";
+import VideoFramesGuide from "@/components/sections/VideoFramesGuide.astro";
+import MainLayout from "@/layouts/main.astro";
+
+const privacyItems = [
+  "A képek ideiglenesen a böngésző helyi, Morf számára elkülönített tárhelyére kerülnek.",
+];
+
+const faqItems = [
+  {
+    question: "Valóban veszteségmentesek az elkészült képek?",
+    answer:
+      "A Morf a dekódolt videóképet teljes felbontású PNG-be menti, ezért nem ad hozzá újabb veszteséges képtömörítést. A forrásvideó korábbi tömörítése során elveszett részleteket azonban nem tudja visszaállítani.",
+  },
+  {
+    question: "Mekkora vagy milyen hosszú videót dolgozhatok fel?",
+    answer:
+      "A Morf nem állít be videóhossz-, fájlméret- vagy képkockalimitet. A tényleges határt a böngésző kodektámogatása, az eszköz teljesítménye és a szabad helyi tárhely adja. A feldolgozás folyamatosan, kisebb szakaszokban történik, nem tölti egyszerre memóriába a teljes videót.",
+  },
+  {
+    question: "Mit jelent a kimeneti FPS?",
+    answer:
+      "A Minden elérhető képkocka beállítás minden eredeti képkockát megtart. Kisebb FPS esetén a Morf időbélyeg alapján ritkít, de soha nem készít olyan új képet, amely nem volt benne a forrásvideóban. Külön beállítással csak a kijelölt időtartomány első és utolsó képkockáját is elmentheted.",
+  },
+  {
+    question: "Módosíthatom az FPS-t a feldolgozás után?",
+    answer:
+      "Igen. A kész sorozatot tovább ritkíthatod az optimalizálás vagy letöltés előtt. A feldolgozáskor kihagyott képkockákat utólag nem lehet visszaállítani, ezért a későbbi FPS nem lehet nagyobb az eredetileg beállított értéknél.",
+  },
+  {
+    question: "Mi történik, ha elfogy a helyi tárhely?",
+    answer:
+      "A Morf checkpoint után biztonságosan szünetelteti a folyamatot, és megtartja az addig elkészült PNG-ket. Ezeket elmentheted vagy optimalizálhatod, szabadíthatsz fel helyet, illetve újrakezdheted kisebb FPS-sel.",
+  },
+  {
+    question: "Milyen videókat támogat az eszköz?",
+    answer:
+      "MP4, MOV és WebM konténereket fogad. A tényleges dekódolhatóság a videó kodekjétől és a böngésződtől is függ; ha egy kodek nem támogatott, a Morf ezt még a feldolgozás előtt jelzi.",
+  },
+  {
+    question: "Ingyenes, reklámmentes és korlátlan a videó képekre bontása?",
+    answer:
+      "Igen. Nincs fiók, hirdetés, napi videó- vagy képkockakvóta. A teljes videó feldolgozhatóságát a böngésződ támogatása, a készüléked teljesítménye és a rendelkezésre álló helyi tárhely határozza meg.",
+  },
+];
+
+const seoDescription =
+  "Bonts MP4, MOV vagy WebM videót teljes felbontású PNG képekre ingyen, reklámmentesen és regisztráció nélkül. A videó helyben marad a böngésződben.";
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebApplication",
+      "@id": "/video-kepekre-bontasa#alkalmazas",
+      name: "Morf videó képekre bontó",
+      description: seoDescription,
+      applicationCategory: "MultimediaApplication",
+      applicationSubCategory: "Videóképkocka-exportáló",
+      operatingSystem: "Web",
+      browserRequirements:
+        "JavaScriptet, Web Workert, WebCodecsot, OffscreenCanvast és OPFS-t támogató modern böngésző",
+      inLanguage: "hu",
+      isAccessibleForFree: true,
+      dateModified: "2026-08-05",
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "HUF",
+      },
+      featureList: [
+        "MP4, MOV és WebM videók helyi feldolgozása",
+        "Minden eredeti képkocka, választható FPS vagy csak az első és utolsó képkocka",
+        "Választható kezdő- és végpont",
+        "Teljes felbontású veszteségmentes PNG-k",
+        "Checkpointos, memóriahatáros feldolgozás",
+        "Képek közvetlen átadása a Morf képkonvertálóba",
+        "Mappás és ZIP-részes mentés",
+      ],
+      fileFormat: ["video/mp4", "video/quicktime", "video/webm", "image/png"],
+      creator: {
+        "@type": "Person",
+        name: "Paládi Bálint",
+      },
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "/video-kepekre-bontasa#gyakori-kerdesek",
+      inLanguage: "hu",
+      mainEntity: faqItems.map((item) => ({
+        "@type": "Question",
+        name: item.question,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: item.answer,
+        },
+      })),
+    },
+  ],
+};
+---
+
+<MainLayout
+  title="Videó képekre bontása online, ingyen PNG-be | Morf"
+  description={seoDescription}
+  canonicalPath="/video-kepekre-bontasa"
+  structuredData={structuredData}
+>
+  <SiteHeader active="videoFrames" category="video" />
+
+  <main>
+    <ToolHero
+      title="Videóképkocka-exportáló"
+      description="Ments ki MP4, MOV és WebM videóból teljes felbontású PNG képkockákat. Hasznos thumbnailhez, megállított jelenethez, videóelemzéshez vagy képsorozat készítéséhez."
+      primaryAction={{
+        href: "#video-frame-workspace",
+        label: "Képek készítése",
+      }}
+      secondaryAction={{
+        href: "#framek-utmutato",
+        label: "Hogyan működik?",
+      }}
+    />
+
+    <VideoFrameWorkspace client:load />
+
+    <RelatedTools hrefs={["/kep-konvertalo", "/video-gyorsitas-lassitas"]} />
+
+    <VideoFramesGuide />
+
+    <PrivacySection
+      title="Adatvédelem videóképkockáknál"
+      description="A videó feldolgozása a böngésződben fut, a Morf pedig nem küldi a forrást szerverre."
+      items={privacyItems}
+    />
+
+    <FaqSection
+      title="Videó képekre bontása, röviden"
+      description="Válaszok a veszteségmentes PNG-kre, az FPS-re, a hosszú videókra, a tárhelyre és a böngészős kodektámogatásra."
+      items={faqItems}
+    />
+  </main>
+
+  <SiteFooter />
+</MainLayout>

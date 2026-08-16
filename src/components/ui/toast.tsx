@@ -191,7 +191,7 @@ function ToastList() {
           <ToastTitle />
           <ToastDescription />
         </div>
-        <ToastAction />
+        {toastItem.actionProps && <ToastAction />}
         <ToastClose />
       </ToastContent>
     </Toast>

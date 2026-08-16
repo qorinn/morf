@@ -1,0 +1,71 @@
+---
+import SiteFooter from "@/components/layout/SiteFooter.astro";
+import SiteHeader from "@/components/layout/SiteHeader.astro";
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import MainLayout from "@/layouts/main.astro";
+import { getHomeCopy, type HomeToolId } from "@/i18n/home";
+import type { Locale } from "@/lib/locale";
+import { ArrowRight02Icon, BrowserIcon, FileZipIcon, Film01Icon, Image02Icon, Resize01Icon, Share01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import HomeHeroGravity from "./HomeHeroGravity";
+import WhyChooseMorf from "./WhyChooseMorf";
+
+interface Props { locale: Extract<Locale, "hu" | "en">; }
+const { locale } = Astro.props;
+const copy = getHomeCopy(locale);
+const isEnglish = locale === "en";
+const tools: Array<{ id: HomeToolId; href: string; icon: typeof Image02Icon; category: "images" | "video" | "web" }> = [
+  { id: "imageConverter", href: "/kep-konvertalo", icon: Image02Icon, category: "images" },
+  { id: "imageOptimizer", href: "/kep-konvertalo", icon: FileZipIcon, category: "images" },
+  { id: "imageResizer", href: "/kep-konvertalo", icon: Resize01Icon, category: "images" },
+  { id: "videoFrames", href: "/video-kepekre-bontasa", icon: Film01Icon, category: "video" },
+  { id: "videoSpeed", href: "/video-gyorsitas-lassitas", icon: Film01Icon, category: "video" },
+  { id: "videoConverter", href: "/video-konvertalo", icon: Film01Icon, category: "video" },
+  { id: "openGraph", href: "/megosztasi-elozet-tervezo", icon: Share01Icon, category: "web" },
+  { id: "favicon", href: "/favicon-generator", icon: BrowserIcon, category: "web" },
+];
+const categories = ["images", "video", "web"] as const;
+const canonicalPath = isEnglish ? "/en/" : "/";
+const alternateLocales = [{ locale: "hu", path: "/" }, { locale: "en", path: "/en/" }] as const;
+---
+
+<MainLayout locale={locale} title={copy.title} description={copy.description} canonicalPath={canonicalPath} alternateLocales={[...alternateLocales]}>
+  <SiteHeader active="home" locale={locale} languageHref={isEnglish ? "/" : "/en/"} languageLabel={isEnglish ? "HU" : "EN"} />
+  <main class="overflow-clip">
+    <HomeHeroGravity client:load locale={locale} />
+    <section id="eszkozok" aria-labelledby="eszkozok-title" class="mx-auto flex w-full max-w-7xl scroll-mt-6 flex-col gap-8 px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
+      <header class="flex max-w-3xl flex-col gap-3">
+        <h2 id="eszkozok-title" class="font-heading text-5xl font-semibold tracking-tight text-balance sm:text-6xl">{copy.catalogTitle}</h2>
+        <p class="text-muted-foreground max-w-2xl text-base leading-relaxed sm:text-lg">{copy.catalogDescription}</p>
+      </header>
+      <div class="flex flex-col gap-10">
+        {categories.map((category) => (
+          <section id={`eszkoz-kategoria-${category === "images" ? "kepek" : category}`} aria-labelledby={`eszkoz-kategoria-${category}-title`} class="scroll-mt-6 flex flex-col gap-4">
+            <div class="flex items-center gap-4">
+              <h3 id={`eszkoz-kategoria-${category}-title`} class="font-heading shrink-0 text-base font-semibold tracking-tight">{copy.categories[category]}</h3>
+              <div class="bg-border h-px flex-1" aria-hidden="true" />
+            </div>
+            <div class="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {tools.filter((tool) => tool.category === category).map((tool) => {
+                const content = copy.tools[tool.id];
+                return <div class="group relative h-full">
+                  <Card size="sm" className="min-h-54 justify-between rounded-3xl border bg-card shadow-none ring-0 transition-colors duration-200 group-hover:border-primary/40 group-hover:bg-muted/40">
+                    <CardHeader className="gap-2">
+                      <HugeiconsIcon icon={tool.icon} strokeWidth={1.7} className="text-muted-foreground size-6" aria-hidden="true" />
+                      <CardTitle><h4 class="text-xl leading-tight font-semibold tracking-tight text-balance sm:text-2xl">{content.title}</h4></CardTitle>
+                      <CardDescription className="max-w-sm text-sm leading-relaxed">{content.description}</CardDescription>
+                    </CardHeader>
+                    <CardFooter className="justify-between text-sm font-semibold"><span>{copy.openTool}</span><HugeiconsIcon icon={ArrowRight02Icon} strokeWidth={1.8} className="size-4 transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transform-none motion-reduce:transition-none" aria-hidden="true" /></CardFooter>
+                  </Card>
+                  <a href={tool.href} class="focus-visible:ring-ring absolute inset-0 rounded-3xl outline-none focus-visible:ring-3 focus-visible:ring-offset-3" aria-label={`${copy.openTool}: ${content.title}`}><span class="sr-only">{copy.openTool}: {content.title}</span></a>
+                </div>;
+              })}
+            </div>
+          </section>
+        ))}
+      </div>
+    </section>
+    <section aria-label={isEnglish ? "Why choose Morf?" : "Miért válaszd a Morfot?"} class="pb-10 sm:pb-16"><WhyChooseMorf client:load locale={locale} /></section>
+  </main>
+  <SiteFooter locale={locale} />
+</MainLayout>

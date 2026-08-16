@@ -1,10 +1,38 @@
+---
+import type { Locale } from "@/lib/locale";
+
+interface Props {
+  locale?: Locale;
+}
+
+const { locale = "hu" } = Astro.props;
+const copy = locale === "en" ? {
+  madeBy: "Made by:",
+  navLabel: "Footer navigation",
+  home: "Home",
+  imageConverter: "Image converter",
+  faviconGenerator: "Favicon generator",
+  browserSupport: "Browser support",
+  privacy: "Privacy",
+} : {
+  madeBy: "Készítette:",
+  navLabel: "Lábléc navigáció",
+  home: "Főoldal",
+  imageConverter: "Képkonvertáló",
+  faviconGenerator: "Favicon generátor",
+  browserSupport: "Böngészőtámogatás",
+  privacy: "Adatvédelem",
+};
+const homeHref = locale === "en" ? "/en/" : "/";
+---
+
 <footer
   class="text-muted-foreground mx-auto flex w-full max-w-7xl flex-col justify-between gap-5 px-4 py-8 text-sm sm:px-6 lg:flex-row lg:items-center lg:px-8"
 >
   <div class="flex flex-col gap-1">
     <p>© {new Date().getFullYear()} Morf</p>
     <p>
-      Készítette:{" "}
+      {copy.madeBy}{" "}
       <a
         class="hover:text-foreground rounded-sm underline-offset-4 transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
         href="https://www.paladi-web.hu/"
@@ -14,17 +42,20 @@
     </p>
   </div>
 
-  <nav class="flex flex-wrap gap-x-5 gap-y-2" aria-label="Lábléc navigáció">
-    <a class="hover:text-foreground transition-colors" href="/">Főoldal</a>
+  <nav class="flex flex-wrap gap-x-5 gap-y-2" aria-label={copy.navLabel}>
+    <a class="hover:text-foreground transition-colors" href={homeHref}>{copy.home}</a>
     <a class="hover:text-foreground transition-colors" href="/kep-konvertalo"
-      >Képkonvertáló</a
+      >{copy.imageConverter}</a
     >
     <a class="hover:text-foreground transition-colors" href="/favicon-generator"
-      >Favicon generátor</a
+      >{copy.faviconGenerator}</a
+    >
+    <a class="hover:text-foreground transition-colors" href="/bongeszo-tamogatas"
+      >{copy.browserSupport}</a
     >
     <a
       class="hover:text-foreground transition-colors"
-      href="/adatvedelmi-tajekoztato">Adatvédelem</a
+      href="/adatvedelmi-tajekoztato">{copy.privacy}</a
     >
   </nav>
 </footer>

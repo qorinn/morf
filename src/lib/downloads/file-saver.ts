@@ -42,6 +42,8 @@ export type SaveableFile = {
 };
 
 export type GeneratedSaveableFile = Omit<SaveableFile, "blob">;
+export type SaveableFileSequence =
+  Iterable<SaveableFile> | AsyncIterable<SaveableFile>;
 
 const downloadUrlLifetime = 30_000;
 
@@ -211,14 +213,23 @@ export async function saveGeneratedFileAs(
 export async function saveFilesToChosenDirectory(
   files: SaveableFile[],
 ): Promise<void> {
+  await saveFileSequenceToChosenDirectory(files);
+}
+
+/** Lusta forrásból érkező fájlok mentése egyetlen kiválasztott mappába. */
+export async function saveFileSequenceToChosenDirectory(
+  files: SaveableFileSequence,
+): Promise<void> {
   const picker = getFileSystemAccessWindow()?.showDirectoryPicker;
   if (!picker) throw new Error("A mappaválasztás nem támogatott.");
 
   // A választót közvetlenül a felhasználói kattintásból kell megnyitni.
   const directory = await picker.call(window);
+  const usedNames = new Set<string>();
 
-  for (const file of makeFileNamesUnique(files)) {
-    const handle = await directory.getFileHandle(file.fileName, {
+  for await (const file of files) {
+    const fileName = createUniqueFileName(file.fileName, usedNames);
+    const handle = await directory.getFileHandle(fileName, {
       create: true,
     });
     await writeBlobToFile(handle, file.blob);

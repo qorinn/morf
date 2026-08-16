@@ -5,8 +5,10 @@ import {
   areConversionSettingsEqual,
   assignJobsToConversionGroup,
   conversionSettingsToRecipe,
+  conversionSettingsKey,
   createConversionSettings,
   resetJobsForConversionChange,
+  shouldProcessJobForSettings,
 } from "./conversion-settings.ts";
 import type {
   ConversionGroup,
@@ -146,6 +148,30 @@ test("a beállításváltozás újra sorba állítja az érintett kész képeket
   assert.equal(updated[0].result, undefined);
   assert.strictEqual(updated[1], untouched);
   assert.deepEqual(releasedUrls, ["blob:old-result"]);
+});
+
+test("a kész kép csak eltérő beállítással válik újra feldolgozhatóvá", () => {
+  const group = createGroup("group-1", 80);
+  const completed = {
+    ...createJob("image", group.id, "completed"),
+    result: {
+      url: "blob:result",
+      settingsKey: conversionSettingsKey(group.settings),
+    },
+  } as FileJob;
+
+  assert.equal(shouldProcessJobForSettings(completed, group.settings), false);
+  assert.equal(
+    shouldProcessJobForSettings(completed, {
+      ...group.settings,
+      quality: 70,
+    }),
+    true,
+  );
+  assert.equal(
+    shouldProcessJobForSettings(createJob("queued", group.id), group.settings),
+    true,
+  );
 });
 
 test("azonos beállítású csoportváltás megtartja a kész eredményt", () => {

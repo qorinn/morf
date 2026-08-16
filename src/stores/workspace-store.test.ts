@@ -5,6 +5,7 @@ import {
   defaultConversionGroupId,
   useWorkspaceStore,
 } from "./workspace-store.ts";
+import { conversionSettingsKey } from "../features/image-processing/conversion-settings.ts";
 
 function addImages(count: number, groupId?: string) {
   useWorkspaceStore.getState().addJobs(
@@ -61,6 +62,41 @@ test("a képek közvetlenül a megadott csoportba tölthetők fel", () => {
     [targetGroupId, targetGroupId],
   );
   assert.equal(state.activeGroupId, targetGroupId);
+});
+
+test("a beállítás módosítása megtartja a kész és letölthető eredményt", () => {
+  addImages(1);
+  const state = useWorkspaceStore.getState();
+  const job = state.jobs[0];
+  const settings = state.groups[0].settings;
+  state.completeJob(
+    job.id,
+    {
+      blob: new Blob(["eredmény"]),
+      url: "blob:result",
+      format: "webp",
+      width: 100,
+      height: 100,
+      size: 8,
+      mimeType: "image/webp",
+      settingsKey: conversionSettingsKey(settings),
+    },
+    100,
+    100,
+  );
+
+  useWorkspaceStore
+    .getState()
+    .updateGroupSettings(defaultConversionGroupId, { quality: 72 });
+
+  const completed = useWorkspaceStore.getState().jobs[0];
+  assert.equal(completed.status, "completed");
+  assert.equal(completed.result?.url, "blob:result");
+
+  useWorkspaceStore.getState().prepareJobsForProcessing([completed.id]);
+  const prepared = useWorkspaceStore.getState().jobs[0];
+  assert.equal(prepared.status, "queued");
+  assert.equal(prepared.result, undefined);
 });
 
 test("a képek feltöltése új csoportot hoz létre és abba teszi a fájlokat", () => {

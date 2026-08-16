@@ -91,6 +91,7 @@ export type FileJobResult = {
   height: number;
   size: number;
   mimeType: string;
+  settingsKey: string;
 };
 
 export type FileJob = {

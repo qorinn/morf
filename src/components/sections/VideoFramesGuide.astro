@@ -1,0 +1,77 @@
+---
+import {
+  Film01Icon,
+  Image02Icon,
+  SlidersHorizontalIcon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+
+const steps = [
+  {
+    icon: Film01Icon,
+    title: "Válassz videót",
+    description:
+      "Adj hozzá egy MP4, MOV vagy WebM fájlt. A Morf kiolvassa a felbontást, az időtartamot és a képkockasebességet, hogy lásd a képek számát.",
+  },
+  {
+    icon: SlidersHorizontalIcon,
+    title: "Állítsd be a képkockákat",
+    description:
+      "Használd a teljes videót vagy adj meg időtartományt és kisebb kimeneti FPS-t. Kérheted csak az első és utolsó képkocka mentését is.",
+  },
+  {
+    icon: Image02Icon,
+    title: "Optimalizálj vagy ments",
+    description:
+      "Vidd tovább a PNG-ket a képkonvertálóba, vagy mentsd őket veszteségmentesen mappába vagy ZIP-be.",
+  },
+];
+---
+
+<section
+  id="framek-utmutato"
+  aria-labelledby="framek-utmutato-title"
+  class="morf-section-normal"
+>
+  <div
+    class="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24"
+  >
+    <header class="flex max-w-3xl flex-col gap-3">
+      <h2
+        id="framek-utmutato-title"
+        class="font-heading text-4xl font-semibold tracking-tight text-balance sm:text-5xl"
+      >
+        Videóból PNG-k, három lépésben
+      </h2>
+      <!-- <p class="text-muted-foreground max-w-2xl text-base leading-relaxed sm:text-lg">
+        A videó végig az eszközödön marad. A képek teljes felbontásban,
+        újabb veszteséges tömörítés nélkül készülnek.
+      </p> -->
+    </header>
+
+    <ol class="grid gap-6 lg:grid-cols-3">
+      {
+        steps.map((step) => (
+          <li class="flex min-w-0 flex-col gap-5">
+            <div class="flex items-center justify-between gap-4">
+              <span class="bg-muted text-foreground flex size-11 items-center justify-center rounded-2xl border">
+                <HugeiconsIcon
+                  icon={step.icon}
+                  className="size-5"
+                  strokeWidth={1.8}
+                  aria-hidden="true"
+                />
+              </span>
+            </div>
+            <div class="flex flex-col gap-2">
+              <h3 class="font-heading text-xl font-medium">{step.title}</h3>
+              <p class="text-muted-foreground leading-relaxed">
+                {step.description}
+              </p>
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>

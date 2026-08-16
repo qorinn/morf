@@ -1,0 +1,72 @@
+---
+import SiteFooter from "@/components/layout/SiteFooter.astro";
+import SiteHeader from "@/components/layout/SiteHeader.astro";
+import FaqSection from "@/components/sections/FaqSection.astro";
+import PrivacySection from "@/components/sections/PrivacySection.astro";
+import RelatedTools from "@/components/sections/RelatedTools.astro";
+import { SharePreviewWorkspace } from "@/components/share-preview/SharePreviewWorkspace";
+import MainLayout from "@/layouts/main.astro";
+
+const privacyItems = [
+  "A feltöltött kép csak a böngésződben jelenik meg, a Morf nem tölti fel vagy tárolja.",
+  "A meta tagek kódja közvetlenül a böngésződben készül, és csak akkor kerül máshová, ha te kimásolod.",
+  "A valódi megosztási képhez a saját, nyilvánosan elérhető képed URL-jét kell megadnod.",
+  "Nincs regisztráció, hirdetés vagy napi ellenőrzési limit.",
+];
+
+const faqItems = [
+  {
+    question: "Miért kell minden oldalhoz külön cím, leírás és kép?",
+    answer:
+      "A megosztási előnézet dönti el, mit lát valaki, mielőtt megnyitja a hivatkozást. Ha minden oldal ugyanazt az általános címet, leírást és képet használja, a konkrét tartalom kevésbé érthető és a link kevésbé kattintható. A fontos landingek, cikkek, termékek és eszközoldalak mind kapjanak saját meta adatokat.",
+  },
+  {
+    question: "Mekkora legyen az Open Graph kép?",
+    answer:
+      "A biztos kiindulópont 1200 × 630 pixel, 1,91:1 képaránnyal. Használj éles, jól olvasható képet, és a fontos szöveget vagy részleteket ne tedd közvetlenül a szélekhez. A különböző platformok kicsit eltérően vághatnak.",
+  },
+  {
+    question: "Miért kell a képnek publikus URL?",
+    answer:
+      "A Facebook, LinkedIn, X és más megosztó szolgáltatások a meta tagben megadott URL-ről töltik le a képet. A tervezőbe húzott fájl csak helyi előnézet, azt egy külső szolgáltatás nem tudja elérni. A kész kép legyen már feltöltve a saját webhelyedre vagy CDN-edre.",
+  },
+  {
+    question: "Mikor frissül a megosztási előnézet?",
+    answer:
+      "A webhelyeden azonnal az új meta tagek lesznek érvényesek, de a közösségi platformok korábbi előnézetet gyorsítótárból mutathatnak. Publikálás után érdemes az adott platform megosztási hibakeresőjében újra lekérni az URL-t.",
+  },
+  {
+    question: "Ingyenes és reklámmentes az Open Graph ellenőrző?",
+    answer:
+      "Igen. A Morf Open Graph ellenőrzője regisztráció és hirdetések nélkül használható, nincs napi URL-ellenőrzési limit. A helyi kép-előnézet a böngésződben marad; a megadott weboldal URL-jét csak te választod ki ellenőrzésre.",
+  },
+];
+---
+
+<MainLayout
+  title="Ingyenes Open Graph ellenőrző és előnézet | Morf"
+  description="Ingyenes, reklámmentes Open Graph ellenőrző Facebook, LinkedIn, X, WhatsApp és Discord előnézethez. Nincs regisztráció vagy napi limit."
+  canonicalPath="/megosztasi-elozet-tervezo"
+>
+  <SiteHeader active="sharePreview" category="web" />
+
+  <main>
+    <SharePreviewWorkspace client:load />
+
+    <RelatedTools hrefs={["/favicon-generator", "/kep-konvertalo"]} />
+
+    <PrivacySection
+      title="A képed nálad marad"
+      description="A helyi kép csak az előnézethez kell, a Morf nem küldi el sehova. A megosztáshoz használt végleges kép URL-jét te adod meg."
+      items={privacyItems}
+    />
+
+    <FaqSection
+      title="Megosztási előnézet, jól beállítva"
+      description="A címről, leírásról, Open Graph képről és az oldalankénti meta adatokról."
+      items={faqItems}
+    />
+  </main>
+
+  <SiteFooter />
+</MainLayout>

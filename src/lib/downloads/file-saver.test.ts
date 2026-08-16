@@ -6,6 +6,7 @@ import {
   createZipArchive,
   makeFileNamesUnique,
   sanitizeSaveFileName,
+  saveFileSequenceToChosenDirectory,
   saveGeneratedFileAs,
 } from "./file-saver.ts";
 
@@ -90,4 +91,49 @@ test("a mentési helyet az aszinkron fájlgenerálás előtt választja ki", asy
 
   assert.deepEqual(events, ["picker", "generate", "write"]);
   assert.equal(await writtenBlob?.text(), "morf");
+});
+
+test("a lusta fájlsorozatot egyetlen kiválasztott mappába menti", async () => {
+  const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+  const savedNames: string[] = [];
+  let pickerCalls = 0;
+
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: {
+      isSecureContext: true,
+      showDirectoryPicker: async () => {
+        pickerCalls += 1;
+        return {
+          getFileHandle: async (fileName: string) => {
+            savedNames.push(fileName);
+            return {
+              createWritable: async () => ({
+                write: async () => undefined,
+                close: async () => undefined,
+              }),
+            };
+          },
+        };
+      },
+    },
+  });
+
+  async function* files() {
+    yield { blob: new Blob(["első"]), fileName: "kep.png" };
+    yield { blob: new Blob(["második"]), fileName: "KEP.PNG" };
+  }
+
+  try {
+    await saveFileSequenceToChosenDirectory(files());
+  } finally {
+    if (originalWindow) {
+      Object.defineProperty(globalThis, "window", originalWindow);
+    } else {
+      Reflect.deleteProperty(globalThis, "window");
+    }
+  }
+
+  assert.equal(pickerCalls, 1);
+  assert.deepEqual(savedNames, ["kep.png", "KEP-2.PNG"]);
 });

@@ -5,21 +5,15 @@ import SiteHeader from "@/components/layout/SiteHeader.astro";
 import FaqSection from "@/components/sections/FaqSection.astro";
 import ImageConverterGuide from "@/components/sections/ImageConverterGuide.astro";
 import PrivacySection from "@/components/sections/PrivacySection.astro";
+import RelatedTools from "@/components/sections/RelatedTools.astro";
 import ToolHero from "@/components/sections/ToolHero.astro";
 import MainLayout from "@/layouts/main.astro";
 
 const privacyItems = [
-  "A konvertálás, az átméretezés és az optimalizálás a saját böngésződben történik.",
   "Az előnézetek csak addig maradnak meg, amíg az oldalon dolgozol.",
-  "Nem kell regisztrálnod, a Morf pedig nem tölti fel vagy tárolja a fájljaidat.",
 ];
 
 const faqItems = [
-  {
-    question: "Valóban nem töltődnek fel a képek?",
-    answer:
-      "Igen. A kiválasztott fájlok feldolgozása a böngésződben történik, Morf szerverére nem kerülnek fel.",
-  },
   {
     question: "Milyen formátumok között konvertálhatok?",
     answer:
@@ -29,6 +23,11 @@ const faqItems = [
     question: "Konvertálhatok több képet egyszerre, különböző beállításokkal?",
     answer:
       "Igen. Minden konfigurációs csoport saját feltöltési területet és konvertálási beállításokat kap. Csoportonként eltérő felhasználási célt, kimeneti formátumot, maximális felbontást, minőséget, maximum fájlméretet vagy veszteségmentes módot választhatsz, majd egyetlen futtatással elkészítheted az összes bevont képet.",
+  },
+  {
+    question: "Hogyan konvertálhatok egyszerre egy teljes képmappát?",
+    answer:
+      "Támogatott böngészőben egy teljes mappát és annak almappáit is hozzáadhatod egyetlen csoportként. A Morf sorban halad a képekkel, ezért nagy mappáknál és videóból készült képeknél sem kell mindent egyszerre megnyitnia.",
   },
   {
     question: "Hogyan rendezhetem át a képeket a csoportok között?",
@@ -61,15 +60,20 @@ const faqItems = [
       "Nincs napi limit vagy fájlszámláló, de a biztonságos fájlméretet az eszközöd memóriája és teljesítménye korlátozza. Mobilon Morf konzervatívabb határt használ.",
   },
   {
+    question: "Ingyenes, reklámmentes és korlátlan a képkonvertáló?",
+    answer:
+      "Igen. Regisztráció és hirdetések nélkül használhatod, nincs napi fájl- vagy letöltési limit. Sok vagy nagy kép esetén a böngésződ memóriája és a készüléked teljesítménye szabja meg, mennyit tudsz egyszerre feldolgozni.",
+  },
+  {
     question: "Az animált képek megőrzik az animációt?",
     answer:
       "Nem. Az első verzió állóképekhez készült, animációmegőrzést nem ígér.",
   },
 ];
 
-const seoTitle = "Online képkonvertáló: JPG, PNG, WebP, AVIF | Morf";
+const seoTitle = "Ingyenes online képkonvertáló: JPG, PNG, WebP | Morf";
 const seoDescription =
-  "Konvertálj több JPG, PNG, WebP, AVIF vagy HEIC képet csoportonként eltérő formátummal, mérettel és minőséggel, privát módon, regisztráció nélkül.";
+  "Ingyenes, reklámmentes képkonvertáló JPG, PNG, WebP, AVIF és HEIC képekhez. Nincs regisztráció vagy napi limit, a fájlok a böngésződben maradnak.";
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
@@ -86,7 +90,7 @@ const structuredData = {
         "JavaScriptet, Web Workert és WebAssemblyt támogató modern böngésző",
       inLanguage: "hu",
       isAccessibleForFree: true,
-      dateModified: "2026-07-26",
+      dateModified: "2026-08-03",
       offers: {
         "@type": "Offer",
         price: "0",
@@ -99,6 +103,8 @@ const structuredData = {
         "Több kijelölt kép közös áthelyezése vagy törlése",
         "Felhasználási cél szerinti előbeállítások",
         "Csoportonként eltérő konvertálási beállítások",
+        "Teljes képmappák opcionális, memóriahatáros importálása",
+        "Nagy képcsoportok feldolgozása a normál konvertálóban",
         "JPG, PNG, WebP és AVIF kimenet",
         "HEIC és HEIF képek beolvasása",
         "Aránytartó képátméretezés",
@@ -143,17 +149,12 @@ const structuredData = {
   canonicalPath="/kep-konvertalo"
   structuredData={structuredData}
 >
-  <SiteHeader
-    active="converter"
-    actionHref="#workspace"
-    actionLabel="Konvertáló megnyitása"
-    actionShortLabel="Megnyitás"
-  />
+  <SiteHeader active="converter" category="kepek" />
 
   <main>
     <ToolHero
-      title="Multifunkciós képkonvertáló"
-      description="Konvertálj, méretezz át és optimalizálj több képet egyszerre. A csoportokhoz külön beállításokat adhatsz, a teljes feldolgozás pedig a böngésződben marad."
+      title="Képformátum-konvertáló és képoptimalizáló"
+      description="JPG, PNG, WebP, AVIF, HEIC és HEIF képek átalakításához, tömörítéséhez és átméretezéséhez. Jó választás webshopképekhez, weboldalhoz, e-mailhez és iPhone-fotók JPG-be mentéséhez."
       primaryAction={{ href: "#workspace", label: "Képek konvertálása" }}
       secondaryAction={{
         href: "#konvertalas-utmutato",
@@ -163,11 +164,13 @@ const structuredData = {
 
     <ImageWorkspace client:load />
 
+    <RelatedTools hrefs={["/favicon-generator", "/video-kepekre-bontasa"]} />
+
     <ImageConverterGuide />
 
     <PrivacySection
-      title="A képeid nálad maradnak"
-      description="A Morf a böngésződben dolgozza fel a képeket. Nem kell feltöltened őket, és nem kerülnek a Morf szerverére."
+      title="Adatvédelem képkonvertáláskor"
+      description="A képfeldolgozás a böngésződben fut, ezért nem kell feltöltened a fájlokat a Morf szerverére."
       items={privacyItems}
     />
 
