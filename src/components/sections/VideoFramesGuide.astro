@@ -5,27 +5,17 @@ import {
   SlidersHorizontalIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { getVideoFramesMessages } from "@/i18n/video-frames";
+import type { Locale } from "@/lib/locale";
 
-const steps = [
-  {
-    icon: Film01Icon,
-    title: "Válassz videót",
-    description:
-      "Adj hozzá egy MP4, MOV vagy WebM fájlt. A Morf kiolvassa a felbontást, az időtartamot és a képkockasebességet, hogy lásd a képek számát.",
-  },
-  {
-    icon: SlidersHorizontalIcon,
-    title: "Állítsd be a képkockákat",
-    description:
-      "Használd a teljes videót vagy adj meg időtartományt és kisebb kimeneti FPS-t. Kérheted csak az első és utolsó képkocka mentését is.",
-  },
-  {
-    icon: Image02Icon,
-    title: "Optimalizálj vagy ments",
-    description:
-      "Vidd tovább a PNG-ket a képkonvertálóba, vagy mentsd őket veszteségmentesen mappába vagy ZIP-be.",
-  },
-];
+interface Props {
+  locale?: Locale;
+}
+
+const { locale = "hu" } = Astro.props;
+const copy = getVideoFramesMessages(locale).guide;
+const stepIcons = [Film01Icon, SlidersHorizontalIcon, Image02Icon];
+const steps = copy.steps.map((step, index) => ({ ...step, icon: stepIcons[index] }));
 ---
 
 <section
@@ -41,12 +31,8 @@ const steps = [
         id="framek-utmutato-title"
         class="font-heading text-4xl font-semibold tracking-tight text-balance sm:text-5xl"
       >
-        Videóból PNG-k, három lépésben
+        {copy.title}
       </h2>
-      <!-- <p class="text-muted-foreground max-w-2xl text-base leading-relaxed sm:text-lg">
-        A videó végig az eszközödön marad. A képek teljes felbontásban,
-        újabb veszteséges tömörítés nélkül készülnek.
-      </p> -->
     </header>
 
     <ol class="grid gap-6 lg:grid-cols-3">
@@ -73,5 +59,31 @@ const steps = [
         ))
       }
     </ol>
+
+    <section
+      aria-labelledby="video-frames-use-cases-title"
+      class="border-border grid gap-10 border-t pt-12 sm:pt-16 lg:grid-cols-[minmax(18rem,0.72fr)_minmax(0,1fr)] lg:gap-20"
+    >
+      <header class="max-w-xl">
+        <h3
+          id="video-frames-use-cases-title"
+          class="font-heading text-2xl font-semibold tracking-tight text-balance sm:text-3xl"
+        >
+          {copy.useCasesTitle}
+        </h3>
+      </header>
+      <div class="grid gap-x-8 sm:grid-cols-2">
+        {
+          copy.useCases.map((useCase) => (
+            <article class="border-border border-t py-5">
+              <h4 class="font-medium">{useCase.title}</h4>
+              <p class="text-muted-foreground mt-2 leading-relaxed">
+                {useCase.description}
+              </p>
+            </article>
+          ))
+        }
+      </div>
+    </section>
   </div>
 </section>

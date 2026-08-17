@@ -12,8 +12,8 @@ test("a lokalizált eszköz saját angol slugot használ", () => {
   assert.equal(getLocalizedRoute("imageConverter", "en"), "/en/image-converter");
 });
 
-test("a még le nem fordított oldal biztonságosan az alapútvonalra esik vissza", () => {
-  assert.equal(getLocalizedRoute("videoConverter", "en"), "/video-konvertalo");
+test("a még le nem fordított nyelv biztonságosan az alapútvonalra esik vissza", () => {
+  assert.equal(getLocalizedRoute("sharePreview", "de"), "/megosztasi-elozet-tervezo");
 });
 
 test("csak valóban elkészült nyelvek kapnak hreflangot és nyelvváltót", () => {
@@ -25,5 +25,8 @@ test("csak valóban elkészült nyelvek kapnak hreflangot és nyelvváltót", ()
     locale: "hu",
     href: "/kep-konvertalo",
   });
-  assert.equal(getLanguageSwitchTarget("videoConverter", "hu"), undefined);
+  assert.deepEqual(getLanguageSwitchTarget("imageConverter", "hu"), {
+    locale: "en",
+    href: "/en/image-converter",
+  });
 });

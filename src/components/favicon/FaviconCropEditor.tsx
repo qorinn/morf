@@ -12,6 +12,8 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Slider } from "@/components/ui/slider";
+import { useWorkspaceI18n } from "@/components/workspace/WorkspaceI18nProvider";
+import type { FaviconMessages } from "@/i18n/favicon";
 
 export type CropCanvasGetter = () => Promise<HTMLCanvasElement>;
 
@@ -80,6 +82,8 @@ export function FaviconCropEditor({
   onChange,
   onGetterChange,
 }: FaviconCropEditorProps) {
+  const { messages } = useWorkspaceI18n<FaviconMessages>();
+  const copy = messages.cropEditor;
   const containerRef = useRef<HTMLDivElement>(null);
   const cropperRef = useRef<Cropper | undefined>(undefined);
   const baseScaleRef = useRef(1);
@@ -136,7 +140,7 @@ export function FaviconCropEditor({
       // over the same <img> node during updates.
       const image = new Image();
       image.src = sourceUrl;
-      image.alt = "A vágásra kijelölt forráskép";
+      image.alt = copy.sourceAlt;
       image.decoding = "async";
       image.draggable = false;
 
@@ -150,13 +154,11 @@ export function FaviconCropEditor({
       canvas?.addEventListener("actionend", handleActionEnd);
 
       const cropperImage = cropper.getCropperImage();
-      if (!cropperImage)
-        throw new Error("A cropper-image elem nem jött létre.");
+      if (!cropperImage) throw new Error(copy.cropperImageError);
       await cropperImage.$ready();
       if (disposed) return;
       const selection = cropper.getCropperSelection();
-      if (!selection)
-        throw new Error("A cropper-selection elem nem jött létre.");
+      if (!selection) throw new Error(copy.cropperSelectionError);
       await selection.$nextTick();
       // A CropperImage a load esemény után még alkalmazza a saját kezdeti
       // "contain" transzformációját. Várjuk meg a kész web component layoutot,
@@ -173,12 +175,10 @@ export function FaviconCropEditor({
       onChange();
     })().catch((error: unknown) => {
       if (disposed) return;
-      console.error("A képvágó betöltése sikertelen.", error);
+      console.error(copy.loadConsoleError, error);
       onGetterChange(undefined);
       setIsReady(false);
-      setLoadError(
-        "A képvágó nem töltődött be. Indítsd újra a fejlesztői szervert, majd frissítsd az oldalt.",
-      );
+      setLoadError(copy.loadErrorMessage);
     });
 
     return () => {
@@ -244,18 +244,18 @@ export function FaviconCropEditor({
         <div
           ref={containerRef}
           role="application"
-          aria-label="Négyzetes képvágó"
+          aria-label={copy.cropperAriaLabel}
           className="morf-cropper size-full overflow-hidden rounded-3xl border border-border/70 bg-muted/60"
         />
         {!isReady && (
           <div className="pointer-events-none absolute inset-0 grid place-items-center px-6 text-center text-sm text-muted-foreground">
-            {loadError || "Képvágó betöltése…"}
+            {loadError || copy.loadingLabel}
           </div>
         )}
       </div>
       <div
         className="morf-inset-panel grid gap-4 rounded-3xl p-4 sm:grid-cols-2"
-        aria-label="Kép transzformációs vezérlői"
+        aria-label={copy.controlsAriaLabel}
       >
         <Field>
           <div className="flex items-center justify-between gap-3">
@@ -269,7 +269,7 @@ export function FaviconCropEditor({
                 strokeWidth={2}
                 aria-hidden="true"
               />
-              Nagyítás
+              {copy.zoomLabel}
             </FieldLabel>
             <output
               htmlFor="favicon-crop-zoom"
@@ -280,7 +280,7 @@ export function FaviconCropEditor({
           </div>
           <Slider
             id="favicon-crop-zoom"
-            aria-label="Kép nagyítása"
+            aria-label={copy.zoomAriaLabel}
             min={25}
             max={300}
             step={1}
@@ -302,7 +302,7 @@ export function FaviconCropEditor({
                 strokeWidth={2}
                 aria-hidden="true"
               />
-              Forgatás
+              {copy.rotationLabel}
             </FieldLabel>
             <output
               htmlFor="favicon-crop-rotation"
@@ -313,7 +313,7 @@ export function FaviconCropEditor({
           </div>
           <Slider
             id="favicon-crop-rotation"
-            aria-label="Kép forgatása"
+            aria-label={copy.rotationAriaLabel}
             min={-180}
             max={180}
             step={1}
@@ -324,17 +324,17 @@ export function FaviconCropEditor({
         </Field>
       </div>
 
-      <div className="flex flex-wrap gap-2" aria-label="Képvágás műveletei">
+      <div className="flex flex-wrap gap-2" aria-label={copy.actionsAriaLabel}>
         <Button
           type="button"
           variant="outline"
           size="sm"
           disabled={!isReady}
           onClick={center}
-          aria-label="Kép középre igazítása"
+          aria-label={copy.centerAriaLabel}
         >
           <HugeiconsIcon icon={CenterFocusIcon} strokeWidth={2} />
-          Középre helyezés
+          {copy.centerLabel}
         </Button>
         <Button
           type="button"
@@ -348,13 +348,10 @@ export function FaviconCropEditor({
             data-icon="inline-start"
             strokeWidth={2}
           />
-          Alaphelyzet
+          {copy.resetLabel}
         </Button>
       </div>
-      <p className="text-muted-foreground text-xs">
-        Húzd a képet a rögzített négyzet alatt, nagyíts érintéssel vagy a
-        vezérlőkkel. A margók már ezt a körbevágott képet módosítják.
-      </p>
+      <p className="text-muted-foreground text-xs">{copy.hint}</p>
     </div>
   );
 }

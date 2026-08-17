@@ -11,6 +11,14 @@ const browserSupportPhrases = [
   "chrome-mal vagy edge-dzsel",
   "h.264 mp4-kódolás",
   "type error",
+  "in your current browser",
+  "in this browser",
+  "current chrome",
+  "chrome or edge",
+  "h.264 mp4 encoding",
+  "does not support",
+  "cannot decode",
+  "cannot be decoded",
 ];
 
 export function videoSpeedBrowserSupportError(locale: Locale = "hu") {
@@ -23,6 +31,6 @@ export function videoConverterBrowserSupportError(locale: Locale = "hu") {
 
 export function isBrowserSupportError(message: string | undefined) {
   if (!message) return false;
-  const normalized = message.toLocaleLowerCase("hu-HU");
+  const normalized = message.toLowerCase();
   return browserSupportPhrases.some((phrase) => normalized.includes(phrase));
 }

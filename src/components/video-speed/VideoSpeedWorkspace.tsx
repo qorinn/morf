@@ -23,6 +23,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress";
 import { Toaster } from "@/components/ui/toast";
 import {
+  WorkspaceI18nProvider,
+  useWorkspaceI18n,
+} from "@/components/workspace/WorkspaceI18nProvider";
+import {
   addHardCut,
   addSpeedPoint,
   createSpeedCurveFileName,
@@ -55,6 +59,9 @@ import { downloadFile } from "@/lib/downloads/file-saver";
 import { isBrowserSupportError, videoSpeedBrowserSupportError } from "@/lib/browser-support";
 import { formatBytes } from "@/lib/filenames/image-filenames";
 import { useErrorToast } from "@/hooks/use-error-toast";
+import { getVideoSpeedMessages, type VideoSpeedMessages } from "@/i18n/video-speed";
+import { getLocalizedRoute } from "@/lib/localized-routes";
+import type { Locale } from "@/lib/locale";
 
 type Phase = "empty" | "inspecting" | "ready" | "rendering-audio" | "exporting" | "complete" | "error";
 type FrameScrubState = { targetFrame: number; requestedFrame: number | undefined; seeking: boolean };
@@ -62,25 +69,12 @@ type ControllerDragState = { shouldResume: boolean };
 type HardCutDrag = { pointIndex: number; target: "position" | "before" | "after" };
 
 const graph = { width: 1000, height: 320, paddingLeft: 50, paddingRight: 14, paddingY: 24 };
-const transitionOptions: Array<{ value: SpeedTransition; label: string }> = [
-  { value: "ease-in", label: "Ease in" },
-  { value: "ease-out", label: "Ease out" },
-  { value: "ease-in-out", label: "Ease in-out" },
-  { value: "linear", label: "Lineáris" },
-];
 
 function formatDuration(seconds: number): string {
   const safe = Math.max(0, seconds);
   const minutes = Math.floor(safe / 60);
   const remainder = safe % 60;
   return `${minutes}:${remainder.toFixed(1).padStart(4, "0")}`;
-}
-
-function isConvertibleSourceFormatError(error: string | undefined) {
-  if (!error) return false;
-  return error.includes("Válassz egyetlen MP4, MOV vagy WebM videót.")
-    || error.includes("Ez a fájltípus nem támogatott.")
-    || error.includes("A videó konténere nem olvasható.");
 }
 
 function formatTimestamp(seconds: number): string {
@@ -142,6 +136,7 @@ function CurveEditor({
   sourceDuration,
   frameRate,
   playbackPosition,
+  copy,
   onChange,
   onDragStart,
   onDragMove,
@@ -156,6 +151,7 @@ function CurveEditor({
   sourceDuration: number;
   frameRate: number;
   playbackPosition: number;
+  copy: VideoSpeedMessages["curveEditor"];
   onChange(curve: SpeedCurve): void;
   onDragStart?(node: SpeedCurveNode): void;
   onDragMove?(node: SpeedCurveNode): void;
@@ -165,6 +161,12 @@ function CurveEditor({
   onControllerDragEnd?(): void;
   onControllerSeek?(position: number): void;
 }) {
+  const transitionOptions: Array<{ value: SpeedTransition; label: string }> = [
+    { value: "ease-in", label: copy.transitions.easeIn },
+    { value: "ease-out", label: copy.transitions.easeOut },
+    { value: "ease-in-out", label: copy.transitions.easeInOut },
+    { value: "linear", label: copy.transitions.linear },
+  ];
   const [dragIndex, setDragIndex] = useState<number>();
   const [hardCutDrag, setHardCutDrag] = useState<HardCutDrag>();
   const [activeIndex, setActiveIndex] = useState<number>();
@@ -251,14 +253,14 @@ function CurveEditor({
           className="aria-pressed:border-primary aria-pressed:bg-muted"
           onClick={() => setAddMode((mode) => mode === "hard-cut" ? "point" : "hard-cut")}
         >
-          Hard jump hozzáadása
+          {copy.addHardCut}
         </Button>
       </div>
       <svg
         ref={svgRef}
         viewBox={`0 0 ${graph.width} ${graph.height}`}
         className="block aspect-[25/8] h-auto w-full touch-none select-none"
-        aria-label="Sebességgörbe. A függőleges jelző a videó aktuális pozícióját mutatja. Kattintással normál pontot vagy hard jumpot adhatsz hozzá."
+        aria-label={copy.graphAriaLabel}
         onPointerMove={changePointFromPointer}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
@@ -319,7 +321,7 @@ function CurveEditor({
           data-controller="true"
           tabIndex={disabled ? -1 : 0}
           role="slider"
-          aria-label="Videó pozíciója"
+          aria-label={copy.controllerAriaLabel}
           aria-valuemin={0}
           aria-valuemax={sourceDuration}
           aria-valuenow={sourceTimeAtPosition(currentControllerPosition, sourceDuration)}
@@ -373,7 +375,7 @@ function CurveEditor({
               height={graph.height - graph.paddingY * 2}
               tabIndex={disabled ? -1 : 0}
               role="slider"
-              aria-label={`Hard jump időpontja: ${Math.round(point.position * 100)}%. Balra és jobbra mozgatható.`}
+              aria-label={copy.hardCutPositionAriaLabel(Math.round(point.position * 100))}
               aria-valuemin={0}
               aria-valuemax={1}
               aria-valuenow={point.position}
@@ -430,7 +432,7 @@ function CurveEditor({
                   r="7"
                   tabIndex={disabled ? -1 : 0}
                   role="slider"
-                  aria-label={`${side === "before" ? "Hard jump előtti" : "Hard jump utáni"} sebesség: ${speed.toFixed(1)}×. Csak fel és le mozgatható.`}
+                  aria-label={copy.hardCutSpeedAriaLabel(side === "before" ? copy.hardCutBefore : copy.hardCutAfter, speed.toFixed(1))}
                   aria-valuemin={MIN_SPEED}
                   aria-valuemax={MAX_SPEED}
                   aria-valuenow={speed}
@@ -466,7 +468,11 @@ function CurveEditor({
             r="8"
             tabIndex={disabled ? -1 : 0}
             role="slider"
-            aria-label={`${index === 0 ? "Kezdőpont, függőlegesen szerkeszthető" : index === normalized.points.length - 1 ? "Végpont, függőlegesen szerkeszthető" : "Szerkeszthető"} görbepont: ${Math.round(point.position * 100)}%, ${point.speed.toFixed(1)}×`}
+            aria-label={copy.pointAriaLabel(
+              index === 0 ? copy.pointStart : index === normalized.points.length - 1 ? copy.pointEnd : copy.pointEditable,
+              Math.round(point.position * 100),
+              point.speed.toFixed(1),
+            )}
             aria-valuemin={MIN_SPEED}
             aria-valuemax={MAX_SPEED}
             aria-valuenow={point.speed}
@@ -519,9 +525,9 @@ function CurveEditor({
             <div className="border-border bg-card pointer-events-none flex items-baseline gap-2 rounded-lg border px-3 py-1.5 text-xs" aria-live="polite">
               <span
                 className="text-muted-foreground"
-                title="A frame-sorszám az átlagos FPS alapján számolt becslés; változó FPS-nél eltérhet."
+                title={copy.frameEstimateTitle}
               >
-                {formatTimestamp(activeSourceTime)} · ~#{frameNumberAtSourceTime(activeSourceTime, frameRate)}. frame
+                {formatTimestamp(activeSourceTime)} · ~#{frameNumberAtSourceTime(activeSourceTime, frameRate)}{copy.frameSuffix}
               </span>
               <strong className="text-foreground text-sm font-semibold tabular-nums">
                 {isHardCut(activeNode)
@@ -533,10 +539,10 @@ function CurveEditor({
           <div className="grid gap-3 md:grid-cols-2">
             {activeIndex > 0 && (
               <fieldset className="border-primary/35 bg-card flex min-w-0 flex-col gap-2 rounded-md border border-l-4 p-3">
-                <legend className="sr-only">Bal oldali átmenet</legend>
+                <legend className="sr-only">{copy.incomingTransitionLegend}</legend>
                 <div className="text-primary flex items-center gap-1.5 text-xs font-semibold">
                   <HugeiconsIcon icon={ArrowLeft01Icon} size={15} strokeWidth={2.2} aria-hidden="true" />
-                  <span>Balról érkezik</span>
+                  <span>{copy.incomingFrom}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5">
                   {transitionOptions.map((option) => (
@@ -554,15 +560,15 @@ function CurveEditor({
                   ))}
                 </div>
                 {isHardCut(activeNode) && (
-                  <p className="text-muted-foreground text-xs">A Hard jump bal oldali végéhez fut.</p>
+                  <p className="text-muted-foreground text-xs">{copy.hardCutIncomingNote}</p>
                 )}
               </fieldset>
             )}
             {activeIndex < normalized.points.length - 1 && (
               <fieldset className={`border-ring/40 flex min-w-0 flex-col gap-2 rounded-md border border-r-4 p-3 ${activeIndex === 0 ? "md:col-start-2" : ""}`}>
-                <legend className="sr-only">Jobb oldali átmenet</legend>
+                <legend className="sr-only">{copy.outgoingTransitionLegend}</legend>
                 <div className="text-secondary-foreground flex items-center justify-end gap-1.5 text-xs font-semibold">
-                  <span>Jobbra indul</span>
+                  <span>{copy.outgoingTo}</span>
                   <HugeiconsIcon icon={ArrowRight01Icon} size={15} strokeWidth={2.2} aria-hidden="true" />
                 </div>
                 <div className="grid grid-cols-2 gap-1.5">
@@ -581,7 +587,7 @@ function CurveEditor({
                   ))}
                 </div>
                 {isHardCut(activeNode) && (
-                  <p className="text-muted-foreground text-xs">A Hard jump jobb oldali végéből indul.</p>
+                  <p className="text-muted-foreground text-xs">{copy.hardCutOutgoingNote}</p>
                 )}
               </fieldset>
             )}
@@ -592,7 +598,9 @@ function CurveEditor({
   );
 }
 
-export default function VideoSpeedWorkspace() {
+function StandardVideoSpeedWorkspace({ locale }: { locale: Locale }) {
+  const { messages } = useWorkspaceI18n<VideoSpeedMessages>();
+  const { workspace } = messages;
   const [phase, setPhase] = useState<Phase>("empty");
   const [source, setSource] = useState<File>();
   const [sourceUrl, setSourceUrl] = useState<string>();
@@ -614,6 +622,18 @@ export default function VideoSpeedWorkspace() {
   const controllerScrubRef = useRef<FrameScrubState | undefined>(undefined);
   const controllerResumeAfterScrubRef = useRef(false);
 
+  const isConvertibleSourceFormatError = useCallback(
+    (message: string | undefined) => {
+      if (!message) return false;
+      return (
+        message.includes(workspace.dropRejected) ||
+        message.includes(messages.workerErrors.unsupportedFileType.message) ||
+        message.includes(messages.workerErrors.unreadableContainer.message)
+      );
+    },
+    [messages.workerErrors, workspace.dropRejected],
+  );
+
   const sourceDuration = metadata?.duration ?? 0;
   const outputDuration = useMemo(
     () => estimateOutputDuration(curve, sourceDuration),
@@ -626,7 +646,7 @@ export default function VideoSpeedWorkspace() {
   const activePreset = curvePresetId(curve);
   const busy = phase === "inspecting" || phase === "rendering-audio" || phase === "exporting";
 
-  useErrorToast(error, "A videó sebességgörbéje nem használható");
+  useErrorToast(error, workspace.errorToastTitle);
 
   const releaseWorker = useCallback(() => {
     workerRef.current?.worker.terminate();
@@ -654,20 +674,20 @@ export default function VideoSpeedWorkspace() {
     const worker = createVideoSpeedWorker();
     workerRef.current = worker;
     try {
-      const inspected = await worker.api.inspectVideo(file);
+      const inspected = await worker.api.inspectVideo(file, messages.workerErrors);
       if (!inspected.valid) throw new Error(`${inspected.message} ${inspected.suggestion}`);
       if (!inspected.canEncode) {
-        throw new Error(videoSpeedBrowserSupportError());
+        throw new Error(videoSpeedBrowserSupportError(locale));
       }
       setMetadata(inspected.metadata);
       setPhase("ready");
     } catch (reason) {
       setMetadata(undefined);
       setPhase("error");
-      const message = reason instanceof Error ? reason.message : "A videó vizsgálata nem sikerült.";
-      setError(isBrowserSupportError(message) ? videoSpeedBrowserSupportError() : message);
+      const message = reason instanceof Error ? reason.message : workspace.inspectionFailedFallback;
+      setError(isBrowserSupportError(message) ? videoSpeedBrowserSupportError(locale) : message);
     }
-  }, [clearResult, releaseWorker]);
+  }, [clearResult, locale, messages.workerErrors, releaseWorker, workspace.inspectionFailedFallback]);
 
   const dropzone = useDropzone({
     multiple: false,
@@ -677,7 +697,7 @@ export default function VideoSpeedWorkspace() {
     onDropAccepted: ([file]) => file && void selectSource(file),
     onDropRejected: () => {
       setPhase("error");
-      setError("Válassz egyetlen MP4, MOV vagy WebM videót.");
+      setError(workspace.dropRejected);
     },
   });
 
@@ -937,7 +957,7 @@ export default function VideoSpeedWorkspace() {
       }
       setPhase("exporting");
       const exported = await workerRef.current.api.exportVideo(
-        transferableExportRequest({ file: source, metadata, curve, audio }),
+        transferableExportRequest({ file: source, metadata, curve, audio, copy: messages.workerErrors }),
         proxy((progress) => {
           const ratio = progress.sourceDuration > 0
             ? progress.sourceTimestamp / progress.sourceDuration
@@ -955,8 +975,8 @@ export default function VideoSpeedWorkspace() {
         setPhase("ready");
       } else {
         setPhase("error");
-        const message = reason instanceof Error ? reason.message : "Az export nem sikerült.";
-        setError(isBrowserSupportError(message) ? videoSpeedBrowserSupportError() : message);
+        const message = reason instanceof Error ? reason.message : workspace.exportFailedFallback;
+        setError(isBrowserSupportError(message) ? videoSpeedBrowserSupportError(locale) : message);
       }
     } finally {
       exportAbortRef.current = undefined;
@@ -971,11 +991,11 @@ export default function VideoSpeedWorkspace() {
             accept: "video/mp4,video/quicktime,video/webm,.mp4,.m4v,.mov,.webm",
           })}
           className="sr-only"
-          aria-label="Videó kiválasztása"
+          aria-label={workspace.sourceInputAriaLabel}
         />
         <header className="flex max-w-3xl flex-col gap-2">
-          <h2 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">Sebességgörbe szerkesztő</h2>
-          <p className="text-muted-foreground text-base leading-relaxed">Adj felgyorsításokat és lassításokat a teljes videóhoz. A feldolgozás a böngésződben marad.</p>
+          <h2 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">{workspace.heading}</h2>
+          <p className="text-muted-foreground text-base leading-relaxed">{workspace.description}</p>
         </header>
 
         {(!source || (phase === "error" && !metadata)) && (
@@ -983,26 +1003,28 @@ export default function VideoSpeedWorkspace() {
             getRootProps={dropzone.getRootProps}
             isDragActive={dropzone.isDragActive}
             onBrowse={dropzone.open}
-            title="Videó feltöltése"
-            description="MP4, MOV vagy WebM videó. Egy munkamenetben egy videót szerkeszthetsz."
-            buttonLabel="Videó kiválasztása"
+            title={workspace.dropzone.title}
+            activeTitle={workspace.dropzone.activeTitle}
+            description={workspace.dropzone.description}
+            buttonLabel={workspace.dropzone.buttonLabel}
             busy={phase === "inspecting"}
-            busyLabel="Videó vizsgálata"
+            busyLabel={workspace.dropzone.busyLabel}
             icon={Video01Icon}
+            privacyNote={workspace.dropzone.privacyNote}
           />
         )}
 
         {error && (
           <Alert variant="destructive">
-            <AlertTitle>Nem sikerült folytatni</AlertTitle>
+            <AlertTitle>{workspace.continueFailedTitle}</AlertTitle>
             <AlertDescription>
               {error}
               {isBrowserSupportError(error) && <BrowserSupportHint />}
               {isConvertibleSourceFormatError(error) && (
                 <div className="mt-3 flex flex-wrap items-center gap-3">
-                  <span>Másik formátumú videót próbálnál?</span>
-                  <Button variant="outline" size="sm" render={<a href="/video-konvertalo" />}>
-                    Videó konvertáló
+                  <span>{workspace.tryAnotherFormat}</span>
+                  <Button variant="outline" size="sm" render={<a href={getLocalizedRoute("videoConverter", locale)} />}>
+                    {workspace.videoConverterLink}
                     <HugeiconsIcon icon={ArrowRight01Icon} data-icon="inline-end" strokeWidth={2} />
                   </Button>
                 </div>
@@ -1021,9 +1043,9 @@ export default function VideoSpeedWorkspace() {
                 aria-hidden="true"
               />
               <div className="flex flex-col gap-1">
-                <p className="font-medium">Videó vizsgálata</p>
+                <p className="font-medium">{workspace.inspectingCard.title}</p>
                 <p className="text-muted-foreground text-sm">
-                  Ellenőrizzük a konténert, a kodeket és a böngésződ MP4-kódolási támogatását.
+                  {workspace.inspectingCard.description}
                 </p>
               </div>
             </CardContent>
@@ -1035,10 +1057,10 @@ export default function VideoSpeedWorkspace() {
             <div className="order-2 flex min-w-0 flex-col gap-4 lg:order-none lg:col-start-1">
               <header className="flex items-start justify-between gap-4">
                 <div className="min-w-0 space-y-1">
-                  <h3 className="truncate text-base font-semibold">Előnézet és sebességgörbe</h3>
+                  <h3 className="truncate text-base font-semibold">{workspace.previewHeading}</h3>
                   <p className="text-muted-foreground truncate text-sm">{source.name} · {formatBytes(source.size)} · {metadata.width} × {metadata.height} · {metadata.frameRate.toFixed(2)} FPS</p>
                 </div>
-                <Button variant="ghost" size="sm" disabled={busy} onClick={() => dropzone.open()}>Csere</Button>
+                <Button variant="ghost" size="sm" disabled={busy} onClick={() => dropzone.open()}>{workspace.changeButton}</Button>
               </header>
               <div className="border-border overflow-hidden border bg-card">
                 <div className="relative bg-black">
@@ -1046,7 +1068,7 @@ export default function VideoSpeedWorkspace() {
                     ref={videoRef}
                     src={sourceUrl}
                     className="aspect-video w-full"
-                    aria-label="Videó előnézet"
+                    aria-label={workspace.videoPreviewAriaLabel}
                     onPlay={() => setIsPlaying(true)}
                     onPause={() => setIsPlaying(false)}
                     onEnded={() => setIsPlaying(false)}
@@ -1058,25 +1080,26 @@ export default function VideoSpeedWorkspace() {
                     size="sm"
                     className="shrink-0 aria-pressed:border-primary aria-pressed:bg-muted"
                     onClick={togglePreviewPlayback}
-                    aria-label={isPlaying ? "Videó szüneteltetése" : "Videó lejátszása"}
+                    aria-label={isPlaying ? workspace.playbackPause : workspace.playbackPlay}
                   >
                     <HugeiconsIcon icon={isPlaying ? PauseIcon : PlayIcon} data-icon="inline-start" strokeWidth={2} />
-                    {isPlaying ? "Szünet" : "Lejátszás"}
+                    {isPlaying ? workspace.pauseLabel : workspace.playLabel}
                   </Button>
                   <span className="text-muted-foreground ml-auto shrink-0 text-xs font-medium tabular-nums" aria-live="off">
-                    Kimenet: {formatDuration(previewOutputTime)} / {formatDuration(outputDuration)}
+                    {workspace.outputLabel} {formatDuration(previewOutputTime)} / {formatDuration(outputDuration)}
                   </span>
                   <span className="bg-card text-foreground shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold tabular-nums">
                     {speedAt(curve, sourceDuration > 0 ? previewTime / sourceDuration : 0).toFixed(2)}×
                   </span>
                 </div>
-                <section aria-label="Sebességgörbe">
+                <section aria-label={workspace.heading}>
                   <CurveEditor
                     curve={curve}
                     disabled={busy}
                     sourceDuration={sourceDuration}
                     frameRate={metadata.frameRate}
                     playbackPosition={sourceDuration > 0 ? previewTime / sourceDuration : 0}
+                    copy={messages.curveEditor}
                     onChange={setCurve}
                     onDragStart={startCurvePointPreview}
                     onDragMove={previewCurvePoint}
@@ -1091,7 +1114,7 @@ export default function VideoSpeedWorkspace() {
                   {curve.points.length > 2 && (
                     <Button variant="ghost" size="sm" className="w-fit" disabled={busy} onClick={() => setCurve(defaultSpeedCurve)}>
                       <HugeiconsIcon icon={Delete02Icon} data-icon="inline-start" strokeWidth={2} />
-                      Egyedi pontok törlése
+                      {workspace.clearCustomPoints}
                     </Button>
                   )}
                 </div>
@@ -1101,7 +1124,7 @@ export default function VideoSpeedWorkspace() {
             <aside className="order-1 flex flex-col gap-3 lg:order-none lg:sticky lg:top-6 lg:self-start lg:gap-6">
               <Card className="border-0 bg-transparent shadow-none lg:border lg:bg-muted/45">
                 <CardHeader className="px-0 pb-3 lg:px-6">
-                  <CardTitle className="text-base">Curve presetek</CardTitle>
+                  <CardTitle className="text-base">{workspace.curvePresetsTitle}</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-3 px-0 lg:gap-4 lg:px-6">
                   <div className="grid grid-cols-3 gap-1.5">
@@ -1125,11 +1148,11 @@ export default function VideoSpeedWorkspace() {
                   <div className="flex flex-wrap gap-2">
                     <Button variant="outline" size="sm" className="justify-start aria-pressed:border-primary aria-pressed:bg-muted" aria-pressed={videoLoopEnabled} onClick={() => setVideoLoopEnabled((enabled) => !enabled)}>
                       <HugeiconsIcon icon={RepeatIcon} data-icon="inline-start" strokeWidth={2} />
-                      Videó loop
+                      {workspace.videoLoop}
                     </Button>
                     <Button variant="outline" size="sm" className="justify-start aria-pressed:border-primary aria-pressed:bg-muted" disabled={busy || !metadata.hasAudio} aria-pressed={preservePitch} onClick={() => setPreservePitch((enabled) => !enabled)}>
                       <HugeiconsIcon icon={MusicNote01Icon} data-icon="inline-start" strokeWidth={2} />
-                      Hangmagasság megtartása
+                      {workspace.preservePitch}
                     </Button>
                   </div>
                 </CardContent>
@@ -1137,36 +1160,36 @@ export default function VideoSpeedWorkspace() {
 
               <Card className="bg-muted/45 border shadow-none">
                 <CardHeader>
-                  <CardTitle>Kimenet</CardTitle>
-                  <CardDescription>Teljes felbontású H.264/AAC MP4. Nem készül mesterséges képkocka-interpoláció.</CardDescription>
+                  <CardTitle>{workspace.outputCard.title}</CardTitle>
+                  <CardDescription>{workspace.outputCard.description}</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-5">
                   <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                    <div><dt className="text-muted-foreground">Forrás</dt><dd className="font-semibold tabular-nums">{formatDuration(sourceDuration)}</dd></div>
-                    <div><dt className="text-muted-foreground">Becsült kimenet</dt><dd className="font-semibold tabular-nums">{formatDuration(outputDuration)}</dd></div>
+                    <div><dt className="text-muted-foreground">{workspace.sourceLabel}</dt><dd className="font-semibold tabular-nums">{formatDuration(sourceDuration)}</dd></div>
+                    <div><dt className="text-muted-foreground">{workspace.estimatedOutputLabel}</dt><dd className="font-semibold tabular-nums">{formatDuration(outputDuration)}</dd></div>
                   </dl>
                   <Button size="lg" disabled={busy} onClick={() => void runExport()}>
                     <HugeiconsIcon icon={Film01Icon} data-icon="inline-start" strokeWidth={2} />
-                    MP4 exportálása
+                    {workspace.exportButton}
                   </Button>
-                  {error && <Alert variant="destructive"><AlertTitle>Az export nem indult el</AlertTitle><AlertDescription>{error}{isBrowserSupportError(error) && <BrowserSupportHint />}</AlertDescription></Alert>}
+                  {error && <Alert variant="destructive"><AlertTitle>{workspace.exportNotStartedTitle}</AlertTitle><AlertDescription>{error}{isBrowserSupportError(error) && <BrowserSupportHint />}</AlertDescription></Alert>}
                   {busy && (
                     <div className="flex flex-col gap-2">
-                      <Progress value={exportProgress * 100}><ProgressLabel>{phase === "rendering-audio" ? "Hang feldolgozása" : "MP4 kódolása"}</ProgressLabel><ProgressValue /></Progress>
+                      <Progress value={exportProgress * 100}><ProgressLabel>{phase === "rendering-audio" ? workspace.progress.renderingAudio : workspace.progress.encoding}</ProgressLabel><ProgressValue /></Progress>
                       <Button variant="ghost" size="sm" className="w-fit" onClick={() => {
                         exportAbortRef.current?.abort();
                         workerRef.current?.api.cancel();
-                      }}>Export megszakítása</Button>
+                      }}>{workspace.cancelExport}</Button>
                     </div>
                   )}
                   {result && (
                     <Alert>
-                      <AlertTitle>Kész az MP4</AlertTitle>
+                      <AlertTitle>{workspace.exportCompleteTitle}</AlertTitle>
                       <AlertDescription className="mt-3 flex flex-wrap items-center gap-3">
                         <span>{result.fileName} · {formatBytes(result.blob.size)}</span>
                         <Button size="sm" onClick={() => downloadFile({ blob: result.blob, fileName: result.fileName, mimeType: "video/mp4" })}>
                           <HugeiconsIcon icon={Download04Icon} data-icon="inline-start" strokeWidth={2} />
-                          Letöltés
+                          {workspace.downloadButton}
                         </Button>
                       </AlertDescription>
                     </Alert>
@@ -1179,5 +1202,19 @@ export default function VideoSpeedWorkspace() {
       </div>
       <Toaster />
     </section>
+  );
+}
+
+interface VideoSpeedWorkspaceProps {
+  locale?: Locale;
+}
+
+export default function VideoSpeedWorkspace({
+  locale = "hu",
+}: VideoSpeedWorkspaceProps) {
+  return (
+    <WorkspaceI18nProvider locale={locale} messages={getVideoSpeedMessages(locale)}>
+      <StandardVideoSpeedWorkspace locale={locale} />
+    </WorkspaceI18nProvider>
   );
 }

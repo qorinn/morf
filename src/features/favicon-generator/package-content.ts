@@ -1,7 +1,14 @@
 import type {
   FaviconExportOptions,
+  FaviconTextCopy,
   ManifestSettings,
 } from "@/features/favicon-generator/types";
+
+function format(template: string, tokens: Record<string, string>): string {
+  return template.replace(/\{(\w+)\}/g, (match, key) =>
+    key in tokens ? tokens[key] : match,
+  );
+}
 
 function hasTarget(
   options: FaviconExportOptions,
@@ -25,51 +32,49 @@ const manifestValidationOrigin = "https://manifest.local";
 function parseRootRelativeManifestUrl(
   value: string,
   label: string,
+  copy: FaviconTextCopy["manifestErrors"],
 ): { url?: URL; error?: string } {
   const trimmed = value.trim();
   if (!trimmed) {
-    return { error: `${label}: adj meg egy URL-útvonalat.` };
+    return { error: format(copy.needsPathTemplate, { label }) };
   }
   if (!trimmed.startsWith("/")) {
-    return {
-      error: `${label}: gyökérrel kezdődő útvonalat használj, például / vagy /app/.`,
-    };
+    return { error: format(copy.needsRootPathTemplate, { label }) };
   }
 
   try {
     const url = new URL(trimmed, manifestValidationOrigin);
     if (url.origin !== manifestValidationOrigin) {
-      return {
-        error: `${label}: csak az alkalmazással azonos domain használható.`,
-      };
+      return { error: format(copy.sameDomainOnlyTemplate, { label }) };
     }
     return { url };
   } catch {
-    return { error: `${label}: az URL-útvonal nem érvényes.` };
+    return { error: format(copy.invalidPathTemplate, { label }) };
   }
 }
 
 export function validateManifestNavigation(
   settings: Pick<ManifestSettings, "id" | "startUrl" | "scope">,
+  copy: FaviconTextCopy["manifestErrors"],
 ): ManifestNavigationErrors {
   const errors: ManifestNavigationErrors = {};
-  const id = parseRootRelativeManifestUrl(settings.id, "Az alkalmazás ID");
+  const id = parseRootRelativeManifestUrl(settings.id, copy.appIdLabel, copy);
   const startUrl = parseRootRelativeManifestUrl(
     settings.startUrl,
-    "Az indulási URL",
+    copy.startUrlLabel,
+    copy,
   );
-  const scope = parseRootRelativeManifestUrl(settings.scope, "A hatókör");
+  const scope = parseRootRelativeManifestUrl(settings.scope, copy.scopeLabel, copy);
 
   if (id.error) errors.id = id.error;
   if (startUrl.error) errors.startUrl = startUrl.error;
   if (scope.error) errors.scope = scope.error;
 
   if (id.url?.hash) {
-    errors.id = "Az alkalmazás ID nem tartalmazhat # fragmentumot.";
+    errors.id = copy.idNoHash;
   }
   if (scope.url && (scope.url.search || scope.url.hash)) {
-    errors.scope =
-      "A hatókör nem tartalmazhat query paramétert vagy # fragmentumot.";
+    errors.scope = copy.scopeNoQueryOrHash;
   }
 
   if (startUrl.url && scope.url && !errors.startUrl && !errors.scope) {
@@ -79,8 +84,7 @@ export function validateManifestNavigation(
     const startPath = startUrl.url.pathname;
     const startsAtScopeRoot = startPath === scope.url.pathname;
     if (!startsAtScopeRoot && !startPath.startsWith(scopePath)) {
-      errors.startUrl =
-        "Az indulási URL-nek a megadott hatókörön belül kell lennie.";
+      errors.startUrl = copy.startUrlOutsideScope;
     }
   }
 
@@ -147,8 +151,11 @@ export function createHtmlCode({
   return lines.length ? `${lines.join("\n")}\n` : "";
 }
 
-export function createManifest(settings: ManifestSettings): string {
-  const navigationErrors = validateManifestNavigation(settings);
+export function createManifest(
+  settings: ManifestSettings,
+  copy: FaviconTextCopy,
+): string {
+  const navigationErrors = validateManifestNavigation(settings, copy.manifestErrors);
   const navigationError = Object.values(navigationErrors)[0];
   if (navigationError) {
     throw new Error(`Manifest: ${navigationError}`);
@@ -191,43 +198,45 @@ export function createReadme({
   exportOptions,
   htmlCode,
   hasSvg,
+  copy,
 }: {
   exportOptions: FaviconExportOptions;
   htmlCode: string;
   hasSvg: boolean;
+  copy: FaviconTextCopy["readme"];
 }): string {
   const includeWebsite = hasTarget(exportOptions, "website");
   const includeWebApp = hasTarget(exportOptions, "web-app");
   const includeManifest = includeWebApp && exportOptions.includeWebManifest;
   const websiteFiles = includeWebsite
-    ? "- `favicon.ico`: 16, 32 és 48 px-es böngészőikon egy fájlban\n- `favicon-16x16.png`, `favicon-32x32.png`, `favicon-48x48.png`: modern PNG faviconok\n- `apple-touch-icon.png`: 180 px-es, átlátszóság nélküli Apple Touch ikon\n"
+    ? `- \`favicon.ico\`: ${copy.files.faviconIco}\n- \`favicon-16x16.png\`, \`favicon-32x32.png\`, \`favicon-48x48.png\`: ${copy.files.faviconPngSet}\n- \`apple-touch-icon.png\`: ${copy.files.appleTouchIcon}\n`
     : "";
   const svgLine =
     includeWebsite && hasSvg
-      ? "- `favicon.svg`: a megtisztított, skálázható SVG-forrás\n"
+      ? `- \`favicon.svg\`: ${copy.files.faviconSvg}\n`
       : "";
   const webAppFiles = includeWebApp
-    ? "- `web-app-manifest-*.png`: normál és maskable webappikonok\n"
+    ? `- \`web-app-manifest-*.png\`: ${copy.files.webAppManifestSet}\n`
     : "";
   const manifestLine = includeManifest
-    ? "- `site.webmanifest`: a telepíthető webalkalmazás metaadatai\n"
+    ? `- \`site.webmanifest\`: ${copy.files.siteWebmanifest}\n`
     : "";
   const codeLine = htmlCode
-    ? "- `favicon-code.html`: a weboldal `<head>` részéhez szükséges kód\n"
+    ? `- \`favicon-code.html\`: ${copy.files.faviconCode}\n`
     : "";
   const installation = htmlCode
-    ? `## Telepítés\n\nA legtöbb keretrendszerben a fájlok helye a \`public/\`, \`static/\` vagy a webhely gyökérkönyvtára. Másold a következő kódot a dokumentum \`<head>\` részébe:\n\n\`\`\`html\n${htmlCode.trim()}\n\`\`\`\n\n`
+    ? `${copy.installationHeading}\n\n${copy.installationIntro}\n\n\`\`\`html\n${htmlCode.trim()}\n\`\`\`\n\n`
     : "";
 
-  return `# Ikoncsomag
+  return `${copy.title}
 
-A generált fájlokat másold a webhely publikus vagy statikus könyvtárába.
+${copy.intro}
 
-## Fájlok
+${copy.filesHeading}
 
-${websiteFiles}${svgLine}${webAppFiles}${manifestLine}${codeLine}- \`README.md\`: ez a telepítési és fájlhasználati útmutató
+${websiteFiles}${svgLine}${webAppFiles}${manifestLine}${codeLine}- \`README.md\`: ${copy.readmeFileDescription}
 
-${installation}${includeManifest ? "A manifest fájlt ugyanazon a domainen szolgáld ki, mint az oldalt. Az `id` maradjon stabil, a `start_url` pedig legyen a `scope` hatókörén belül. Az offline működéshez külön service worker szükséges. " : ""}A böngészők cache-elhetik az ikonokat, ezért a frissítés nem mindig azonnali.
+${installation}${includeManifest ? copy.manifestNote : ""}${copy.cacheNote}
 `;
 }
 

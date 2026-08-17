@@ -72,7 +72,7 @@ export async function generateFaviconPackage(
     includeWebApp && request.exportOptions.includeWebManifest;
 
   if (!includeWebsite && !includeWebApp) {
-    throw new Error("Válassz legalább egy exportcélt.");
+    throw new Error(request.copy.noExportTargetError);
   }
 
   report(onProgress, "generating", 8);
@@ -91,7 +91,13 @@ export async function generateFaviconPackage(
     ? encodePngIco(
         ICO_SIZES.map((size) => {
           const png = standardAssets.get(`favicon-${size}x${size}.png`);
-          if (!png) throw new Error(`Hiányzó ${size} px-es ICO frame.`);
+          if (!png)
+            throw new Error(
+              request.copy.missingIcoFrameTemplate.replace(
+                "{size}",
+                String(size),
+              ),
+            );
           return { size, png };
         }),
       )
@@ -117,12 +123,13 @@ export async function generateFaviconPackage(
     themeColor: request.manifest.themeColor,
   });
   const manifest = includeManifest
-    ? createManifest(request.manifest)
+    ? createManifest(request.manifest, request.copy)
     : undefined;
   const readme = createReadme({
     exportOptions: request.exportOptions,
     htmlCode,
     hasSvg: Boolean(request.sanitizedSvg),
+    copy: request.copy.readme,
   });
 
   const encoder = new TextEncoder();

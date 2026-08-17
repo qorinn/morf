@@ -51,6 +51,39 @@ export const toolMessages = defineMessages({
     cta: "Oldal ellenőrzése", formats: "Open Graph, X Card", features: ["Éles oldal Open Graph ellenőrzése", "Helyi kép-előnézet drag and droppal", "Ajánlott szöveghossz és képméret", "Azonnal másolható meta tag kód"],
   },
   },
-} satisfies { hu: Record<ToolId, ToolMessage> });
+  en: {
+  imageConverter: {
+    title: "Image converter",
+    shortDescription: "Free, ad-free image conversion with no daily limit.",
+    description: "Convert multiple JPG, PNG, or WebP images for free, without registration or a daily limit, and set the size and quality in one place.",
+    cta: "Convert images", formats: "JPG, PNG, WebP", features: ["Format conversion and resizing", "Process several images at once", "Save individually or as a ZIP"],
+  },
+  faviconGenerator: {
+    title: "Favicon generator", shortDescription: "Free favicon and PWA icon pack from a single image.",
+    description: "Create a favicon and PWA icon pack from a single image for free, without ads or registration.",
+    cta: "Create favicon", formats: "ICO, PNG, Apple, PWA", features: ["Crop and preview at real icon size", "Separate safe zone for maskable icons", "Choose what you need: website or web app"],
+  },
+  videoFrames: {
+    title: "Video to frames", shortDescription: "Free video to frames extraction with local PNG export.",
+    description: "Extract full-resolution PNG frames from MP4, MOV, or WebM video for free, ad-free, then optimize them in the image converter.",
+    cta: "Extract frames", formats: "MP4, MOV, WebM → PNG", features: ["Every frame or a chosen FPS", "Checkpointed local processing", "One-click handoff to the optimizer"],
+  },
+  videoSpeed: {
+    title: "Video speed editor", shortDescription: "Free video speed up and slow down with a curve.",
+    description: "Speed up or slow down video with an editable speed curve for free, no account or daily limit, then download it as MP4.",
+    cta: "Edit video", formats: "MP4, MOV, WebM → MP4", features: ["Draggable points and five curve presets", "Playable preview and length estimate", "Optional pitch preservation"],
+  },
+  videoConverter: {
+    title: "Video converter and optimizer", shortDescription: "Free video conversion and file size reduction.",
+    description: "Convert video to MP4, WebM, or MOV for free and ad-free, reduce the resolution, and preview the expected file size.",
+    cta: "Convert video", formats: "MP4, MOV, WebM, MKV, TS → MP4, WebM, MOV", features: ["Percentage-based resolution reduction", "Three compression levels", "Local processing and download"],
+  },
+  sharePreview: {
+    title: "Open Graph checker", shortDescription: "Free Open Graph check and share preview.",
+    description: "Check your page's Open Graph data for free, see the share preview, then copy the improved meta tags.",
+    cta: "Check page", formats: "Open Graph, X Card", features: ["Open Graph check for a live page", "Local image preview with drag and drop", "Recommended text length and image size", "Instantly copyable meta tag code"],
+  },
+  },
+} satisfies { hu: Record<ToolId, ToolMessage>; en: Record<ToolId, ToolMessage> });
 
 export type ToolMessages = (typeof toolMessages)["hu"];

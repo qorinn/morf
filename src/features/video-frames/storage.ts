@@ -5,7 +5,9 @@ import {
   type FrameRecordV1,
   type FrameSetManifestV1,
   type FrameSetSummary,
+  type VideoFramesTextCopy,
 } from "./types.ts";
+import { getVideoFramesMessages } from "../../i18n/video-frames.ts";
 
 const rootDirectoryName = "morf-video-framek";
 const manifestFileName = "manifest.json";
@@ -13,9 +15,13 @@ const chunksDirectoryName = "chunks";
 const framesDirectoryName = "frames";
 const staleAfterMilliseconds = 24 * 60 * 60 * 1000;
 
-async function getRootDirectory(): Promise<FileSystemDirectoryHandle> {
+const defaultCopy = getVideoFramesMessages("hu").workerErrors;
+
+async function getRootDirectory(
+  copy: VideoFramesTextCopy = defaultCopy,
+): Promise<FileSystemDirectoryHandle> {
   if (!navigator.storage?.getDirectory) {
-    throw new Error("A böngésződ nem támogatja a szükséges helyi fájltárolót.");
+    throw new Error(copy.localStorageUnsupported);
   }
 
   const opfsRoot = await navigator.storage.getDirectory();
@@ -25,8 +31,9 @@ async function getRootDirectory(): Promise<FileSystemDirectoryHandle> {
 export async function getFrameSetDirectory(
   frameSetId: string,
   create = false,
+  copy: VideoFramesTextCopy = defaultCopy,
 ): Promise<FileSystemDirectoryHandle> {
-  const root = await getRootDirectory();
+  const root = await getRootDirectory(copy);
   return root.getDirectoryHandle(frameSetId, { create });
 }
 
@@ -65,29 +72,32 @@ async function readJson<T>(
 function assertSupportedVersion(
   value: { schemaVersion?: unknown },
   artifactName: string,
+  copy: VideoFramesTextCopy,
 ): void {
   if (value.schemaVersion !== frameSetSchemaVersion) {
     throw new Error(
-      `A helyi ${artifactName} verziója nem támogatott. Készíts új képkészletet.`,
+      copy.unsupportedSchemaVersionTemplate.replace("{artifact}", artifactName),
     );
   }
 }
 
 export async function writeFrameSetManifest(
   manifest: FrameSetManifestV1,
+  copy: VideoFramesTextCopy = defaultCopy,
 ): Promise<void> {
-  const directory = await getFrameSetDirectory(manifest.id, true);
+  const directory = await getFrameSetDirectory(manifest.id, true, copy);
   await writeJson(directory, manifestFileName, manifest);
 }
 
 export async function readFrameSetManifest(
   frameSetId: string,
+  copy: VideoFramesTextCopy = defaultCopy,
 ): Promise<FrameSetManifestV1> {
   const manifest = await readJson<FrameSetManifestV1>(
-    await getFrameSetDirectory(frameSetId),
+    await getFrameSetDirectory(frameSetId, false, copy),
     manifestFileName,
   );
-  assertSupportedVersion(manifest, "képkészlet");
+  assertSupportedVersion(manifest, copy.frameSetArtifactName, copy);
   return manifest;
 }
 
@@ -95,8 +105,9 @@ export async function writeFrameBlob(
   frameSetId: string,
   fileName: string,
   blob: Blob,
+  copy: VideoFramesTextCopy = defaultCopy,
 ): Promise<void> {
-  const frameSet = await getFrameSetDirectory(frameSetId, true);
+  const frameSet = await getFrameSetDirectory(frameSetId, true, copy);
   const frames = await frameSet.getDirectoryHandle(framesDirectoryName, {
     create: true,
   });
@@ -106,15 +117,19 @@ export async function writeFrameBlob(
 export async function readFrameFile(
   frameSetId: string,
   fileName: string,
+  copy: VideoFramesTextCopy = defaultCopy,
 ): Promise<File> {
-  const frameSet = await getFrameSetDirectory(frameSetId);
+  const frameSet = await getFrameSetDirectory(frameSetId, false, copy);
   const frames = await frameSet.getDirectoryHandle(framesDirectoryName);
   const handle = await frames.getFileHandle(fileName);
   return handle.getFile();
 }
 
-export async function writeFrameChunk(chunk: FrameChunkIndexV1): Promise<void> {
-  const frameSet = await getFrameSetDirectory(chunk.frameSetId, true);
+export async function writeFrameChunk(
+  chunk: FrameChunkIndexV1,
+  copy: VideoFramesTextCopy = defaultCopy,
+): Promise<void> {
+  const frameSet = await getFrameSetDirectory(chunk.frameSetId, true, copy);
   const chunks = await frameSet.getDirectoryHandle(chunksDirectoryName, {
     create: true,
   });
@@ -128,23 +143,25 @@ export async function writeFrameChunk(chunk: FrameChunkIndexV1): Promise<void> {
 export async function readFrameChunk(
   frameSetId: string,
   chunkNumber: number,
+  copy: VideoFramesTextCopy = defaultCopy,
 ): Promise<FrameChunkIndexV1> {
-  const frameSet = await getFrameSetDirectory(frameSetId);
+  const frameSet = await getFrameSetDirectory(frameSetId, false, copy);
   const chunks = await frameSet.getDirectoryHandle(chunksDirectoryName);
   const chunk = await readJson<FrameChunkIndexV1>(
     chunks,
     `${String(chunkNumber).padStart(8, "0")}.json`,
   );
-  assertSupportedVersion(chunk, "checkpoint");
+  assertSupportedVersion(chunk, copy.checkpointArtifactName, copy);
   return chunk;
 }
 
 export async function readAllFrameRecords(
   manifest: FrameSetManifestV1,
+  copy: VideoFramesTextCopy = defaultCopy,
 ): Promise<FrameRecordV1[]> {
   const records: FrameRecordV1[] = [];
   for (let chunkNumber = 1; chunkNumber <= manifest.chunkCount; chunkNumber++) {
-    const chunk = await readFrameChunk(manifest.id, chunkNumber);
+    const chunk = await readFrameChunk(manifest.id, chunkNumber, copy);
     records.push(...chunk.frames);
   }
   return records;
@@ -152,11 +169,12 @@ export async function readAllFrameRecords(
 
 export async function* iterateSelectedFrameRecords(
   manifest: FrameSetManifestV1,
+  copy: VideoFramesTextCopy = defaultCopy,
 ): AsyncGenerator<FrameRecordV1> {
   let previousSelectedTimestamp: number | null = null;
 
   for (let chunkNumber = 1; chunkNumber <= manifest.chunkCount; chunkNumber++) {
-    const chunk = await readFrameChunk(manifest.id, chunkNumber);
+    const chunk = await readFrameChunk(manifest.id, chunkNumber, copy);
     for (const frame of chunk.frames) {
       if (
         shouldSelectFrame(
@@ -174,9 +192,10 @@ export async function* iterateSelectedFrameRecords(
 
 export async function readSelectedFrameRecords(
   manifest: FrameSetManifestV1,
+  copy: VideoFramesTextCopy = defaultCopy,
 ): Promise<FrameRecordV1[]> {
   const records: FrameRecordV1[] = [];
-  for await (const frame of iterateSelectedFrameRecords(manifest)) {
+  for await (const frame of iterateSelectedFrameRecords(manifest, copy)) {
     records.push(frame);
   }
   return records;
@@ -184,13 +203,14 @@ export async function readSelectedFrameRecords(
 
 export async function getFrameSetSummary(
   frameSetId: string,
+  copy: VideoFramesTextCopy = defaultCopy,
 ): Promise<FrameSetSummary> {
-  const manifest = await readFrameSetManifest(frameSetId);
+  const manifest = await readFrameSetManifest(frameSetId, copy);
   const previewFrames: FrameRecordV1[] = [];
   let selectedCount = 0;
   let selectedBytes = 0;
 
-  for await (const frame of iterateSelectedFrameRecords(manifest)) {
+  for await (const frame of iterateSelectedFrameRecords(manifest, copy)) {
     selectedCount += 1;
     selectedBytes += frame.byteSize;
     if (previewFrames.length < 24) previewFrames.push(frame);
@@ -207,24 +227,31 @@ export async function getFrameSetSummary(
 export async function updateFrameSetSelection(
   frameSetId: string,
   selectionFps: number | null,
+  copy: VideoFramesTextCopy = defaultCopy,
 ): Promise<FrameSetManifestV1> {
-  const manifest = await readFrameSetManifest(frameSetId);
+  const manifest = await readFrameSetManifest(frameSetId, copy);
   const updated = {
     ...manifest,
     selectionFps,
     updatedAt: new Date().toISOString(),
   };
-  await writeFrameSetManifest(updated);
+  await writeFrameSetManifest(updated, copy);
   return updated;
 }
 
-export async function removeFrameSet(frameSetId: string): Promise<void> {
-  const root = await getRootDirectory();
+export async function removeFrameSet(
+  frameSetId: string,
+  copy: VideoFramesTextCopy = defaultCopy,
+): Promise<void> {
+  const root = await getRootDirectory(copy);
   await root.removeEntry(frameSetId, { recursive: true });
 }
 
-export async function cleanupStaleFrameSets(now = Date.now()): Promise<number> {
-  const root = await getRootDirectory();
+export async function cleanupStaleFrameSets(
+  now = Date.now(),
+  copy: VideoFramesTextCopy = defaultCopy,
+): Promise<number> {
+  const root = await getRootDirectory(copy);
   let removed = 0;
 
   for await (const [name, handle] of root.entries()) {

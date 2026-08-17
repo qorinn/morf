@@ -41,6 +41,10 @@ import {
   ProgressValue,
 } from "@/components/ui/progress";
 import { Toaster, toast } from "@/components/ui/toast";
+import {
+  WorkspaceI18nProvider,
+  useWorkspaceI18n,
+} from "@/components/workspace/WorkspaceI18nProvider";
 import { useErrorToast } from "@/hooks/use-error-toast";
 import {
   canSaveFrameSetToDirectory,
@@ -72,6 +76,9 @@ import {
 } from "@/features/video-frames/worker-client";
 import { formatBytes } from "@/lib/filenames/image-filenames";
 import { isFilePickerCancellation } from "@/lib/downloads";
+import { getVideoFramesMessages, type VideoFramesMessages } from "@/i18n/video-frames";
+import { getLocalizedRoute } from "@/lib/localized-routes";
+import type { Locale } from "@/lib/locale";
 
 type WorkspacePhase =
   | "empty"
@@ -122,6 +129,7 @@ type FpsControlProps = {
   fps: number;
   maximumFps: number;
   disabled?: boolean;
+  copy: VideoFramesMessages["workspace"]["fpsControl"];
   onAllFramesChange(value: boolean): void;
   onFpsChange(value: number): void;
 };
@@ -132,6 +140,7 @@ function FpsControl({
   fps,
   maximumFps,
   disabled,
+  copy,
   onAllFramesChange,
   onFpsChange,
 }: FpsControlProps) {
@@ -140,7 +149,7 @@ function FpsControl({
       data-disabled={disabled ? "true" : undefined}
       className="transition-opacity data-[disabled=true]:opacity-50"
     >
-      <FieldLabel htmlFor={`${id}-all`}>Kimeneti képkockaszám</FieldLabel>
+      <FieldLabel htmlFor={`${id}-all`}>{copy.label}</FieldLabel>
       <label
         htmlFor={`${id}-all`}
         className="flex items-center gap-3 text-sm font-medium"
@@ -152,7 +161,7 @@ function FpsControl({
           className={disabled ? "disabled:opacity-100" : undefined}
           onCheckedChange={(checked) => onAllFramesChange(checked === true)}
         />
-        Minden elérhető képkocka
+        {copy.allFrames}
       </label>
       <div className="flex items-center gap-3">
         <Input
@@ -164,17 +173,19 @@ function FpsControl({
           value={fps}
           disabled={disabled || allFrames}
           className={disabled ? "disabled:opacity-100" : undefined}
-          aria-label="Kimeneti FPS"
+          aria-label={copy.ariaLabel}
           onChange={(event) => onFpsChange(Number(event.target.value))}
         />
-        <span className="text-muted-foreground shrink-0 text-sm">FPS</span>
+        <span className="text-muted-foreground shrink-0 text-sm">{copy.unit}</span>
       </div>
-      <FieldDescription>Maximum: {formatFps(maximumFps)} FPS.</FieldDescription>
+      <FieldDescription>{copy.maximum(formatFps(maximumFps))}</FieldDescription>
     </Field>
   );
 }
 
-export default function VideoFrameWorkspace() {
+function StandardVideoFrameWorkspace({ locale }: { locale: Locale }) {
+  const { messages } = useWorkspaceI18n<VideoFramesMessages>();
+  const { workspace } = messages;
   const [phase, setPhase] = useState<WorkspacePhase>("empty");
   const [source, setSource] = useState<File>();
   const [sourceUrl, setSourceUrl] = useState<string>();
@@ -219,7 +230,7 @@ export default function VideoFrameWorkspace() {
     : 0;
   const isActive = phase === "extracting";
 
-  useErrorToast(error, "A videó feldolgozása nem sikerült");
+  useErrorToast(error, workspace.errorToastTitle);
 
   const revokePreviews = useCallback((items: PreviewFrame[]) => {
     items.forEach((item) => URL.revokeObjectURL(item.url));
@@ -227,13 +238,20 @@ export default function VideoFrameWorkspace() {
 
   const refreshSummary = useCallback(
     async (frameSetId: string) => {
-      const nextSummary = await getFrameSetSummary(frameSetId);
+      const nextSummary = await getFrameSetSummary(
+        frameSetId,
+        messages.workerErrors,
+      );
       setManifest(nextSummary.manifest);
       setSummary(nextSummary);
 
       const nextPreviews: PreviewFrame[] = [];
       for (const frame of nextSummary.previewFrames.slice(0, 12)) {
-        const file = await readFrameFile(frameSetId, frame.fileName);
+        const file = await readFrameFile(
+          frameSetId,
+          frame.fileName,
+          messages.workerErrors,
+        );
         nextPreviews.push({
           fileName: frame.fileName,
           timestamp: frame.timestamp,
@@ -245,7 +263,7 @@ export default function VideoFrameWorkspace() {
         return nextPreviews;
       });
     },
-    [revokePreviews],
+    [messages.workerErrors, revokePreviews],
   );
 
   const releaseWorker = useCallback(() => {
@@ -264,16 +282,18 @@ export default function VideoFrameWorkspace() {
     });
     if (frameSetId) {
       try {
-        await removeFrameSet(frameSetId);
+        await removeFrameSet(frameSetId, messages.workerErrors);
       } catch {
         // A böngésző már eltávolíthatta az ideiglenes készletet.
       }
     }
-  }, [manifest?.id, revokePreviews]);
+  }, [manifest?.id, messages.workerErrors, revokePreviews]);
 
   useEffect(() => {
-    void cleanupStaleFrameSets().catch(() => undefined);
-  }, []);
+    void cleanupStaleFrameSets(Date.now(), messages.workerErrors).catch(
+      () => undefined,
+    );
+  }, [messages.workerErrors]);
 
   useEffect(() => {
     sourceUrlRef.current = sourceUrl;
@@ -318,7 +338,7 @@ export default function VideoFrameWorkspace() {
       const handle = createVideoFrameWorker();
       workerRef.current = handle;
       try {
-        const result = await handle.api.inspectVideo(file);
+        const result = await handle.api.inspectVideo(file, messages.workerErrors);
         if (!result.valid) {
           setError(`${result.message} ${result.suggestion}`);
           setPhase("error");
@@ -339,14 +359,19 @@ export default function VideoFrameWorkspace() {
         setError(
           inspectionError instanceof Error
             ? inspectionError.message
-            : "A videót nem sikerült beolvasni.",
+            : workspace.inspectionFailedFallback,
         );
         setPhase("error");
       } finally {
         releaseWorker();
       }
     },
-    [clearCurrentFrameSet, releaseWorker],
+    [
+      clearCurrentFrameSet,
+      messages.workerErrors,
+      releaseWorker,
+      workspace.inspectionFailedFallback,
+    ],
   );
 
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
@@ -368,7 +393,7 @@ export default function VideoFrameWorkspace() {
         rangeEnd > metadata.duration ||
         rangeStart >= rangeEnd
       ) {
-        setError("A kezdőpontnak a végpont előtt, a videón belül kell lennie.");
+        setError(workspace.rangeValidationError);
         return;
       }
 
@@ -404,6 +429,7 @@ export default function VideoFrameWorkspace() {
             extractionMode: firstAndLastOnly ? "first-last" : "timeline",
             extractionFps: effectiveExtractionFps,
             resume,
+            copy: messages.workerErrors,
           },
           proxy((nextProgress) => setProgress(nextProgress)),
         );
@@ -418,14 +444,14 @@ export default function VideoFrameWorkspace() {
           setPhase("ready");
           toast.add({
             type: "success",
-            title: "Elkészültek a képek",
-            description: `${result.manifest.frameCount} veszteségmentes PNG készült.`,
+            title: workspace.toasts.extractionCompleteTitle,
+            description: workspace.toasts.extractionCompleteDescription(
+              result.manifest.frameCount,
+            ),
           });
         } else if (result.reason === "storage") {
           await refreshSummary(result.manifest.id);
-          setError(
-            "A helyi tárhely biztonságos határához értünk. Mentsd vagy optimalizáld az elkészült képeket, szabadíts fel helyet, vagy indíts kisebb FPS-sel.",
-          );
+          setError(workspace.storagePausedMessage);
           setPhase("paused");
         } else {
           await refreshSummary(result.manifest.id);
@@ -435,7 +461,7 @@ export default function VideoFrameWorkspace() {
         setError(
           extractionError instanceof Error
             ? extractionError.message
-            : "A képek elkészítése megszakadt.",
+            : workspace.extractionFailedFallback,
         );
         setPhase("error");
       } finally {
@@ -446,12 +472,17 @@ export default function VideoFrameWorkspace() {
       effectiveExtractionFps,
       firstAndLastOnly,
       manifest,
+      messages.workerErrors,
       metadata,
       rangeEnd,
       rangeStart,
       refreshSummary,
       releaseWorker,
       source,
+      workspace.extractionFailedFallback,
+      workspace.rangeValidationError,
+      workspace.storagePausedMessage,
+      workspace.toasts,
     ],
   );
 
@@ -469,10 +500,14 @@ export default function VideoFrameWorkspace() {
       const selectionFps = useAll
         ? manifest.extractionFps
         : normalizeFrameRate(requestedFps, resultMaximum);
-      await updateFrameSetSelection(manifest.id, selectionFps);
+      await updateFrameSetSelection(
+        manifest.id,
+        selectionFps,
+        messages.workerErrors,
+      );
       await refreshSummary(manifest.id);
     },
-    [manifest, refreshSummary, resultMaximum],
+    [manifest, messages.workerErrors, refreshSummary, resultMaximum],
   );
 
   const handleResultAllFrames = (value: boolean) => {
@@ -502,33 +537,43 @@ export default function VideoFrameWorkspace() {
             summary.manifest,
             summary.selectedCount,
             setSaveProgress,
+            messages.workerErrors,
           );
           toast.add({
             type: "success",
-            title: "A képek mappába kerültek",
-            description: `${summary.selectedCount} PNG mentése elkészült.`,
+            title: workspace.toasts.savedToDirectoryTitle,
+            description: workspace.toasts.savedToDirectoryDescription(
+              summary.selectedCount,
+            ),
           });
         } else if (mode === "files") {
           await downloadFrameSetFiles(
             summary.manifest,
             summary.selectedCount,
             setSaveProgress,
+            messages.workerErrors,
           );
           toast.add({
             type: "success",
-            title: "A letöltés elindult",
-            description: `${summary.selectedCount} PNG külön fájlként kerül a böngésző letöltési helyére.`,
+            title: workspace.toasts.downloadStartedTitle,
+            description: workspace.toasts.downloadStartedDescription(
+              summary.selectedCount,
+            ),
           });
         } else {
           const parts = await downloadFrameSetAsZipParts(
             summary.manifest,
             summary.selectedCount,
             setSaveProgress,
+            messages.workerErrors,
           );
           toast.add({
             type: "success",
-            title: "A letöltés elkészült",
-            description: `${summary.selectedCount} PNG, ${parts} ZIP-részben.`,
+            title: workspace.toasts.downloadCompleteTitle,
+            description: workspace.toasts.downloadCompleteDescription(
+              summary.selectedCount,
+              parts,
+            ),
           });
         }
       } catch (saveError) {
@@ -536,7 +581,7 @@ export default function VideoFrameWorkspace() {
           setError(
             saveError instanceof Error
               ? saveError.message
-              : "A képek mentése nem sikerült.",
+              : workspace.saveFailedFallback,
           );
         }
       } finally {
@@ -544,13 +589,14 @@ export default function VideoFrameWorkspace() {
         setPhase(returnPhase);
       }
     },
-    [phase, summary],
+    [messages.workerErrors, phase, summary, workspace.saveFailedFallback, workspace.toasts],
   );
 
   const transferToConverter = () => {
     if (!summary) return;
+    const converterHref = getLocalizedRoute("imageConverter", locale);
     window.location.assign(
-      `/kep-konvertalo?frameSet=${encodeURIComponent(summary.manifest.id)}#workspace`,
+      `${converterHref}?frameSet=${encodeURIComponent(summary.manifest.id)}#workspace`,
     );
   };
 
@@ -570,36 +616,19 @@ export default function VideoFrameWorkspace() {
 
   const mascot = useMemo(() => {
     if (phase === "extracting") {
-      return {
-        state: "processing" as const,
-        title: "Morf képkockánként dolgozik",
-        message:
-          "A videó részletekben olvasódik, a PNG-k pedig folyamatosan a helyi tárhelyre kerülnek.",
-      };
+      return { state: "processing" as const, ...workspace.mascot.processing };
     }
     if (phase === "ready" || phase === "saving") {
-      return {
-        state: "success" as const,
-        title: "A képek készen állnak",
-        message:
-          "Elsődlegesen átviheted őket optimalizálásra, vagy megtarthatod a veszteségmentes PNG-ket.",
-      };
+      return { state: "success" as const, ...workspace.mascot.success };
     }
     if (phase === "paused") {
-      return {
-        state: "warning" as const,
-        title: "A feldolgozás szünetel",
-        message:
-          "Az elkészült checkpointok biztonságban vannak. Ugyaninnen folytathatod.",
-      };
+      return { state: "warning" as const, ...workspace.mascot.paused };
     }
     return {
       state: phase === "error" ? ("error" as const) : ("idle" as const),
-      title: "Csatolj egy videót",
-      message:
-        "A feltöltés után kiválaszhatod, hogyan szeretnéd képekre bontani.",
+      ...workspace.mascot.idle,
     };
-  }, [phase]);
+  }, [phase, workspace.mascot]);
 
   return (
     <section
@@ -611,7 +640,7 @@ export default function VideoFrameWorkspace() {
 
         {error && (
           <Alert variant="destructive">
-            <AlertTitle>A művelet figyelmet kér</AlertTitle>
+            <AlertTitle>{workspace.errorAlertTitle}</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
@@ -623,20 +652,20 @@ export default function VideoFrameWorkspace() {
                 accept:
                   "video/mp4,video/quicktime,video/webm,.mp4,.m4v,.mov,.webm",
               })}
-              aria-label="Videó kiválasztása"
+              aria-label={workspace.sourceInputAriaLabel}
             />
             <FileUploadDropzone
               getRootProps={getRootProps}
               isDragActive={isDragActive}
               onBrowse={open}
-              title="Húzd ide a videót"
-              activeTitle="Engedd el a videót"
-              description="Egy MP4, MOV vagy WebM videóból készíthetsz teljes felbontású PNG képeket."
-              buttonLabel="Videó kiválasztása"
+              title={workspace.dropzone.title}
+              activeTitle={workspace.dropzone.activeTitle}
+              description={workspace.dropzone.description}
+              buttonLabel={workspace.dropzone.buttonLabel}
               busy={phase === "inspecting"}
-              busyLabel="Videó ellenőrzése"
+              busyLabel={workspace.dropzone.busyLabel}
               icon={Video01Icon}
-              privacyNote="A videó nem töltődik fel a Morf szerverére."
+              privacyNote={workspace.dropzone.privacyNote}
             />
           </div>
         ) : (
@@ -646,10 +675,9 @@ export default function VideoFrameWorkspace() {
               <div className="flex min-w-0 flex-col gap-6">
                 <Card className="min-w-0 overflow-hidden border shadow-none ring-0">
                   <CardHeader>
-                    <CardTitle>Forrásvideó</CardTitle>
+                    <CardTitle>{workspace.sourceCard.title}</CardTitle>
                     <CardDescription>
-                      A fájlhoz a feldolgozás alatt közvetlenül, részletekben
-                      férünk hozzá.
+                      {workspace.sourceCard.description}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="grid gap-5 md:grid-cols-[minmax(0,1fr)_18rem]">
@@ -666,7 +694,7 @@ export default function VideoFrameWorkspace() {
                     </div>
                     <dl className="grid min-w-0 content-start gap-3 text-sm">
                       <div className="min-w-0">
-                        <dt className="text-muted-foreground">Fájlnév</dt>
+                        <dt className="text-muted-foreground">{workspace.fileName}</dt>
                         <dd
                           className="block max-w-full truncate font-medium"
                           title={source.name}
@@ -676,13 +704,13 @@ export default function VideoFrameWorkspace() {
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <dt className="text-muted-foreground">Időtartam</dt>
+                          <dt className="text-muted-foreground">{workspace.duration}</dt>
                           <dd className="font-medium tabular-nums">
                             {formatDuration(metadata.duration)}
                           </dd>
                         </div>
                         <div>
-                          <dt className="text-muted-foreground">Méret</dt>
+                          <dt className="text-muted-foreground">{workspace.size}</dt>
                           <dd className="font-medium tabular-nums">
                             {formatBytes(source.size)}
                           </dd>
@@ -690,13 +718,13 @@ export default function VideoFrameWorkspace() {
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <dt className="text-muted-foreground">Felbontás</dt>
+                          <dt className="text-muted-foreground">{workspace.resolution}</dt>
                           <dd className="font-medium tabular-nums">
                             {metadata.width} × {metadata.height}
                           </dd>
                         </div>
                         <div>
-                          <dt className="text-muted-foreground">Forrás FPS</dt>
+                          <dt className="text-muted-foreground">{workspace.sourceFps}</dt>
                           <dd className="font-medium tabular-nums">
                             ≈ {formatFps(metadata.sourceFps)}
                           </dd>
@@ -711,8 +739,8 @@ export default function VideoFrameWorkspace() {
                     <CardHeader>
                       <CardTitle>
                         {phase === "paused"
-                          ? "Feldolgozás szünetel"
-                          : "Képek készítése"}
+                          ? workspace.progressCard.paused
+                          : workspace.progressCard.extracting}
                       </CardTitle>
                       <CardDescription>
                         {progress.frameCount} PNG ·{" "}
@@ -722,7 +750,7 @@ export default function VideoFrameWorkspace() {
                     <CardContent className="flex flex-col gap-5">
                       <Progress
                         value={progressPercent(progress)}
-                        aria-label="Képek feldolgozási folyamata"
+                        aria-label={workspace.progressAriaLabel}
                       >
                         <ProgressLabel>
                           {formatDuration(progress.currentTimestamp)} /{" "}
@@ -732,7 +760,7 @@ export default function VideoFrameWorkspace() {
                       </Progress>
                       {progress.storageRemaining !== undefined && (
                         <p className="text-muted-foreground text-sm tabular-nums">
-                          Becsült szabad helyi tárhely:{" "}
+                          {workspace.storageRemainingLabel}{" "}
                           {formatBytes(progress.storageRemaining)}
                         </p>
                       )}
@@ -749,14 +777,14 @@ export default function VideoFrameWorkspace() {
                                 strokeWidth={2}
                                 data-icon="inline-start"
                               />
-                              Szüneteltetés
+                              {workspace.pause}
                             </Button>
                             <Button
                               type="button"
                               variant="ghost"
                               onClick={cancelExtraction}
                             >
-                              Megszakítás
+                              {workspace.cancel}
                             </Button>
                           </>
                         ) : (
@@ -769,7 +797,7 @@ export default function VideoFrameWorkspace() {
                               strokeWidth={2}
                               data-icon="inline-start"
                             />
-                            Folytatás
+                            {workspace.resume}
                           </Button>
                         )}
                       </div>
@@ -783,11 +811,12 @@ export default function VideoFrameWorkspace() {
                   summary && (
                     <Card className="border shadow-none ring-0">
                       <CardHeader>
-                        <CardTitle>Elkészült PNG-képek</CardTitle>
+                        <CardTitle>{workspace.resultCard.title}</CardTitle>
                         <CardDescription>
-                          {summary.selectedCount} kiválasztva ·{" "}
-                          {formatBytes(summary.selectedBytes)} · eredeti
-                          felbontás
+                          {workspace.resultCard.description(
+                            summary.selectedCount,
+                            formatBytes(summary.selectedBytes),
+                          )}
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="flex flex-col gap-5">
@@ -820,9 +849,9 @@ export default function VideoFrameWorkspace() {
                                   100
                                 : 0
                             }
-                            aria-label="Képek mentése"
+                            aria-label={workspace.saveProgressAriaLabel}
                           >
-                            <ProgressLabel>PNG-k mentése</ProgressLabel>
+                            <ProgressLabel>{workspace.savingLabel}</ProgressLabel>
                             <span className="text-muted-foreground ml-auto text-sm tabular-nums">
                               {saveProgress.completed} / {saveProgress.total}
                             </span>
@@ -832,11 +861,10 @@ export default function VideoFrameWorkspace() {
                         <div className="border-primary/30 bg-primary/5 flex flex-col gap-4 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between">
                           <div>
                             <h4 className="font-heading text-base font-medium">
-                              Optimalizálnád a PNG-ket?
+                              {workspace.optimizePromo.title}
                             </h4>
                             <p className="text-muted-foreground mt-1 max-w-xl text-sm">
-                              Vidd át a kiválasztott képeket a képkonvertálóba,
-                              ahol formátumot, méretet és minőséget adhatsz meg.
+                              {workspace.optimizePromo.description}
                             </p>
                           </div>
                           <div className="flex shrink-0 flex-wrap gap-2">
@@ -846,7 +874,7 @@ export default function VideoFrameWorkspace() {
                               disabled={phase === "saving"}
                               onClick={transferToConverter}
                             >
-                              Képek optimalizálása
+                              {workspace.optimizePromo.action}
                               <HugeiconsIcon
                                 icon={ArrowRight02Icon}
                                 strokeWidth={2}
@@ -869,7 +897,7 @@ export default function VideoFrameWorkspace() {
                                   strokeWidth={2}
                                   data-icon="inline-start"
                                 />
-                                PNG-k letöltése
+                                {workspace.downloadMenu.trigger}
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuGroup>
@@ -880,7 +908,7 @@ export default function VideoFrameWorkspace() {
                                       icon={Download04Icon}
                                       strokeWidth={2}
                                     />
-                                    Letöltés egyesével
+                                    {workspace.downloadMenu.files}
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     onClick={() => void runSave("zip")}
@@ -889,7 +917,7 @@ export default function VideoFrameWorkspace() {
                                       icon={FileZipIcon}
                                       strokeWidth={2}
                                     />
-                                    Letöltés ZIP-ben
+                                    {workspace.downloadMenu.zip}
                                   </DropdownMenuItem>
                                   {canSaveFrameSetToDirectory() && (
                                     <DropdownMenuItem
@@ -899,7 +927,7 @@ export default function VideoFrameWorkspace() {
                                         icon={FolderDownloadIcon}
                                         strokeWidth={2}
                                       />
-                                      Mentés választott mappába
+                                      {workspace.downloadMenu.directory}
                                     </DropdownMenuItem>
                                   )}
                                 </DropdownMenuGroup>
@@ -916,16 +944,16 @@ export default function VideoFrameWorkspace() {
                 {phase === "configured" || phase === "extracting" ? (
                   <Card className="border shadow-none ring-0">
                     <CardHeader>
-                      <CardTitle>Beállítások</CardTitle>
+                      <CardTitle>{workspace.settingsCard.title}</CardTitle>
                       <CardDescription>
-                        Válaszd ki, hány képre szeretnéd felbontani a videót.
+                        {workspace.settingsCard.description}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-6">
                       <div className="grid grid-cols-2 gap-3">
                         <Field>
                           <FieldLabel htmlFor="frame-range-start">
-                            Kezdés, mp
+                            {workspace.rangeStart}
                           </FieldLabel>
                           <Input
                             id="frame-range-start"
@@ -942,7 +970,7 @@ export default function VideoFrameWorkspace() {
                         </Field>
                         <Field>
                           <FieldLabel htmlFor="frame-range-end">
-                            Vége, mp
+                            {workspace.rangeEnd}
                           </FieldLabel>
                           <Input
                             id="frame-range-end"
@@ -972,11 +1000,10 @@ export default function VideoFrameWorkspace() {
                               setFirstAndLastOnly(checked === true)
                             }
                           />
-                          <span>Csak az első és utolsó képkocka mentése</span>
+                          <span>{workspace.firstAndLastOnly.label}</span>
                         </label>
                         <FieldDescription>
-                          A kijelölt időtartomány elejéről és végéről egy-egy
-                          kép készül.
+                          {workspace.firstAndLastOnly.description}
                         </FieldDescription>
                       </Field>
 
@@ -986,6 +1013,7 @@ export default function VideoFrameWorkspace() {
                         fps={extractionFps}
                         maximumFps={metadata.sourceFps}
                         disabled={phase !== "configured" || firstAndLastOnly}
+                        copy={workspace.fpsControl}
                         onAllFramesChange={setAllFrames}
                         onFpsChange={(value) =>
                           setExtractionFps(
@@ -996,15 +1024,15 @@ export default function VideoFrameWorkspace() {
 
                       <div className="bg-muted rounded-2xl border p-4">
                         <p className="text-muted-foreground text-xs">
-                          Becsült kimenet
+                          {workspace.estimatedOutput.label}
                         </p>
                         <p className="mt-1 text-lg font-semibold tabular-nums">
                           {firstAndLastOnly
-                            ? "= 2 PNG"
-                            : `≈ ${estimatedFrames} PNG`}
+                            ? workspace.estimatedOutput.exactlyTwo
+                            : workspace.estimatedOutput.approx(estimatedFrames)}
                         </p>
                         <p className="text-muted-foreground mt-2 text-xs">
-                          A PNG-k pontos mérete a videó tartalmától függ.
+                          {workspace.estimatedOutput.note}
                         </p>
                       </div>
 
@@ -1019,7 +1047,7 @@ export default function VideoFrameWorkspace() {
                             strokeWidth={2}
                             data-icon="inline-start"
                           />
-                          Képek elkészítése
+                          {workspace.extractButton}
                         </Button>
                       )}
                     </CardContent>
@@ -1027,10 +1055,9 @@ export default function VideoFrameWorkspace() {
                 ) : (
                   <Card className="border shadow-none ring-0">
                     <CardHeader>
-                      <CardTitle>Kiválasztott képek</CardTitle>
+                      <CardTitle>{workspace.resultSettingsCard.title}</CardTitle>
                       <CardDescription>
-                        Az elkészült készlet tovább ritkítható, de nem
-                        sűríthető.
+                        {workspace.resultSettingsCard.description}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-5">
@@ -1040,15 +1067,16 @@ export default function VideoFrameWorkspace() {
                         fps={resultFps}
                         maximumFps={resultMaximum}
                         disabled={phase === "saving"}
+                        copy={workspace.fpsControl}
                         onAllFramesChange={handleResultAllFrames}
                         onFpsChange={handleResultFps}
                       />
                       <div className="bg-muted rounded-2xl border p-4">
                         <p className="text-muted-foreground text-xs">
-                          Aktív készlet
+                          {workspace.activeSet}
                         </p>
                         <p className="mt-1 text-lg font-semibold tabular-nums">
-                          {summary?.selectedCount ?? 0} kép
+                          {workspace.imageCountLabel(summary?.selectedCount ?? 0)}
                         </p>
                         <p className="text-muted-foreground mt-1 text-sm tabular-nums">
                           {formatBytes(summary?.selectedBytes ?? 0)}
@@ -1069,7 +1097,7 @@ export default function VideoFrameWorkspace() {
                     strokeWidth={2}
                     data-icon="inline-start"
                   />
-                  Új videó választása
+                  {workspace.chooseNewVideo}
                 </Button>
               </aside>
             </div>
@@ -1078,5 +1106,19 @@ export default function VideoFrameWorkspace() {
       </div>
       <Toaster />
     </section>
+  );
+}
+
+interface VideoFrameWorkspaceProps {
+  locale?: Locale;
+}
+
+export default function VideoFrameWorkspace({
+  locale = "hu",
+}: VideoFrameWorkspaceProps) {
+  return (
+    <WorkspaceI18nProvider locale={locale} messages={getVideoFramesMessages(locale)}>
+      <StandardVideoFrameWorkspace locale={locale} />
+    </WorkspaceI18nProvider>
   );
 }

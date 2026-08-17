@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { Locale } from "@/lib/locale";
+import { getHomeCopy } from "@/i18n/home";
 
 const benefitsByLocale = {
   hu: [
@@ -148,8 +149,7 @@ function WhyChooseMorf({
   locale?: Extract<Locale, "hu" | "en">;
 }) {
   const benefits = benefitsByLocale[locale];
-  const heading = locale === "en" ? "Why choose Morf?" : "Miért válaszd a Morfot?";
-  const lead = locale === "en" ? "Beyond being easy to use." : "Az egyszerű használaton kívül.";
+  const { heading, lead } = getHomeCopy(locale).whyChoose;
   return (
     <StackingCards totalCards={benefits.length + 1}>
       <StackingCardItem index={0} className="h-[700px] sm:h-[760px]">

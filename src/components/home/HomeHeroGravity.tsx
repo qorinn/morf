@@ -10,36 +10,26 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useReducedMotion } from "motion/react";
 import type { Locale } from "@/lib/locale";
+import { getLocalizedRoute } from "@/lib/localized-routes";
+import { getHomeCopy } from "@/i18n/home";
 
 import Gravity, { MatterBody } from "@/components/fancy/physics/gravity";
 import { buttonVariants } from "@/components/ui/button";
 import morfPeeking from "../../assets/morf-actions/morf-peeking.webp";
 
 interface Props {
-  locale?: Locale;
+  locale?: Extract<Locale, "hu" | "en">;
 }
 
 function HomeHeroGravity({ locale = "hu" }: Props) {
   const shouldReduceMotion = useReducedMotion();
-  const isEnglish = locale === "en";
-  const copy = isEnglish ? {
-    imageConverter: "Image converter",
-    frames: "Video to frames",
-    speed: "Video speed",
-    videoConverter: "Video converter",
-    favicon: "Favicon generator",
-    title: ["Tools for everyday", "digital tasks."],
-    description: "Morf makes common digital tasks simple, free, and private in your browser.",
-    cta: "Explore tools",
-  } : {
-    imageConverter: "Képkonvertáló",
-    frames: "Videó képekre bontása",
-    speed: "Videó gyorsítás",
-    videoConverter: "Videó konvertáló",
-    favicon: "Favicon generátor",
-    title: ["Eszközök a digitális", "mindennapokhoz."],
-    description: "A Morf célja, hogy a gyakori digitális feladatokhoz egyszerű, ingyenes és privát böngészős eszközöket kínáljon.",
-    cta: "Eszközök megnyitása",
+  const copy = getHomeCopy(locale).hero;
+  const hrefs = {
+    imageConverter: getLocalizedRoute("imageConverter", locale),
+    frames: getLocalizedRoute("videoFrames", locale),
+    speed: getLocalizedRoute("videoSpeed", locale),
+    videoConverter: getLocalizedRoute("videoConverter", locale),
+    favicon: getLocalizedRoute("faviconGenerator", locale),
   };
 
   return (
@@ -58,7 +48,7 @@ function HomeHeroGravity({ locale = "hu" }: Props) {
           className="z-10"
         >
           <a
-            href="/kep-konvertalo"
+            href={hrefs.imageConverter}
             className="bg-card/90 text-card-foreground focus-visible:ring-ring inline-flex items-center gap-2 rounded-4xl border px-4 py-3 text-sm font-semibold whitespace-nowrap shadow-sm transition-colors hover:bg-card focus-visible:ring-3 focus-visible:ring-offset-2 focus-visible:outline-none sm:px-5 sm:py-3.5 sm:text-base"
           >
             <HugeiconsIcon
@@ -79,7 +69,7 @@ function HomeHeroGravity({ locale = "hu" }: Props) {
           className="z-10"
         >
           <a
-            href="/video-kepekre-bontasa"
+            href={hrefs.frames}
             className="bg-card/90 text-card-foreground focus-visible:ring-ring inline-flex items-center gap-2 rounded-4xl border px-4 py-3 text-sm font-semibold whitespace-nowrap shadow-sm transition-colors hover:bg-card focus-visible:ring-3 focus-visible:ring-offset-2 focus-visible:outline-none sm:px-5 sm:py-3.5 sm:text-base"
           >
             <HugeiconsIcon
@@ -100,7 +90,7 @@ function HomeHeroGravity({ locale = "hu" }: Props) {
           className="z-10"
         >
           <a
-            href="/video-gyorsitas-lassitas"
+            href={hrefs.speed}
             className="bg-card/90 text-card-foreground focus-visible:ring-ring inline-flex items-center gap-2 rounded-4xl border px-4 py-3 text-sm font-semibold whitespace-nowrap shadow-sm transition-colors hover:bg-card focus-visible:ring-3 focus-visible:ring-offset-2 focus-visible:outline-none sm:px-5 sm:py-3.5 sm:text-base"
           >
             <HugeiconsIcon
@@ -121,7 +111,7 @@ function HomeHeroGravity({ locale = "hu" }: Props) {
           className="z-10"
         >
           <a
-            href="/video-konvertalo"
+            href={hrefs.videoConverter}
             className="bg-card/90 text-card-foreground focus-visible:ring-ring inline-flex items-center gap-2 rounded-4xl border px-4 py-3 text-sm font-semibold whitespace-nowrap shadow-sm transition-colors hover:bg-card focus-visible:ring-3 focus-visible:ring-offset-2 focus-visible:outline-none sm:px-5 sm:py-3.5 sm:text-base"
           >
             <HugeiconsIcon
@@ -142,7 +132,7 @@ function HomeHeroGravity({ locale = "hu" }: Props) {
           className="z-10"
         >
           <a
-            href="/favicon-generator"
+            href={hrefs.favicon}
             className="bg-card/90 text-card-foreground focus-visible:ring-ring inline-flex items-center gap-2 rounded-4xl border px-4 py-3 text-sm font-semibold whitespace-nowrap shadow-sm transition-colors hover:bg-card focus-visible:ring-3 focus-visible:ring-offset-2 focus-visible:outline-none sm:px-5 sm:py-3.5 sm:text-base"
           >
             <HugeiconsIcon

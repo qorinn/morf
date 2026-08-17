@@ -6,6 +6,9 @@ import {
   type ImageInspection,
   type OpenGraphData,
 } from "./open-graph.ts";
+import { getSharePreviewMessages } from "../../i18n/share-preview.ts";
+
+const auditCopy = getSharePreviewMessages("hu").audit;
 
 const completeData: OpenGraphData = {
   pageUrl: "https://example.com/oldal",
@@ -36,7 +39,7 @@ const goodImage: ImageInspection = {
 };
 
 test("a teljes Open Graph készlet sikeres auditpontokat ad", () => {
-  const audit = createOpenGraphAudit(completeData, goodImage);
+  const audit = createOpenGraphAudit(completeData, goodImage, auditCopy);
 
   assert.ok(
     audit.some(
@@ -62,6 +65,7 @@ test("a hiányzó kép és a túl hosszú leírás hibát illetve figyelmezteté
       ogDescription: "x".repeat(138),
     },
     { ...goodImage, status: "idle", width: null, height: null },
+    auditCopy,
   );
 
   assert.ok(
@@ -78,11 +82,11 @@ test("a hiányzó kép és a túl hosszú leírás hibát illetve figyelmezteté
 });
 
 test("az eltérő képméret külön figyelmeztetést kap", () => {
-  const audit = createOpenGraphAudit(completeData, {
-    ...goodImage,
-    width: 1200,
-    height: 628,
-  });
+  const audit = createOpenGraphAudit(
+    completeData,
+    { ...goodImage, width: 1200, height: 628 },
+    auditCopy,
+  );
 
   assert.ok(
     audit.some(

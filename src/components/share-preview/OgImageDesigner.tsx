@@ -13,6 +13,7 @@ import {
   Download04Icon,
   ImageAdd02Icon,
   MagicWand03Icon,
+  Image02Icon
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
@@ -21,6 +22,8 @@ import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { useWorkspaceI18n } from "@/components/workspace/WorkspaceI18nProvider";
+import type { SharePreviewMessages } from "@/i18n/share-preview";
 import {
   PlatformPreviewCard,
   previewPlatformItems,
@@ -56,13 +59,6 @@ type TemplateDefinition = {
   quickPalettes: Array<{ name: string; palette: TemplatePalette }>;
 };
 
-const paletteSlotLabels: Record<PaletteSlot, string> = {
-  canvas: "Vászon",
-  surface: "Másodlagos felület",
-  accent: "Kiemelés",
-  text: "Szöveg",
-  glow: "Glow / árnyalat",
-};
 
 const templateDefinitions: TemplateDefinition[] = [
   {
@@ -625,9 +621,43 @@ type ArtworkProps = {
   quoteAuthor: string;
   quoteAuthorImage: string;
   editorialBadge: string;
+  editorialBadgeColor: string;
   svgRef?: RefObject<SVGSVGElement | null>;
-  label?: string;
+  label: string;
+  ownImagePlaceholder: string;
 };
+
+function ArrowIcon({
+  size = 20,
+  style,
+}: {
+  size?: number;
+  style?: CSSProperties;
+}) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      style={{
+        display: "inline-block",
+        verticalAlign: "middle",
+        flexShrink: 0,
+        ...style,
+      }}
+    >
+      <path d="M5 12h14" />
+      <path d="m12 5 7 7-7 7" />
+    </svg>
+  );
+}
 
 const textReset = { margin: 0, padding: 0 } as const;
 const clamp = (lines: number): CSSProperties => ({
@@ -658,12 +688,15 @@ function Artwork({
   quoteAuthor,
   quoteAuthorImage,
   editorialBadge,
+  editorialBadgeColor,
   svgRef,
-  label = "Open Graph kép sablon előnézete",
+  label,
+  ownImagePlaceholder,
 }: ArtworkProps) {
   const { canvas: background, surface, accent, text, glow } = palette;
-  const softText = `${text}12`;
+  const softText = withAlpha(text, "12");
   const safeLaunchCampaignColor = launchCampaignColor || "#264BB3";
+  const safeEditorialBadgeColor = editorialBadgeColor || "#10B981";
   const imageElement = image ? (
     <img
       src={image}
@@ -692,7 +725,7 @@ function Artwork({
         opacity: 0.55,
       }}
     >
-      Saját kép
+      {ownImagePlaceholder}
     </div>
   );
 
@@ -766,7 +799,7 @@ function Artwork({
                         borderRadius: 999,
                         padding: "8px 17px",
                         background: glow,
-                        color: "#10B981",
+                        color: safeEditorialBadgeColor,
                         fontSize: 20,
                         fontWeight: 750,
                       }}
@@ -877,7 +910,7 @@ function Artwork({
                   overflow: "hidden",
                   border: `5px solid ${glow}`,
                   borderRadius: 28,
-                  boxShadow: `0 18px 38px ${glow}88`,
+                  boxShadow: `0 18px 38px ${withAlpha(glow, "88")}`,
                 }}
               >
                 {imageElement}
@@ -937,13 +970,17 @@ function Artwork({
                   <p
                     style={{
                       ...textReset,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
                       marginTop: 34,
                       color: accent,
                       fontSize: 20,
                       fontWeight: 800,
                     }}
                   >
-                    {cta} →
+                    {cta}
+                    <ArrowIcon size={20} />
                   </p>
                 )}
               </div>
@@ -968,7 +1005,7 @@ function Artwork({
                   justifyContent: "space-between",
                   background: text,
                   color: background,
-                  boxShadow: `0 22px 60px ${glow}88`,
+                  boxShadow: `0 22px 60px ${withAlpha(glow, "88")}`,
                 }}
               >
                 {eyebrow && (
@@ -1066,6 +1103,7 @@ function Artwork({
                     {title}
                   </h3>
                 )}
+                {(quoteAuthor || quoteAuthorImage) && (
                 <div
                   style={{
                     position: "absolute",
@@ -1076,16 +1114,16 @@ function Artwork({
                     gap: 24,
                   }}
                 >
-                  <div
-                    style={{
-                      width: 100,
-                      height: 100,
-                      overflow: "hidden",
-                      borderRadius: "50%",
-                      background: glow,
-                    }}
-                  >
-                    {quoteAuthorImage && (
+                  {quoteAuthorImage && (
+                    <div
+                      style={{
+                        width: 100,
+                        height: 100,
+                        overflow: "hidden",
+                        borderRadius: "50%",
+                        background: glow,
+                      }}
+                    >
                       <img
                         src={quoteAuthorImage}
                         alt=""
@@ -1096,8 +1134,8 @@ function Artwork({
                           display: "block",
                         }}
                       />
-                    )}
-                  </div>
+                    </div>
+                  )}
                   {quoteAuthor && (
                     <p
                       style={{
@@ -1111,6 +1149,7 @@ function Artwork({
                     </p>
                   )}
                 </div>
+                )}
                 {cta && (
                   <span
                     style={{
@@ -1316,6 +1355,9 @@ function Artwork({
                 {cta && (
                   <span
                     style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
                       alignSelf: "flex-start",
                       marginTop: 10,
                       borderRadius: 999,
@@ -1326,7 +1368,8 @@ function Artwork({
                       fontWeight: 800,
                     }}
                   >
-                    {cta} →
+                    {cta}
+                    <ArrowIcon size={18} />
                   </span>
                 )}
               </div>
@@ -1548,6 +1591,9 @@ function Artwork({
                 <p
                   style={{
                     ...textReset,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
                     position: "absolute",
                     right: 98,
                     bottom: 174,
@@ -1557,7 +1603,8 @@ function Artwork({
                     letterSpacing: "-0.03em",
                   }}
                 >
-                  {cta} →
+                  {cta}
+                  <ArrowIcon size={26} />
                 </p>
               )}
             </div>
@@ -1784,7 +1831,7 @@ function Artwork({
                     width: 392,
                     height: 206,
                     overflow: "hidden",
-                    boxShadow: `0 22px 32px ${text}16`,
+                    boxShadow: `0 22px 32px ${withAlpha(text, "16")}`,
                   }}
                 >
                   {imageElement}
@@ -1912,7 +1959,7 @@ function Artwork({
                       style={{
                         height: 10,
                         marginTop: 28,
-                        background: `${text}20`,
+                        background: withAlpha(text, "20"),
                       }}
                     />
                     {dealRating && (
@@ -2024,7 +2071,7 @@ function Artwork({
                     style={{
                       height: 2,
                       margin: "54px 0 22px",
-                      background: `${text}33`,
+                      background: withAlpha(text, "33"),
                     }}
                   />
                   {description && (
@@ -2293,7 +2340,7 @@ function Artwork({
                     border: `7px solid ${background}`,
                     borderRadius: 26,
                     transform: "rotate(-7deg)",
-                    boxShadow: `0 22px 44px ${glow}cc`,
+                    boxShadow: `0 22px 44px ${withAlpha(glow, "cc")}`,
                   }}
                 >
                   {imageElement}
@@ -2316,7 +2363,7 @@ function Artwork({
                       alignSelf: "flex-start",
                       borderRadius: 999,
                       padding: "8px 16px",
-                      background: `${text}12`,
+                      background: withAlpha(text, "12"),
                       fontSize: 18,
                       fontWeight: 700,
                     }}
@@ -2371,20 +2418,26 @@ function svgToDataUrl(svg: string) {
   return `data:image/svg+xml;charset=utf-8;base64,${btoa(binary)}`;
 }
 
-async function fetchImageAsDataUrl(url: string): Promise<string> {
-  const response = await fetch(`/api/image-fetch?url=${encodeURIComponent(url)}`);
+async function fetchImageAsDataUrl(
+  url: string,
+  copy: SharePreviewMessages["designer"],
+  locale: string,
+): Promise<string> {
+  const response = await fetch(
+    `/api/image-fetch?url=${encodeURIComponent(url)}&locale=${encodeURIComponent(locale)}`,
+  );
   if (!response.ok) {
     const payload = await response.json().catch(() => null);
-    throw new Error(payload?.error || "A kép nem tölthető le.");
+    throw new Error(payload?.error || copy.imageFetchFailedFallback);
   }
   const blob = await response.blob();
   return await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === "string") resolve(reader.result);
-      else reject(new Error("A kép nem alakítható át."));
+      else reject(new Error(copy.imageConversionFailed));
     };
-    reader.onerror = () => reject(new Error("A kép nem olvasható be."));
+    reader.onerror = () => reject(new Error(copy.imageReadFailed));
     reader.readAsDataURL(blob);
   });
 }
@@ -2392,7 +2445,11 @@ async function fetchImageAsDataUrl(url: string): Promise<string> {
 // A távoli kép-URL-eket data URL-re cseréli a klónozott SVG-ben exportálás
 // előtt, különben a <canvas> "tainted" lesz, és a PNG-mentés csendben
 // meghiúsul (crossOrigin nélkül betöltött kép nem olvasható ki canvasból).
-async function inlineRemoteImages(root: SVGSVGElement) {
+async function inlineRemoteImages(
+  root: SVGSVGElement,
+  copy: SharePreviewMessages["designer"],
+  locale: string,
+) {
   const images = Array.from(root.querySelectorAll("img")).filter((img) =>
     /^https?:\/\//i.test(img.getAttribute("src") ?? ""),
   );
@@ -2402,18 +2459,9 @@ async function inlineRemoteImages(root: SVGSVGElement) {
   for (const img of images) {
     const src = img.getAttribute("src")!;
     if (!cache.has(src)) {
-      cache.set(src, await fetchImageAsDataUrl(src));
+      cache.set(src, await fetchImageAsDataUrl(src, copy, locale));
     }
     img.setAttribute("src", cache.get(src)!);
-  }
-}
-
-function filenameFromUrl(url: string) {
-  try {
-    const { pathname } = new URL(url);
-    return pathname.split("/").filter(Boolean).pop() || url;
-  } catch {
-    return url;
   }
 }
 
@@ -2494,6 +2542,7 @@ function buildOpenGraphCode({
 }
 
 function CharacterHint({ current, limit }: { current: number; limit: number }) {
+  const { messages } = useWorkspaceI18n<SharePreviewMessages>();
   return (
     <span
       className={cn(
@@ -2501,9 +2550,42 @@ function CharacterHint({ current, limit }: { current: number; limit: number }) {
         current > limit ? "text-destructive" : "text-muted-foreground",
       )}
     >
-      {current} / {limit} karakter
+      {current} / {limit} {messages.designer.characterCountSuffix}
     </span>
   );
+}
+
+function hexRgb(hex: string): string {
+  return hex.length >= 7 ? hex.slice(0, 7) : "#000000";
+}
+
+function hexAlphaPercent(hex: string): number {
+  if (hex.length < 9) return 100;
+  const alpha = Number.parseInt(hex.slice(7, 9), 16);
+  return Number.isNaN(alpha) ? 100 : Math.round((alpha / 255) * 100);
+}
+
+function setHexAlpha(hex: string, alphaPercent: number): string {
+  const rgb = hexRgb(hex);
+  const clamped = Math.max(0, Math.min(100, Math.round(alphaPercent)));
+  if (clamped >= 100) return rgb;
+  const alphaByte = Math.round((clamped / 100) * 255);
+  return `${rgb}${alphaByte.toString(16).padStart(2, "0")}`;
+}
+
+/**
+ * Egy paletta-szín saját (a felhasználó által beállított) átlátszóságát
+ * kombinálja egy másodlagos, csak dekoratív célra (pl. árnyék, halvány
+ * tint) alkalmazott átlátszósággal — a kettő szorzódik, nem írja felül
+ * egymást, így korrekt az eredmény akkor is, ha a szín már eleve részben
+ * átlátszó.
+ */
+function withAlpha(hex: string, effectAlphaHex: string): string {
+  const rgb = hexRgb(hex);
+  const baseAlpha = hex.length >= 9 ? Number.parseInt(hex.slice(7, 9), 16) : 255;
+  const effectAlpha = Number.parseInt(effectAlphaHex, 16);
+  const combined = Math.round((baseAlpha / 255) * (effectAlpha / 255) * 255);
+  return `${rgb}${combined.toString(16).padStart(2, "0")}`;
 }
 
 function ColorControl({
@@ -2516,20 +2598,30 @@ function ColorControl({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="flex items-center gap-3 text-xs font-medium text-muted-foreground">
+    <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground">
       <input
         type="color"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="size-9 shrink-0 rounded-full border bg-background p-1"
+        value={hexRgb(value)}
+        onChange={(event) =>
+          onChange(setHexAlpha(event.target.value, hexAlphaPercent(value)))
+        }
+        aria-label={label}
+        className="size-9 shrink-0 cursor-pointer appearance-none rounded-full border bg-background p-0 transition-shadow hover:ring-2 hover:ring-ring/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 [&::-moz-color-swatch]:rounded-full [&::-moz-color-swatch]:border-2 [&::-moz-color-swatch]:border-background [&::-webkit-color-swatch]:rounded-full [&::-webkit-color-swatch]:border-2 [&::-webkit-color-swatch]:border-background [&::-webkit-color-swatch-wrapper]:rounded-full [&::-webkit-color-swatch-wrapper]:p-0"
       />
       <span className="min-w-0 flex-1">
         <span className="block text-foreground">{label}</span>
-        <span className="mt-0.5 block font-mono text-[0.68rem] uppercase">
-          {value}
-        </span>
+        <Input
+          type="text"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          aria-label={label}
+          spellCheck={false}
+          maxLength={9}
+          placeholder="#RRGGBBAA"
+          className="mt-1 h-7 w-full rounded-lg px-2 py-0 font-mono text-[0.7rem] uppercase"
+        />
       </span>
-    </label>
+    </div>
   );
 }
 
@@ -2570,34 +2662,37 @@ export function OgImageDesigner({
   onPageUrlChange: (value: string) => void;
   scannedImage?: { url: string; token: number } | null;
 }) {
+  const { locale: uiLocale, messages } = useWorkspaceI18n<SharePreviewMessages>();
+  const copy = messages.designer;
+  const defaults = copy.defaults;
   const [template, setTemplate] = useState<TemplateId>("editorial");
   const [editorTab, setEditorTab] = useState<EditorTab>("image");
   const [platform, setPlatform] = useState<DesignerPreviewPlatform>("facebook");
-  const [imageTitle, setImageTitle] = useState("A megosztásra kész üzenet");
-  const [imageDescription, setImageDescription] = useState(
-    "Rövid, egyértelmű kiegészítő szöveg a megosztási képen.",
+  const [imageTitle, setImageTitle] = useState<string>(defaults.imageTitle);
+  const [imageDescription, setImageDescription] = useState<string>(
+    defaults.imageDescription,
   );
-  const [imageEyebrow, setImageEyebrow] = useState("Márkanév vagy címke");
-  const [cta, setCta] = useState("Tudj meg többet");
-  const [dealBadge, setDealBadge] = useState("Élethosszig tartó ajánlat");
-  const [dealRating, setDealRating] = useState("4,97 (155 értékelés)");
-  const [dealPrice, setDealPrice] = useState("69 000 Ft / egyszeri díj");
-  const [vaultStatus, setVaultStatus] = useState("Követés aktív");
-  const [vaultLabel, setVaultLabel] = useState("Biztonságos tár");
-  const [gridKicker, setGridKicker] = useState("UX/UI designer ügynökség");
-  const [gridFooter, setGridFooter] = useState("Kiegészítő");
-  const [launchCampaign, setLaunchCampaign] = useState("Kiemelt kampány");
+  const [imageEyebrow, setImageEyebrow] = useState<string>(defaults.imageEyebrow);
+  const [cta, setCta] = useState<string>(defaults.cta);
+  const [dealBadge, setDealBadge] = useState<string>(defaults.dealBadge);
+  const [dealRating, setDealRating] = useState<string>(defaults.dealRating);
+  const [dealPrice, setDealPrice] = useState<string>(defaults.dealPrice);
+  const [vaultStatus, setVaultStatus] = useState<string>(defaults.vaultStatus);
+  const [vaultLabel, setVaultLabel] = useState<string>(defaults.vaultLabel);
+  const [gridKicker, setGridKicker] = useState<string>(defaults.gridKicker);
+  const [gridFooter, setGridFooter] = useState<string>(defaults.gridFooter);
+  const [launchCampaign, setLaunchCampaign] = useState<string>(defaults.launchCampaign);
   const [launchCampaignColor, setLaunchCampaignColor] = useState("#264BB3");
-  const [launchOffer, setLaunchOffer] = useState("Egyedi ajánlat");
-  const [quoteAuthor, setQuoteAuthor] = useState("Szerző neve");
+  const [launchOffer, setLaunchOffer] = useState<string>(defaults.launchOffer);
+  const [quoteAuthor, setQuoteAuthor] = useState<string>(defaults.quoteAuthor);
   const [quoteAuthorImage, setQuoteAuthorImage] = useState("");
   const [quoteAuthorImageName, setQuoteAuthorImageName] = useState("");
-  const [editorialBadge, setEditorialBadge] = useState("Kiemelt tartalom");
+  const [editorialBadge, setEditorialBadge] = useState<string>(defaults.editorialBadge);
+  const [editorialBadgeColor, setEditorialBadgeColor] = useState("#10B981");
   const [palettes, setPalettes] = useState<Record<TemplateId, TemplatePalette>>(
     createInitialPalettes,
   );
   const [image, setImage] = useState("");
-  const [imageName, setImageName] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [exportState, setExportState] = useState<
     "idle" | "exporting" | "error"
@@ -2616,7 +2711,6 @@ export function OgImageDesigner({
   useEffect(() => {
     if (!scannedImage?.url) return;
     setImage(scannedImage.url);
-    setImageName(filenameFromUrl(scannedImage.url));
   }, [scannedImage?.token]);
 
   function loadImage(file: File | undefined) {
@@ -2625,7 +2719,6 @@ export function OgImageDesigner({
     reader.onload = () => {
       if (typeof reader.result === "string") {
         setImage(reader.result);
-        setImageName(file.name);
       }
     };
     reader.readAsDataURL(file);
@@ -2656,7 +2749,7 @@ export function OgImageDesigner({
       clone
         .querySelector("foreignObject > div")
         ?.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
-      await inlineRemoteImages(clone);
+      await inlineRemoteImages(clone, copy, uiLocale);
 
       const serialized = new XMLSerializer().serializeToString(clone);
       // Chrome "tainted"-nek jelöli a canvast, ha egy foreignObject-et
@@ -2670,7 +2763,7 @@ export function OgImageDesigner({
       canvas.width = 1200;
       canvas.height = 630;
       const context = canvas.getContext("2d");
-      if (!context) throw new Error("A vászon nem hozható létre.");
+      if (!context) throw new Error(copy.canvasCreationFailed);
       context.drawImage(rasterImage, 0, 0, 1200, 630);
 
       const blob = await new Promise<Blob>((resolve, reject) => {
@@ -2678,7 +2771,7 @@ export function OgImageDesigner({
           (result) =>
             result
               ? resolve(result)
-              : reject(new Error("A PNG nem készíthető el.")),
+              : reject(new Error(copy.pngCreationFailed)),
           "image/png",
         );
       });
@@ -2716,6 +2809,9 @@ export function OgImageDesigner({
     quoteAuthor,
     quoteAuthorImage,
     editorialBadge,
+    editorialBadgeColor,
+    label: copy.defaultCanvasPreviewAlt,
+    ownImagePlaceholder: copy.ownImagePlaceholder,
   };
   const generatedCode = buildOpenGraphCode({
     title,
@@ -2764,18 +2860,16 @@ export function OgImageDesigner({
       <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
         <header className="mb-8 max-w-4xl">
           <p className="text-primary text-sm font-medium">
-            Open Graph képtervező
+            {copy.eyebrow}
           </p>
           <h2
             id="og-image-designer-title"
             className="font-heading mt-2 text-4xl font-semibold tracking-[-0.04em] text-balance sm:text-5xl"
           >
-            A jobb első benyomás több kattintást hozhat
+            {copy.title}
           </h2>
           <p className="text-muted-foreground mt-4 max-w-2xl text-base leading-relaxed text-pretty">
-            Tartsd egyértelműen a címet, a képet és a következő lépést. A
-            preview pontosan ugyanabból a kompozícióból készül, mint a
-            letölthető PNG.
+            {copy.description}
           </p>
         </header>
 
@@ -2784,11 +2878,11 @@ export function OgImageDesigner({
             <div
               className="flex border-b px-3 pt-3 sm:px-5"
               role="tablist"
-              aria-label="Szerkesztési mód"
+              aria-label={copy.editingModeAriaLabel}
             >
               {[
-                { id: "image", label: "Kép szerkesztése" },
-                { id: "metadata", label: "Metaadatok" },
+                { id: "image", label: copy.imageTab },
+                { id: "metadata", label: copy.metadataTab },
               ].map((item) => (
                 <button
                   key={item.id}
@@ -2813,7 +2907,7 @@ export function OgImageDesigner({
                   <Field>
                     <div className="flex items-baseline justify-between gap-3">
                       <FieldLabel htmlFor="og-image-content-title">
-                        Képen szereplő cím
+                        {copy.imageContentTitleLabel}
                       </FieldLabel>
                       <CharacterHint current={imageTitle.length} limit={64} />
                     </div>
@@ -2828,7 +2922,7 @@ export function OgImageDesigner({
                   <Field>
                     <div className="flex items-baseline justify-between gap-3">
                       <FieldLabel htmlFor="og-image-content-description">
-                        Képen szereplő leírás
+                        {copy.imageContentDescriptionLabel}
                       </FieldLabel>
                       <CharacterHint
                         current={imageDescription.length}
@@ -2849,7 +2943,7 @@ export function OgImageDesigner({
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Field>
                       <FieldLabel htmlFor="og-image-eyebrow">
-                        Címke / márkanév
+                        {copy.eyebrowLabel}
                       </FieldLabel>
                       <Input
                         id="og-image-eyebrow"
@@ -2861,7 +2955,7 @@ export function OgImageDesigner({
                       />
                     </Field>
                     <Field>
-                      <FieldLabel htmlFor="og-designer-cta">CTA</FieldLabel>
+                      <FieldLabel htmlFor="og-designer-cta">{copy.ctaLabel}</FieldLabel>
                       <Input
                         id="og-designer-cta"
                         value={cta}
@@ -2875,7 +2969,7 @@ export function OgImageDesigner({
                     <div className="grid gap-4 border-t pt-5 sm:grid-cols-2">
                       <Field className="sm:col-span-2">
                         <FieldLabel htmlFor="og-deal-badge">
-                          Ajánlatcímke
+                          {copy.dealBadgeLabel}
                         </FieldLabel>
                         <Input
                           id="og-deal-badge"
@@ -2888,7 +2982,7 @@ export function OgImageDesigner({
                       </Field>
                       <Field>
                         <FieldLabel htmlFor="og-deal-rating">
-                          Értékelés szövege
+                          {copy.dealRatingLabel}
                         </FieldLabel>
                         <Input
                           id="og-deal-rating"
@@ -2900,7 +2994,7 @@ export function OgImageDesigner({
                         />
                       </Field>
                       <Field>
-                        <FieldLabel htmlFor="og-deal-price">Ár</FieldLabel>
+                        <FieldLabel htmlFor="og-deal-price">{copy.dealPriceLabel}</FieldLabel>
                         <Input
                           id="og-deal-price"
                           value={dealPrice}
@@ -2915,7 +3009,7 @@ export function OgImageDesigner({
                     <div className="grid gap-4 border-t pt-5 sm:grid-cols-2">
                       <Field>
                         <FieldLabel htmlFor="og-vault-status">
-                          Állapotjelző
+                          {copy.vaultStatusLabel}
                         </FieldLabel>
                         <Input
                           id="og-vault-status"
@@ -2928,7 +3022,7 @@ export function OgImageDesigner({
                       </Field>
                       <Field>
                         <FieldLabel htmlFor="og-vault-label">
-                          Zöld címke
+                          {copy.vaultLabelLabel}
                         </FieldLabel>
                         <Input
                           id="og-vault-label"
@@ -2946,7 +3040,7 @@ export function OgImageDesigner({
                     <div className="grid gap-4 border-t pt-5 sm:grid-cols-2">
                       <Field>
                         <FieldLabel htmlFor="og-grid-kicker">
-                          Felső kategória
+                          {copy.gridKickerLabel}
                         </FieldLabel>
                         <Input
                           id="og-grid-kicker"
@@ -2959,7 +3053,7 @@ export function OgImageDesigner({
                       </Field>
                       <Field>
                         <FieldLabel htmlFor="og-grid-footer">
-                          Jobb alsó felirat
+                          {copy.gridFooterLabel}
                         </FieldLabel>
                         <Input
                           id="og-grid-footer"
@@ -2977,7 +3071,7 @@ export function OgImageDesigner({
                     <div className="grid gap-4 border-t pt-5 sm:grid-cols-2">
                       <Field>
                         <FieldLabel htmlFor="og-launch-campaign">
-                          Kampánycímke
+                          {copy.launchCampaignLabel}
                         </FieldLabel>
                         <Input
                           id="og-launch-campaign"
@@ -2990,7 +3084,7 @@ export function OgImageDesigner({
                       </Field>
                       <Field>
                         <FieldLabel htmlFor="og-launch-offer">
-                          Ajánlati sor
+                          {copy.launchOfferLabel}
                         </FieldLabel>
                         <Input
                           id="og-launch-offer"
@@ -2999,11 +3093,6 @@ export function OgImageDesigner({
                           onChange={(event) => setLaunchOffer(event.target.value)}
                         />
                       </Field>
-                      <ColorControl
-                        label="Kampánycímke szövegszíne"
-                        value={launchCampaignColor}
-                        onChange={setLaunchCampaignColor}
-                      />
                     </div>
                   )}
 
@@ -3011,7 +3100,7 @@ export function OgImageDesigner({
                     <div className="grid gap-4 border-t pt-5 sm:grid-cols-2">
                       <Field>
                         <FieldLabel htmlFor="og-quote-author">
-                          Szerző neve
+                          {copy.quoteAuthorLabel}
                         </FieldLabel>
                         <Input
                           id="og-quote-author"
@@ -3021,7 +3110,7 @@ export function OgImageDesigner({
                         />
                       </Field>
                       <Field>
-                        <FieldLabel>Szerző portréja</FieldLabel>
+                        <FieldLabel>{copy.quoteAuthorPortraitLabel}</FieldLabel>
                         <input
                           ref={quoteAuthorInputRef}
                           type="file"
@@ -3042,7 +3131,7 @@ export function OgImageDesigner({
                             data-icon="inline-start"
                             aria-hidden="true"
                           />
-                          {quoteAuthorImageName || "Kép kiválasztása"}
+                          {quoteAuthorImageName || copy.choosePhoto}
                         </Button>
                       </Field>
                     </div>
@@ -3052,7 +3141,7 @@ export function OgImageDesigner({
                     <div className="border-t pt-5">
                       <Field>
                         <FieldLabel htmlFor="og-editorial-badge">
-                          Kampánycímke
+                          {copy.editorialBadgeLabel}
                         </FieldLabel>
                         <Input
                           id="og-editorial-badge"
@@ -3067,10 +3156,12 @@ export function OgImageDesigner({
                   )}
 
                   <Field>
-                    <FieldLabel>Kiválasztott kép</FieldLabel>
+                    <FieldLabel htmlFor="og-image-source-url">
+                      {copy.selectedImageLabel}
+                    </FieldLabel>
                     <div
                       className={cn(
-                        "flex min-h-28 flex-col items-center justify-center rounded-xl border border-dashed p-3 text-center transition-colors",
+                        "flex items-center gap-2 rounded-xl border p-2 transition-colors",
                         isDragging
                           ? "border-ring bg-muted ring-3 ring-ring/20"
                           : "bg-muted/30",
@@ -3087,6 +3178,21 @@ export function OgImageDesigner({
                         loadImage(event.dataTransfer.files[0]);
                       }}
                     >
+                      <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-background">
+                        {image ? (
+                          <img
+                            src={image}
+                            alt=""
+                            className="size-full object-cover"
+                          />
+                        ) : (
+                          <HugeiconsIcon
+                            icon={Image02Icon}
+                            className="text-muted-foreground size-4"
+                            aria-hidden="true"
+                          />
+                        )}
+                      </div>
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -3094,104 +3200,38 @@ export function OgImageDesigner({
                         className="sr-only"
                         onChange={(event) => loadImage(event.target.files?.[0])}
                       />
-                      <HugeiconsIcon
-                        icon={ImageAdd02Icon}
-                        className="text-muted-foreground size-5"
-                        aria-hidden="true"
+                      <Input
+                        id="og-image-source-url"
+                        type="url"
+                        value={image.startsWith("data:") ? "" : image}
+                        onChange={(event) => setImage(event.target.value)}
+                        placeholder={copy.imageUrlPlaceholder}
+                        className="h-9 min-w-0 flex-1"
                       />
-                      <p className="mt-2 max-w-full truncate text-xs font-medium">
-                        {imageName ||
-                          (isDragging ? "Engedd el" : "Húzd ide a képet")}
-                      </p>
-                      <button
+                      <Button
                         type="button"
-                        className="mt-2 text-xs font-medium text-primary underline underline-offset-4"
+                        variant="outline"
+                        size="icon-sm"
                         onClick={() => fileInputRef.current?.click()}
+                        aria-label={copy.browseLabel}
+                        title={copy.browseLabel}
                       >
-                        {image ? "Csere" : "Tallózás"}
-                      </button>
+                        <HugeiconsIcon icon={ImageAdd02Icon} aria-hidden="true" />
+                      </Button>
                     </div>
                     <FieldDescription>
-                      PNG, JPG vagy WebP. Ez csak a megosztási kép tartalmát
-                      módosítja.
+                      {copy.imageHint}
                     </FieldDescription>
                   </Field>
-
-                  <Field>
-                    <FieldLabel htmlFor="og-image-source-url">
-                      Vagy add meg a kép URL-jét
-                    </FieldLabel>
-                    <Input
-                      id="og-image-source-url"
-                      type="url"
-                      value={image.startsWith("data:") ? "" : image}
-                      onChange={(event) => {
-                        setImage(event.target.value);
-                        setImageName(filenameFromUrl(event.target.value));
-                      }}
-                      placeholder="https://pelda.hu/kep.jpg"
-                    />
-                    <FieldDescription>
-                      Egy publikus kép URL-je is használható feltöltés
-                      helyett — ez felülírja a fentebb kiválasztott fájlt.
-                    </FieldDescription>
-                  </Field>
-
-                  <div className="border-t pt-5">
-                    <div className="mb-4 flex items-center justify-between gap-3">
-                      <p className="text-xs font-medium text-foreground">
-                        {activeTemplate.name} palettája
-                      </p>
-                      <span className="text-muted-foreground text-xs">
-                        Csak ezt a sablont érinti
-                      </span>
-                    </div>
-                    <div className="mb-5 flex flex-wrap gap-2">
-                      {activeTemplate.quickPalettes.map((quickPalette) => (
-                        <button
-                          key={quickPalette.name}
-                          type="button"
-                          onClick={() =>
-                            applyQuickPalette(quickPalette.palette)
-                          }
-                          className="flex items-center gap-1.5 rounded-full border bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-foreground/25 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
-                        >
-                          <span className="flex -space-x-1" aria-hidden="true">
-                            {activeTemplate.slots.slice(0, 4).map((slot) => (
-                              <span
-                                key={slot}
-                                className="size-3 rounded-full border border-background"
-                                style={{
-                                  background: quickPalette.palette[slot],
-                                }}
-                              />
-                            ))}
-                          </span>
-                          {quickPalette.name}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-                      {activeTemplate.slots.map((slot) => (
-                        <ColorControl
-                          key={slot}
-                          label={paletteSlotLabels[slot]}
-                          value={activePalette[slot]}
-                          onChange={(value) => updatePalette(slot, value)}
-                        />
-                      ))}
-                    </div>
-                  </div>
                 </>
               ) : (
                 <>
                   <p className="text-muted-foreground text-sm leading-relaxed">
-                    Ezek az értékek jelennek meg a platformok kártyáin és a
-                    HTML-kódban. Nem módosítják a tervezett kép szövegét.
+                    {copy.metadataTabIntro}
                   </p>
                   <Field>
                     <FieldLabel htmlFor="share-page-url">
-                      Az oldal URL-je
+                      {copy.pageUrlLabel}
                     </FieldLabel>
                     <Input
                       id="share-page-url"
@@ -3202,7 +3242,7 @@ export function OgImageDesigner({
                   </Field>
                   <Field>
                     <div className="flex items-baseline justify-between gap-3">
-                      <FieldLabel htmlFor="share-title">OG cím</FieldLabel>
+                      <FieldLabel htmlFor="share-title">{copy.ogTitleLabel}</FieldLabel>
                       <CharacterHint current={title.length} limit={60} />
                     </div>
                     <Input
@@ -3215,7 +3255,7 @@ export function OgImageDesigner({
                   <Field>
                     <div className="flex items-baseline justify-between gap-3">
                       <FieldLabel htmlFor="share-description">
-                        OG leírás
+                        {copy.ogDescriptionLabel}
                       </FieldLabel>
                       <CharacterHint current={description.length} limit={125} />
                     </div>
@@ -3231,23 +3271,22 @@ export function OgImageDesigner({
                   </Field>
                   <Field>
                     <FieldLabel htmlFor="share-image-url">
-                      A kép publikus URL-je
+                      {copy.imagePublicUrlLabel}
                     </FieldLabel>
                     <Input
                       id="share-image-url"
                       type="url"
                       value={imageUrl}
                       onChange={(event) => onImageUrlChange(event.target.value)}
-                      placeholder="https://pelda.hu/og-image.jpg"
+                      placeholder={copy.imagePublicUrlPlaceholder}
                     />
                     <FieldDescription>
-                      Az exportált PNG-t előbb töltsd fel a saját webhelyedre
-                      vagy CDN-edre.
+                      {copy.imagePublicUrlHint}
                     </FieldDescription>
                   </Field>
                   <Field>
                     <FieldLabel htmlFor="share-image-alt">
-                      A kép leírása
+                      {copy.imageDescriptionLabel}
                     </FieldLabel>
                     <Input
                       id="share-image-alt"
@@ -3259,7 +3298,7 @@ export function OgImageDesigner({
                   <div className="grid gap-4 border-t pt-5 sm:grid-cols-2">
                     <Field>
                       <FieldLabel htmlFor="share-site-name">
-                        Webhely neve
+                        {copy.siteNameLabel}
                       </FieldLabel>
                       <Input
                         id="share-site-name"
@@ -3270,7 +3309,7 @@ export function OgImageDesigner({
                       />
                     </Field>
                     <Field>
-                      <FieldLabel htmlFor="share-type">Oldal típusa</FieldLabel>
+                      <FieldLabel htmlFor="share-type">{copy.pageTypeLabel}</FieldLabel>
                       <select
                         id="share-type"
                         value={pageType}
@@ -3279,13 +3318,13 @@ export function OgImageDesigner({
                         }
                         className="h-9 w-full rounded-3xl border border-transparent bg-input/50 px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
                       >
-                        <option value="website">Weboldal</option>
-                        <option value="article">Cikk</option>
+                        <option value="website">{copy.pageTypeWebsite}</option>
+                        <option value="article">{copy.pageTypeArticle}</option>
                       </select>
                     </Field>
                     <Field>
                       <FieldLabel htmlFor="share-locale">
-                        Nyelv / régió
+                        {copy.localeLabel}
                       </FieldLabel>
                       <Input
                         id="share-locale"
@@ -3304,7 +3343,7 @@ export function OgImageDesigner({
               <div
                 className="flex min-w-0 overflow-x-auto"
                 role="tablist"
-                aria-label="Közösségi előnézet"
+                aria-label={copy.socialPreviewAriaLabel}
               >
                 {designerPreviewPlatforms.map((item) => (
                   <button
@@ -3352,8 +3391,8 @@ export function OgImageDesigner({
                 />
                 <span className="hidden sm:inline">
                   {exportState === "exporting"
-                    ? "PNG készítése"
-                    : "PNG letöltése"}
+                    ? copy.generatingPngLabel
+                    : copy.downloadPngLabel}
                 </span>
                 <span className="sm:hidden">PNG</span>
               </Button>
@@ -3365,10 +3404,10 @@ export function OgImageDesigner({
                   <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                     <div>
                       <h3 className="font-heading text-lg font-semibold">
-                        Beilleszthető HTML
+                        {copy.embeddableHtmlTitle}
                       </h3>
                       <p className="text-muted-foreground mt-1 text-sm">
-                        Tedd az adott oldal &lt;head&gt; részébe.
+                        {copy.embeddableHtmlHint}
                       </p>
                     </div>
                     <Button type="button" size="sm" onClick={copyCode}>
@@ -3378,17 +3417,17 @@ export function OgImageDesigner({
                         aria-hidden="true"
                       />
                       {copyState === "copied"
-                        ? "Kimásolva"
+                        ? copy.copiedLabel
                         : copyState === "error"
-                          ? "Másold ki kézzel"
-                          : "Kód másolása"}
+                          ? copy.copyManuallyLabel
+                          : copy.copyCodeLabel}
                     </Button>
                   </div>
                   <pre className="morf-share-code max-h-[32rem] overflow-auto rounded-xl border p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap break-all">
                     <code>{generatedCode}</code>
                   </pre>
                   <p className="sr-only" aria-live="polite">
-                    {copyState === "copied" ? "A kód a vágólapra került." : ""}
+                    {copyState === "copied" ? copy.codeCopiedSrOnly : ""}
                   </p>
                 </div>
               ) : (
@@ -3411,16 +3450,72 @@ export function OgImageDesigner({
                 className="border-t px-5 py-3 text-sm text-destructive"
               >
                 {exportErrorMessage
-                  ? `A PNG export nem sikerült: ${exportErrorMessage}`
-                  : "A PNG export nem sikerült. Próbálj másik helyben feltöltött képet."}
+                  ? copy.pngExportFailedTemplate.replace("{message}", exportErrorMessage)
+                  : copy.pngExportFailedFallback}
               </p>
             )}
+
+            <div className="border-t px-4 py-4 sm:px-5 sm:py-5">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <p className="text-xs font-medium text-foreground">
+                  {activeTemplate.name} {copy.paletteOfTemplateSuffix}
+                </p>
+                <span className="text-muted-foreground text-xs">
+                  {copy.templateOnlyNote}
+                </span>
+              </div>
+              <div className="mb-5 flex flex-wrap gap-2">
+                {activeTemplate.quickPalettes.map((quickPalette) => (
+                  <button
+                    key={quickPalette.name}
+                    type="button"
+                    onClick={() => applyQuickPalette(quickPalette.palette)}
+                    className="flex items-center gap-1.5 rounded-full border bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-foreground/25 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
+                  >
+                    <span className="flex -space-x-1" aria-hidden="true">
+                      {activeTemplate.slots.slice(0, 4).map((slot) => (
+                        <span
+                          key={slot}
+                          className="size-3 rounded-full border border-background"
+                          style={{ background: quickPalette.palette[slot] }}
+                        />
+                      ))}
+                    </span>
+                    {(copy.paletteNames as Record<string, string>)[quickPalette.name] ?? quickPalette.name}
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {activeTemplate.slots.map((slot) => (
+                  <ColorControl
+                    key={slot}
+                    label={copy.paletteSlotLabels[slot]}
+                    value={activePalette[slot]}
+                    onChange={(value) => updatePalette(slot, value)}
+                  />
+                ))}
+                {template === "launch" && (
+                  <ColorControl
+                    label={copy.launchCampaignColorLabel}
+                    value={launchCampaignColor}
+                    onChange={setLaunchCampaignColor}
+                  />
+                )}
+                {template === "editorial" && (
+                  <ColorControl
+                    label={copy.editorialBadgeColorLabel}
+                    value={editorialBadgeColor}
+                    onChange={setEditorialBadgeColor}
+                  />
+                )}
+              </div>
+            </div>
 
             <div className="border-t px-4 py-4 sm:px-5">
               <div className="mb-3 flex items-center justify-between gap-4">
                 <div>
                   <h3 className="font-heading text-base font-semibold">
-                    Sablonok
+                    {copy.templatesHeading}
                   </h3>
                   <p className="text-muted-foreground text-xs">
                     {selectedIndex + 1} / {templates.length} · 1200 × 630 px
@@ -3431,7 +3526,7 @@ export function OgImageDesigner({
                     type="button"
                     variant="outline"
                     size="icon-sm"
-                    aria-label="Előző sablonok"
+                    aria-label={copy.previousTemplatesAriaLabel}
                     onClick={() =>
                       templateStripRef.current?.scrollBy({
                         left: -360,
@@ -3445,7 +3540,7 @@ export function OgImageDesigner({
                     type="button"
                     variant="outline"
                     size="icon-sm"
-                    aria-label="Következő sablonok"
+                    aria-label={copy.nextTemplatesAriaLabel}
                     onClick={() =>
                       templateStripRef.current?.scrollBy({
                         left: 360,
@@ -3479,7 +3574,7 @@ export function OgImageDesigner({
                       {...artworkProps}
                       template={item.id}
                       palette={palettes[item.id]}
-                      label={`${item.name} sablon`}
+                      label={`${item.name} ${copy.templateNameSuffix}`}
                     />
                     <span className="block border-t px-3 py-2 text-xs font-medium">
                       {item.name}

@@ -11,28 +11,28 @@ import MainLayout from "@/layouts/main.astro";
 import { getFaviconMessages } from "@/i18n/favicon";
 import { getLocalizedRoute, getRouteAlternates } from "@/lib/localized-routes";
 
-const locale = "hu" as const;
+const locale = "en" as const;
 const copy = getFaviconMessages(locale);
 const canonicalPath = getLocalizedRoute("faviconGenerator", locale);
 
-const seoTitle = "Ingyenes favicon generátor: favicon.ico, PWA és app ikonok | Morf";
-const seoDescription = "Alakíts logót vagy képet teljes favicon- és PWA ikoncsomaggá: favicon.ico, Apple Touch ikon és Android maskable ikonok új weboldalhoz, webapphoz vagy meglévő oldal arculatváltásához. Ingyenes, regisztráció nélkül.";
+const seoTitle = "Free Favicon Generator: favicon.ico, PWA & App Icons | Morf";
+const seoDescription = "Turn a logo or image into a complete favicon and PWA icon pack — favicon.ico, Apple Touch icon, and Android maskable icons for a new website, web app, or rebrand. Free, no sign-up required.";
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
     {
       "@type": "WebApplication",
-      "@id": `${canonicalPath}#alkalmazas`,
-      name: "Morf favicon generátor",
+      "@id": `${canonicalPath}#application`,
+      name: "Morf favicon generator",
       description: seoDescription,
       applicationCategory: "DesignApplication",
       operatingSystem: "Web",
       isAccessibleForFree: true,
-      offers: { "@type": "Offer", price: "0", priceCurrency: "HUF" },
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
     },
     {
       "@type": "FAQPage",
-      "@id": `${canonicalPath}#gyakori-kerdesek`,
+      "@id": `${canonicalPath}#faq`,
       mainEntity: copy.page.faq.items.map((item) => ({
         "@type": "Question",
         name: item.question,
@@ -78,12 +78,14 @@ const structuredData = {
       title={copy.page.privacy.title}
       description={copy.page.privacy.description}
       items={copy.page.privacy.items}
+      eyebrow="Privacy"
     />
 
     <FaqSection
       title={copy.page.faq.title}
       description={copy.page.faq.description}
       items={[...copy.page.faq.items]}
+      id="faq"
     />
   </main>
 

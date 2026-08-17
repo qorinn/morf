@@ -14,16 +14,15 @@ import WhyChooseMorf from "./WhyChooseMorf";
 interface Props { locale: Extract<Locale, "hu" | "en">; }
 const { locale } = Astro.props;
 const copy = getHomeCopy(locale);
-const isEnglish = locale === "en";
 const tools: Array<{ id: HomeToolId; href: string; icon: typeof Image02Icon; category: "images" | "video" | "web" }> = [
   { id: "imageConverter", href: getLocalizedRoute("imageConverter", locale), icon: Image02Icon, category: "images" },
   { id: "imageOptimizer", href: getLocalizedRoute("imageConverter", locale), icon: FileZipIcon, category: "images" },
   { id: "imageResizer", href: getLocalizedRoute("imageConverter", locale), icon: Resize01Icon, category: "images" },
-  { id: "videoFrames", href: "/video-kepekre-bontasa", icon: Film01Icon, category: "video" },
-  { id: "videoSpeed", href: "/video-gyorsitas-lassitas", icon: Film01Icon, category: "video" },
-  { id: "videoConverter", href: "/video-konvertalo", icon: Film01Icon, category: "video" },
-  { id: "openGraph", href: "/megosztasi-elozet-tervezo", icon: Share01Icon, category: "web" },
-  { id: "favicon", href: "/favicon-generator", icon: BrowserIcon, category: "web" },
+  { id: "videoFrames", href: getLocalizedRoute("videoFrames", locale), icon: Film01Icon, category: "video" },
+  { id: "videoSpeed", href: getLocalizedRoute("videoSpeed", locale), icon: Film01Icon, category: "video" },
+  { id: "videoConverter", href: getLocalizedRoute("videoConverter", locale), icon: Film01Icon, category: "video" },
+  { id: "openGraph", href: getLocalizedRoute("sharePreview", locale), icon: Share01Icon, category: "web" },
+  { id: "favicon", href: getLocalizedRoute("faviconGenerator", locale), icon: BrowserIcon, category: "web" },
 ];
 const categories = ["images", "video", "web"] as const;
 const canonicalPath = getLocalizedRoute("home", locale);
@@ -66,7 +65,7 @@ const alternateLocales = [{ locale: "hu", path: getLocalizedRoute("home", "hu") 
         ))}
       </div>
     </section>
-    <section aria-label={isEnglish ? "Why choose Morf?" : "Miért válaszd a Morfot?"} class="pb-10 sm:pb-16"><WhyChooseMorf client:load locale={locale} /></section>
+    <section aria-label={copy.whyChoose.heading} class="pb-10 sm:pb-16"><WhyChooseMorf client:load locale={locale} /></section>
   </main>
   <SiteFooter locale={locale} />
 </MainLayout>

@@ -1,10 +1,11 @@
 import { defineHungarianMessages } from "./types";
 import type { ToolId } from "./tools";
+import type { Locale } from "../lib/locale.ts";
 
 type SeoPage = {
   title: string;
   description: string;
-  inLanguage: "hu";
+  inLanguage: Locale;
 };
 
 export const seoMessages = defineHungarianMessages({

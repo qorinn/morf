@@ -1,6 +1,24 @@
 export const frameSetSchemaVersion = 1 as const;
 export const frameCheckpointSeconds = 15;
 
+export interface VideoFramesTextCopy {
+  unsupportedFileType: { message: string; suggestion: string };
+  unreadableContainer: { message: string; suggestion: string };
+  noVideoTrack: { message: string; suggestion: string };
+  undecodableCodecTemplate: string;
+  undecodableCodecSuggestion: string;
+  metadataReadFailed: { message: string; suggestion: string };
+  canvasUnavailable: string;
+  trackNotDecodable: string;
+  localStorageUnsupported: string;
+  unsupportedSchemaVersionTemplate: string;
+  frameSetArtifactName: string;
+  checkpointArtifactName: string;
+  directorySaveUnsupported: string;
+  pngImageDescription: string;
+  pngImagesDescription: string;
+}
+
 export type FrameRateSelection = number | null;
 export type FrameExtractionMode = "timeline" | "first-last";
 
@@ -71,6 +89,7 @@ export type ExtractFramesRequest = {
   extractionMode: FrameExtractionMode;
   extractionFps: FrameRateSelection;
   resume: boolean;
+  copy: VideoFramesTextCopy;
 };
 
 export type FrameExtractionProgress = {
@@ -90,7 +109,10 @@ export type ExtractFramesResult = {
 };
 
 export type VideoFrameWorkerApi = {
-  inspectVideo(file: File): Promise<InspectVideoResult>;
+  inspectVideo(
+    file: File,
+    copy: VideoFramesTextCopy,
+  ): Promise<InspectVideoResult>;
   extractFrames(
     request: ExtractFramesRequest,
     onProgress: (progress: FrameExtractionProgress) => void,

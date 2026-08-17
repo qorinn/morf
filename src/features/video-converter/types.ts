@@ -1,5 +1,17 @@
+export interface VideoConverterTextCopy {
+  unsupportedFileType: { message: string; suggestion: string };
+  unreadableContainer: { message: string; suggestion: string };
+  trackNotDecodable: { message: string; suggestion: string };
+  inspectFailed: { message: string; suggestion: string };
+  exportCancelled: string;
+  exportTrackNotDecodable: string;
+  videoEncoderUnavailableTemplate: string;
+  audioEncoderUnavailableTemplate: string;
+  outputNotCreated: string;
+}
+
 export type VideoOutputFormat = "mp4" | "webm" | "mov";
-export type VideoQualityPreset = "smaller" | "balanced" | "higher";
+export type VideoQualityPreset = "smaller" | "balanced" | "original";
 
 export type VideoConverterMetadata = {
   fileName: string;
@@ -32,6 +44,7 @@ export type VideoConverterRequest = {
   outputFormat: VideoOutputFormat;
   scalePercent: number;
   quality: VideoQualityPreset;
+  copy: VideoConverterTextCopy;
 };
 
 export type VideoConverterProgress = {
@@ -46,7 +59,10 @@ export type VideoConverterResult = {
 };
 
 export type VideoConverterWorkerApi = {
-  inspectVideo(file: File): Promise<VideoConverterInspectResult>;
+  inspectVideo(
+    file: File,
+    copy: VideoConverterTextCopy,
+  ): Promise<VideoConverterInspectResult>;
   convertVideo(
     request: VideoConverterRequest,
     onProgress: (progress: VideoConverterProgress) => void,

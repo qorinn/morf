@@ -14,6 +14,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useWorkspaceI18n } from "@/components/workspace/WorkspaceI18nProvider";
+import type { FaviconMessages } from "@/i18n/favicon";
 
 interface FaviconPreviewsProps {
   previewUrl?: string;
@@ -27,18 +29,20 @@ function PreviewImage({
   alt,
   className,
   size,
+  loadingAriaLabel,
 }: {
   src?: string;
   alt: string;
   className?: string;
   size?: number;
+  loadingAriaLabel: string;
 }) {
   if (!src) {
     return (
       <span
         className="morf-inset-panel text-muted-foreground flex aspect-square items-center justify-center rounded-2xl text-xs"
         style={size ? { width: size, height: size } : undefined}
-        aria-label="Előnézet készül"
+        aria-label={loadingAriaLabel}
       >
         …
       </span>
@@ -61,16 +65,16 @@ export function FaviconPreviews({
   maskablePreviewUrl,
   projectName,
 }: FaviconPreviewsProps) {
-  const name = projectName.trim() || "Az oldalad";
+  const { messages } = useWorkspaceI18n<FaviconMessages>();
+  const copy = messages.previews;
+  const name = projectName.trim() || copy.fallbackName;
 
   return (
     <Card>
       <CardHeader>
         <div className="flex flex-col gap-1.5">
-          <CardTitle>Élő előnézet</CardTitle>
-          <CardDescription>
-            Nagyított környezetek és valódi pixelméretek.
-          </CardDescription>
+          <CardTitle>{copy.cardTitle}</CardTitle>
+          <CardDescription>{copy.cardDescription}</CardDescription>
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
@@ -82,13 +86,14 @@ export function FaviconPreviews({
                 className="size-4"
                 strokeWidth={2}
               />
-              Böngészőfül
+              {copy.browserTab}
             </figcaption>
             <div className="morf-control-surface border-border/60 flex items-center gap-2 rounded-2xl border px-3 py-2">
               <PreviewImage
                 src={previewUrl}
-                alt="16 pixeles böngészőfavicon"
+                alt={copy.browserTabAlt}
                 size={16}
+                loadingAriaLabel={copy.previewLoadingAriaLabel}
               />
               <span className="min-w-0 truncate text-xs">{name}</span>
             </div>
@@ -101,18 +106,19 @@ export function FaviconPreviews({
                 className="size-4"
                 strokeWidth={2}
               />
-              Keresési találat
+              {copy.searchResult}
             </figcaption>
             <div className="flex items-center gap-3">
               <PreviewImage
                 src={previewUrl}
-                alt="48 pixeles keresési favicon"
+                alt={copy.searchResultAlt}
                 className="size-12 rounded-full"
+                loadingAriaLabel={copy.previewLoadingAriaLabel}
               />
               <div className="min-w-0">
                 <p className="truncate text-xs font-medium">{name}</p>
                 <p className="text-muted-foreground truncate text-xs">
-                  example.com
+                  {copy.exampleDomain}
                 </p>
               </div>
             </div>
@@ -125,15 +131,16 @@ export function FaviconPreviews({
                 className="size-4"
                 strokeWidth={2}
               />
-              iOS kezdőképernyő
+              {copy.iosHomeScreen}
             </figcaption>
             <div className="flex items-center gap-3">
               <PreviewImage
                 src={opaquePreviewUrl}
-                alt="Apple Touch ikon előnézete"
+                alt={copy.appleTouchAlt}
                 className="size-16 rounded-[1.35rem] shadow-sm"
+                loadingAriaLabel={copy.previewLoadingAriaLabel}
               />
-              <span className="text-xs">{name}</span>
+              {/* <span className="text-xs">{name}</span> */}
             </div>
           </figure>
 
@@ -144,18 +151,20 @@ export function FaviconPreviews({
                 className="size-4"
                 strokeWidth={2}
               />
-              Android ikon
+              {copy.androidIcon}
             </figcaption>
             <div className="flex items-center gap-4">
               <PreviewImage
                 src={opaquePreviewUrl}
-                alt="Normál Android ikon"
+                alt={copy.androidNormalAlt}
                 className="size-16 rounded-2xl"
+                loadingAriaLabel={copy.previewLoadingAriaLabel}
               />
               <PreviewImage
                 src={opaquePreviewUrl}
-                alt="Kör alakú Android ikon"
+                alt={copy.androidRoundAlt}
                 className="size-16 rounded-full"
+                loadingAriaLabel={copy.previewLoadingAriaLabel}
               />
             </div>
           </figure>
@@ -170,10 +179,10 @@ export function FaviconPreviews({
               id="actual-size-title"
               className="font-heading text-sm font-medium"
             >
-              Tényleges méret
+              {copy.actualSizeTitle}
             </h3>
             <p className="text-muted-foreground mt-1 text-xs">
-              Ezek az ikonok nem nagyítottak.
+              {copy.actualSizeDescription}
             </p>
           </div>
           <div className="morf-inset-panel flex min-h-20 items-center gap-6 overflow-x-auto rounded-3xl p-4">
@@ -181,8 +190,9 @@ export function FaviconPreviews({
               <figure key={size} className="flex shrink-0 items-center gap-2">
                 <PreviewImage
                   src={previewUrl}
-                  alt={`${size} × ${size} pixeles favicon`}
+                  alt={copy.sizeAlt(size)}
                   size={size}
+                  loadingAriaLabel={copy.previewLoadingAriaLabel}
                 />
                 <figcaption className="text-muted-foreground text-xs tabular-nums">
                   {size} px
@@ -206,7 +216,7 @@ export function FaviconPreviews({
               id="maskable-title"
               className="font-heading text-sm font-medium"
             >
-              Maskable safe-zone
+              {copy.maskableTitle}
             </h3>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -214,26 +224,28 @@ export function FaviconPreviews({
               <div className="relative size-32 overflow-hidden rounded-full">
                 <PreviewImage
                   src={maskablePreviewUrl}
-                  alt="Kör alakú maskable ikon előnézete"
+                  alt={copy.maskableCircleAlt}
                   className="size-full"
+                  loadingAriaLabel={copy.previewLoadingAriaLabel}
                 />
                 <span className="border-foreground/70 pointer-events-none absolute inset-[10%] rounded-full border border-dashed" />
               </div>
               <figcaption className="text-center text-xs">
-                Kör maszk · a szaggatott vonal jelzi a biztonságos zónát
+                {copy.maskableCircleCaption}
               </figcaption>
             </figure>
             <figure className="morf-inset-panel flex flex-col items-center gap-3 rounded-3xl p-5">
               <div className="relative size-32 overflow-hidden rounded-[2.35rem]">
                 <PreviewImage
                   src={maskablePreviewUrl}
-                  alt="Squircle alakú maskable ikon előnézete"
+                  alt={copy.maskableSquircleAlt}
                   className="size-full"
+                  loadingAriaLabel={copy.previewLoadingAriaLabel}
                 />
                 <span className="border-foreground/70 pointer-events-none absolute inset-[10%] rounded-3xl border border-dashed" />
               </div>
               <figcaption className="text-center text-xs">
-                Squircle maszk · a maszkolás csak az előnézetre hat
+                {copy.maskableSquircleCaption}
               </figcaption>
             </figure>
           </div>

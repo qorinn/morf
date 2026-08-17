@@ -18,6 +18,10 @@ import { FaviconExportPanel } from "@/components/favicon/FaviconExportPanel";
 import { FaviconPreviews } from "@/components/favicon/FaviconPreviews";
 import { FaviconSettings } from "@/components/favicon/FaviconSettings";
 import { FileUploadDropzone } from "@/components/upload/FileUploadDropzone";
+import {
+  WorkspaceI18nProvider,
+  useWorkspaceI18n,
+} from "@/components/workspace/WorkspaceI18nProvider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -58,6 +62,10 @@ import {
   saveFileAs,
   saveGeneratedFileAs,
 } from "@/lib/downloads";
+import { getFaviconMessages, type FaviconMessages } from "@/i18n/favicon";
+import type { Locale } from "@/lib/locale";
+
+class FaviconBrowserUnsupportedError extends Error {}
 
 interface PreviewUrls {
   standard?: string;
@@ -111,20 +119,25 @@ function validColor(
     : fallback;
 }
 
-function progressLabel(progress?: FaviconProgress): string | undefined {
+function progressLabel(
+  progress: FaviconProgress | undefined,
+  copy: FaviconMessages["workspace"]["progress"],
+): string | undefined {
   switch (progress?.status) {
     case "generating":
-      return "Ikonok generálása";
+      return copy.generating;
     case "creating-ico":
-      return "Favicon.ico létrehozása";
+      return copy.creatingIco;
     case "creating-package":
-      return "ZIP csomag készítése";
+      return copy.creatingPackage;
     default:
       return undefined;
   }
 }
 
-export default function FaviconWorkspace() {
+function StandardFaviconWorkspace() {
+  const { messages } = useWorkspaceI18n<FaviconMessages>();
+  const { workspace } = messages;
   const [source, setSource] = useState<FaviconSource>();
   const [settings, setSettings] = useState(initialSettings);
   const [manifest, setManifest] = useState(initialManifest);
@@ -141,8 +154,8 @@ export default function FaviconWorkspace() {
   const [archiveBlob, setArchiveBlob] = useState<Blob>();
   const [canSaveAs, setCanSaveAs] = useState(false);
 
-  useErrorToast(sourceError, "A képet nem tudjuk használni");
-  useErrorToast(generationError, "A favicon nem készült el");
+  useErrorToast(sourceError, workspace.sourceErrorToastTitle);
+  useErrorToast(generationError, workspace.generationErrorToastTitle);
   const cropGetterRef = useRef<CropCanvasGetter | undefined>(undefined);
   const sourceRef = useRef<FaviconSource | undefined>(undefined);
   const previewsRef = useRef<PreviewUrls>({});
@@ -178,9 +191,9 @@ export default function FaviconWorkspace() {
 
   const getDrawable = useCallback(async () => {
     const getter = cropGetterRef.current;
-    if (!getter) throw new Error("A képkivágó még nem áll készen.");
+    if (!getter) throw new Error(workspace.cropperNotReady);
     return getter();
-  }, []);
+  }, [workspace.cropperNotReady]);
 
   useEffect(() => {
     if (!source) return;
@@ -252,37 +265,44 @@ export default function FaviconWorkspace() {
     setArchiveBlob(undefined);
   }, [exportOptions, manifest, settings, source]);
 
-  const onDrop = useCallback(async (files: File[]) => {
-    const file = files[0];
-    if (!file) return;
-    setLoadingSource(true);
-    setSourceError(undefined);
-    setGenerationError(undefined);
-    try {
-      const validated = await validateFaviconSource(file);
-      if (sourceRef.current) URL.revokeObjectURL(sourceRef.current.objectUrl);
-      setSettings((current) => ({
-        ...current,
-        dominantColor: validated.dominantColor,
-      }));
-      const baseName = fileBaseName(file.name);
-      setManifest((current) => ({
-        ...current,
-        name: baseName,
-        shortName: baseName.slice(0, 24),
-        projectName: baseName,
-      }));
-      setSource(validated);
-    } catch (error) {
-      setSourceError(
-        error instanceof FaviconSourceError
-          ? error.message
-          : "A képet nem sikerült beolvasni. Próbálj másik fájlt.",
-      );
-    } finally {
-      setLoadingSource(false);
-    }
-  }, []);
+  const onDrop = useCallback(
+    async (files: File[]) => {
+      const file = files[0];
+      if (!file) return;
+      setLoadingSource(true);
+      setSourceError(undefined);
+      setGenerationError(undefined);
+      try {
+        const validated = await validateFaviconSource(
+          file,
+          messages.sourceErrors,
+        );
+        if (sourceRef.current)
+          URL.revokeObjectURL(sourceRef.current.objectUrl);
+        setSettings((current) => ({
+          ...current,
+          dominantColor: validated.dominantColor,
+        }));
+        const baseName = fileBaseName(file.name);
+        setManifest((current) => ({
+          ...current,
+          name: baseName,
+          shortName: baseName.slice(0, 24),
+          projectName: baseName,
+        }));
+        setSource(validated);
+      } catch (error) {
+        setSourceError(
+          error instanceof FaviconSourceError
+            ? error.message
+            : workspace.decodeFailed,
+        );
+      } finally {
+        setLoadingSource(false);
+      }
+    },
+    [messages.sourceErrors, workspace.decodeFailed],
+  );
 
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
@@ -307,9 +327,9 @@ export default function FaviconWorkspace() {
       blob: archiveBlob,
       fileName: result.archiveName,
       mimeType: "application/zip",
-      description: "Favicon ZIP-csomag",
+      description: workspace.archiveDescription,
     };
-  }, [archiveBlob, result]);
+  }, [archiveBlob, result, workspace.archiveDescription]);
 
   const downloadArchive = useCallback(() => {
     const archive = saveableArchive();
@@ -318,12 +338,10 @@ export default function FaviconWorkspace() {
 
   const createArchive = useCallback(async () => {
     if (!source || generating) {
-      throw new Error("A csomag jelenleg nem készíthető el.");
+      throw new Error(workspace.packageNotReady);
     }
     if (typeof Worker === "undefined" || typeof WebAssembly === "undefined") {
-      throw new Error(
-        "A böngésződ nem támogatja a szükséges helyi feldolgozást.",
-      );
+      throw new FaviconBrowserUnsupportedError(workspace.browserUnsupported);
     }
 
     setGenerating(true);
@@ -375,7 +393,7 @@ export default function FaviconWorkspace() {
             backgroundColor: webAppBackgroundColor || "#ffffff",
           },
           sanitizedSvg: source.sanitizedSvg,
-          language: "hu" as const,
+          copy: messages.engine,
         },
         [standardMaster.buffer, opaqueMaster.buffer, maskableMaster.buffer],
       );
@@ -392,7 +410,7 @@ export default function FaviconWorkspace() {
         blob,
         fileName: generated.archiveName,
         mimeType: "application/zip",
-        description: "Favicon ZIP-csomag",
+        description: workspace.archiveDescription,
       };
     } finally {
       workerHandle.worker.terminate();
@@ -403,22 +421,29 @@ export default function FaviconWorkspace() {
     generating,
     getDrawable,
     manifest,
+    messages.engine,
     settings,
     source,
     webAppBackgroundColor,
+    workspace.archiveDescription,
+    workspace.browserUnsupported,
+    workspace.packageNotReady,
   ]);
 
-  const reportGenerationError = useCallback((error: unknown) => {
-    setGenerationError(
-      error instanceof Error && /^Manifest:/i.test(error.message)
-        ? error.message.replace(/^Manifest:\s*/i, "")
-        : error instanceof Error && /ICO/i.test(error.message)
-          ? "A favicon.ico létrehozása sikertelen volt. Ellenőrizd a forrásképet, majd próbáld újra."
-          : error instanceof Error && /nem támogatja/i.test(error.message)
+  const reportGenerationError = useCallback(
+    (error: unknown) => {
+      setGenerationError(
+        error instanceof Error && /^Manifest:/i.test(error.message)
+          ? error.message.replace(/^Manifest:\s*/i, "")
+          : error instanceof FaviconBrowserUnsupportedError
             ? error.message
-            : "A favicon csomagot nem sikerült elkészíteni. Ellenőrizd a beállításokat, majd próbáld újra.",
-    );
-  }, []);
+            : error instanceof Error && /ICO/i.test(error.message)
+              ? workspace.icoGenerationFailed
+              : workspace.packageGenerationFailed,
+      );
+    },
+    [workspace.icoGenerationFailed, workspace.packageGenerationFailed],
+  );
 
   const generatePackage = useCallback(async () => {
     try {
@@ -440,7 +465,7 @@ export default function FaviconWorkspace() {
         {
           fileName: `${slugifyProjectName(manifest.projectName)}-favicon-package.zip`,
           mimeType: "application/zip",
-          description: "Favicon ZIP-csomag",
+          description: workspace.archiveDescription,
         },
         async () => (await createArchive()).blob,
       );
@@ -454,21 +479,24 @@ export default function FaviconWorkspace() {
     manifest.projectName,
     reportGenerationError,
     saveableArchive,
+    workspace.archiveDescription,
   ]);
 
   const warnings = source
     ? [
         source.width < RECOMMENDED_SOURCE_DIMENSION ||
         source.height < RECOMMENDED_SOURCE_DIMENSION
-          ? "A forráskép kisebb 512 × 512 px-nél; a nagyobb PWA-ikon enyhén életlen lehet."
+          ? workspace.warnings.smallSource
           : undefined,
         source.transparentRatio > 0.45
-          ? "Az ikon túl kicsinek tűnhet. Csökkentsd a belső margót vagy nagyítsd a grafikát."
+          ? workspace.warnings.tooSmallIcon
           : undefined,
         settings.backgroundMode === "transparent" && source.hasTransparency
-          ? "Az Apple Touch ikon fehér hátteret kap, mert ez a formátum nem átlátszó exportként készül."
+          ? workspace.warnings.appleTouchOpaque
           : undefined,
-      ].filter((warning): warning is string => Boolean(warning))
+      ].filter((warning): warning is NonNullable<typeof warning> =>
+        Boolean(warning),
+      )
     : [];
 
   return (
@@ -479,15 +507,14 @@ export default function FaviconWorkspace() {
       <input
         {...getInputProps()}
         className="sr-only"
-        aria-label="Favicon forráskép kiválasztása"
+        aria-label={workspace.sourceInputAriaLabel}
       />
       <div className="flex flex-col gap-2">
         <h2 className="font-heading text-3xl font-medium tracking-tight sm:text-4xl">
-          Egy képből teljes ikoncsomag
+          {workspace.heading}
         </h2>
         <p className="text-muted-foreground max-w-3xl text-base leading-relaxed">
-          Vágd, igazítsd és ellenőrizd valódi méretben, majd válaszd ki, mely
-          weboldalas és webapp ikonok kerüljenek a ZIP-be.
+          {workspace.description}
         </p>
       </div>
 
@@ -496,14 +523,14 @@ export default function FaviconWorkspace() {
           getRootProps={getRootProps}
           isDragActive={isDragActive}
           onBrowse={open}
-          title="Húzd ide a logót vagy ikont"
-          activeTitle="Engedd el a képet"
-          description="PNG, JPG, WebP vagy biztonságosan megtisztítható SVG · legfeljebb 20 MB · ajánlott 1024 × 1024 px"
-          buttonLabel="Kép kiválasztása"
-          busyLabel="Kép ellenőrzése"
+          title={workspace.dropzone.title}
+          activeTitle={workspace.dropzone.activeTitle}
+          description={workspace.dropzone.description}
+          buttonLabel={workspace.dropzone.buttonLabel}
+          busyLabel={workspace.dropzone.busyLabel}
           busy={loadingSource}
           disabled={generating}
-          privacyNote="A fájl nem hagyja el az eszközödet."
+          privacyNote={workspace.dropzone.privacyNote}
         />
       ) : (
         <>
@@ -537,7 +564,7 @@ export default function FaviconWorkspace() {
                   data-icon="inline-start"
                   strokeWidth={2}
                 />
-                Másik kép
+                {workspace.changeImage}
               </Button>
               <Button
                 type="button"
@@ -551,7 +578,7 @@ export default function FaviconWorkspace() {
                   data-icon="inline-start"
                   strokeWidth={2}
                 />
-                Eltávolítás
+                {workspace.removeImage}
               </Button>
             </div>
           </div>
@@ -559,7 +586,7 @@ export default function FaviconWorkspace() {
           {warnings.length > 0 && (
             <Alert>
               <HugeiconsIcon icon={Alert02Icon} strokeWidth={2} />
-              <AlertTitle>Érdemes még ellenőrizni</AlertTitle>
+              <AlertTitle>{workspace.warningsTitle}</AlertTitle>
               <AlertDescription>
                 <ul className="flex list-disc flex-col gap-1 pl-4">
                   {warnings.map((warning) => (
@@ -573,9 +600,9 @@ export default function FaviconWorkspace() {
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
             <Card>
               <CardHeader>
-                <CardTitle>Beállítás</CardTitle>
+                <CardTitle>{workspace.settingsCardTitle}</CardTitle>
                 <CardDescription>
-                  A négyzetes master nem torzítja a forrásképet.
+                  {workspace.settingsCardDescription}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-7">
@@ -605,7 +632,7 @@ export default function FaviconWorkspace() {
             exportOptions={exportOptions}
             manifest={manifest}
             progress={generationProgress?.value || 0}
-            statusLabel={progressLabel(generationProgress)}
+            statusLabel={progressLabel(generationProgress, workspace.progress)}
             generating={generating}
             error={generationError}
             result={result}
@@ -624,11 +651,25 @@ export default function FaviconWorkspace() {
       {sourceError && (
         <Alert variant="destructive">
           <HugeiconsIcon icon={InformationCircleIcon} strokeWidth={2} />
-          <AlertTitle>A képet nem tudjuk használni</AlertTitle>
+          <AlertTitle>{workspace.sourceErrorAlertTitle}</AlertTitle>
           <AlertDescription>{sourceError}</AlertDescription>
         </Alert>
       )}
       <Toaster />
     </section>
+  );
+}
+
+interface FaviconWorkspaceProps {
+  locale?: Locale;
+}
+
+export default function FaviconWorkspace({
+  locale = "hu",
+}: FaviconWorkspaceProps) {
+  return (
+    <WorkspaceI18nProvider locale={locale} messages={getFaviconMessages(locale)}>
+      <StandardFaviconWorkspace />
+    </WorkspaceI18nProvider>
   );
 }

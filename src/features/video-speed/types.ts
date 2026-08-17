@@ -1,3 +1,15 @@
+export interface VideoSpeedTextCopy {
+  unsupportedFileType: { message: string; suggestion: string };
+  unreadableContainer: { message: string; suggestion: string };
+  trackNotDecodable: { message: string; suggestion: string };
+  inspectFailed: { message: string; suggestion: string };
+  exportCancelled: string;
+  exportTrackNotDecodable: string;
+  h264Unsupported: string;
+  aacUnsupported: string;
+  outputNotCreated: string;
+}
+
 export type SpeedTransition = "ease-in" | "ease-out" | "ease-in-out" | "linear";
 
 export type SpeedPoint = {
@@ -70,6 +82,7 @@ export type VideoSpeedExportRequest = {
   metadata: VideoSpeedMetadata;
   curve: SpeedCurve;
   audio?: ProcessedAudio;
+  copy: VideoSpeedTextCopy;
 };
 
 export type VideoSpeedExportProgress = {
@@ -84,7 +97,10 @@ export type VideoSpeedExportResult = {
 };
 
 export type VideoSpeedWorkerApi = {
-  inspectVideo(file: File): Promise<InspectSpeedVideoResult>;
+  inspectVideo(
+    file: File,
+    copy: VideoSpeedTextCopy,
+  ): Promise<InspectSpeedVideoResult>;
   exportVideo(
     request: VideoSpeedExportRequest,
     onProgress: (progress: VideoSpeedExportProgress) => void,
