@@ -627,6 +627,14 @@ type ArtworkProps = {
   ownImagePlaceholder: string;
 };
 
+// Sima <span> + CSS mask, NEM beágyazott <svg>: a foreignObject-en belüli
+// beágyazott SVG-k mérete megbízhatatlanul skálázódik a Chrome-ban a külső
+// SVG viewBox-transzformációjához képest (a valós méretű preview-ban
+// aránytalanul naggyá nőhet, miközben a lekicsinyített sablon-előnézetben
+// jónak tűnik) — egy sima HTML elem ettől a hibától mentes.
+const arrowIconMaskUrl =
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14'/%3E%3Cpath d='m12 5 7 7-7 7'/%3E%3C/svg%3E\")";
+
 function ArrowIcon({
   size = 20,
   style,
@@ -635,27 +643,26 @@ function ArrowIcon({
   style?: CSSProperties;
 }) {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
+    <span
       aria-hidden="true"
       style={{
         display: "inline-block",
         verticalAlign: "middle",
         flexShrink: 0,
+        width: size,
+        height: size,
+        backgroundColor: "currentColor",
+        WebkitMaskImage: arrowIconMaskUrl,
+        maskImage: arrowIconMaskUrl,
+        WebkitMaskRepeat: "no-repeat",
+        maskRepeat: "no-repeat",
+        WebkitMaskSize: "contain",
+        maskSize: "contain",
+        WebkitMaskPosition: "center",
+        maskPosition: "center",
         ...style,
       }}
-    >
-      <path d="M5 12h14" />
-      <path d="m12 5 7 7-7 7" />
-    </svg>
+    />
   );
 }
 
@@ -977,6 +984,7 @@ function Artwork({
                       color: accent,
                       fontSize: 20,
                       fontWeight: 800,
+                      whiteSpace: "nowrap",
                     }}
                   >
                     {cta}
@@ -1366,6 +1374,7 @@ function Artwork({
                       color: background,
                       fontSize: 19,
                       fontWeight: 800,
+                      whiteSpace: "nowrap",
                     }}
                   >
                     {cta}
@@ -1601,6 +1610,7 @@ function Artwork({
                     fontSize: 29,
                     fontWeight: 400,
                     letterSpacing: "-0.03em",
+                    whiteSpace: "nowrap",
                   }}
                 >
                   {cta}
