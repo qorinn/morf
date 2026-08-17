@@ -1,5 +1,8 @@
 import { MAX_SOURCE_SIZE, MIN_SOURCE_DIMENSION } from "./config.ts";
 import type { FaviconSource, SourceKind } from "./types.ts";
+import type { FaviconMessages } from "@/i18n/favicon";
+
+type SourceErrorCopy = FaviconMessages["sourceErrors"];
 
 const rasterMimeTypes: Record<Exclude<SourceKind, "svg">, string> = {
   png: "image/png",
@@ -65,11 +68,12 @@ function isEmbeddedRaster(value: string): boolean {
   return /^data:image\/(?:png|jpeg|webp);base64,/i.test(value.trim());
 }
 
-export function sanitizeSvgText(source: string): string {
+export function sanitizeSvgText(
+  source: string,
+  copy: SourceErrorCopy,
+): string {
   if (/<!DOCTYPE|<!ENTITY/i.test(source)) {
-    throw new FaviconSourceError(
-      "Az SVG tiltott dokumentumdeklarációt tartalmaz.",
-    );
+    throw new FaviconSourceError(copy.svgForbiddenDoctype);
   }
 
   const parser = new DOMParser();
@@ -78,7 +82,7 @@ export function sanitizeSvgText(source: string): string {
     document.querySelector("parsererror") ||
     document.documentElement.localName !== "svg"
   ) {
-    throw new FaviconSourceError("Az SVG szerkezete hibás vagy nem olvasható.");
+    throw new FaviconSourceError(copy.svgInvalidStructure);
   }
 
   document
@@ -132,16 +136,17 @@ export function sanitizeSvgText(source: string): string {
   return new XMLSerializer().serializeToString(svg);
 }
 
-async function loadImage(url: string): Promise<HTMLImageElement> {
+async function loadImage(
+  url: string,
+  copy: SourceErrorCopy,
+): Promise<HTMLImageElement> {
   const image = new Image();
   image.decoding = "async";
   image.src = url;
   try {
     await image.decode();
   } catch {
-    throw new FaviconSourceError(
-      "A képet nem sikerült beolvasni. Próbálj másik fájlt.",
-    );
+    throw new FaviconSourceError(copy.decodeFailed);
   }
   return image;
 }
@@ -154,14 +159,13 @@ function rgbToHex(red: number, green: number, blue: number): string {
     .join("")}`;
 }
 
-function analyzeImage(image: HTMLImageElement) {
+function analyzeImage(image: HTMLImageElement, copy: SourceErrorCopy) {
   const size = 96;
   const canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
   const context = canvas.getContext("2d", { willReadFrequently: true });
-  if (!context)
-    throw new FaviconSourceError("A böngésző nem tud előnézetet készíteni.");
+  if (!context) throw new FaviconSourceError(copy.canvasUnavailable);
 
   context.clearRect(0, 0, size, size);
   const ratio = Math.min(size / image.naturalWidth, size / image.naturalHeight);
@@ -198,9 +202,7 @@ function analyzeImage(image: HTMLImageElement) {
   }
 
   if (visible === 0) {
-    throw new FaviconSourceError(
-      "A kép teljesen átlátszó, ezért nem készíthető belőle ikon.",
-    );
+    throw new FaviconSourceError(copy.fullyTransparent);
   }
 
   const dominant = [...colors.values()].sort(
@@ -217,9 +219,10 @@ function analyzeImage(image: HTMLImageElement) {
 
 export async function validateFaviconSource(
   file: File,
+  copy: SourceErrorCopy,
 ): Promise<FaviconSource> {
   if (file.size > MAX_SOURCE_SIZE) {
-    throw new FaviconSourceError("A fájl legfeljebb 20 MB lehet.");
+    throw new FaviconSourceError(copy.fileTooLarge);
   }
 
   const sampleBuffer = await file.slice(0, 4096).arrayBuffer();
@@ -233,15 +236,13 @@ export async function validateFaviconSource(
 
   const kind = sniffSourceKind(sampleBytes, textSample);
   if (!kind) {
-    throw new FaviconSourceError(
-      "Ezt a fájlformátumot nem támogatjuk. Használj PNG, JPG, WebP vagy SVG képet.",
-    );
+    throw new FaviconSourceError(copy.unsupportedFormat);
   }
 
   let sanitizedSvg: string | undefined;
   let objectUrl: string;
   if (kind === "svg") {
-    sanitizedSvg = sanitizeSvgText(await file.text());
+    sanitizedSvg = sanitizeSvgText(await file.text(), copy);
     objectUrl = URL.createObjectURL(
       new Blob([sanitizedSvg], { type: "image/svg+xml" }),
     );
@@ -252,16 +253,14 @@ export async function validateFaviconSource(
   }
 
   try {
-    const image = await loadImage(objectUrl);
+    const image = await loadImage(objectUrl, copy);
     if (
       image.naturalWidth < MIN_SOURCE_DIMENSION ||
       image.naturalHeight < MIN_SOURCE_DIMENSION
     ) {
-      throw new FaviconSourceError(
-        "A kép mindkét oldala legalább 64 px legyen.",
-      );
+      throw new FaviconSourceError(copy.tooSmall);
     }
-    const analysis = analyzeImage(image);
+    const analysis = analyzeImage(image, copy);
 
     return {
       file,

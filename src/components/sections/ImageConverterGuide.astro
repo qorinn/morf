@@ -1,94 +1,13 @@
 ---
-import { imageConverterMessages } from "@/i18n/image-converter";
+import { getImageConverterMessages } from "@/i18n/image-converter";
+import type { Locale } from "@/lib/locale";
 
-const copy = imageConverterMessages.hu.guide;
-const capabilities = [
-  {
-    title: "Képek csoportba rendezése",
-    description:
-      "Minden csoportkártyával feltölthetsz képeket: húzz rá egy fájlt, vagy tallózz a gomb megnyomásával. Támogatott böngészőben a Mappa importálása művelettel egy teljes képmappát is hozzáadhatsz egyetlen csoportként, amelyet ugyanazokkal a beállításokkal konvertálhatsz.",
-  },
-  {
-    title: "Csoportos beállítások",
-    description:
-      "Kattints egy csoportra kiválasztásához, majd válassz felhasználási célt, formátumot, felbontást, minőséget, maximum fájlméretet vagy veszteségmentes módot az oldalsávban. Ez az összes képre alkalmazódik a csoportban.",
-  },
-  {
-    title: "Drag-and-drop rendezés és bulk műveletek",
-    description:
-      "A képeket a fogantyúval rendezheted vagy másik csoportba húzhatod. Egy gombnyomással pedig duplikálhatod is, nem kell újra feltöltened. Több kijelölt képet együtt is áthelyezhetsz, külön csoportokra bonthatsz vagy törölhetsz.",
-  },
-  {
-    title: "Automatikus igazodás a maximum fájlmérethez",
-    description:
-      "Adj meg egy KB-ban mért felső határt, és a Morf megkeresi a lehető legjobb, még a célméret alatti minőséget.",
-  },
-  {
-    title: "Veszteségmentes mód az eredeti részletekhez",
-    description:
-      "A veszteségmentes mód megtartja az eredeti felbontást, és a választott formátum lehetőségeihez mérten optimalizálás nélkül kódol.",
-  },
-  {
-    title: "Mentsd egyenként vagy ZIP-be",
-    description:
-      "A kész fájlokat külön-külön, vagy egyetlen ZIP-csomagban is mentheted.",
-  },
-];
+interface Props {
+  locale?: Locale;
+}
 
-const formatRows = [
-  {
-    format: "JPG / JPEG",
-    input: "Igen",
-    output: "Igen",
-    useCase:
-      "Fotókhoz, e-mailhez és olyan felületekhez, ahol a széles kompatibilitás fontos.",
-  },
-  {
-    format: "PNG",
-    input: "Igen",
-    output: "Igen",
-    useCase:
-      "Átlátszó hátterű grafikákhoz, képernyőképekhez és veszteségmentes kimenethez.",
-  },
-  {
-    format: "WebP",
-    input: "Igen",
-    output: "Igen",
-    useCase:
-      "Weboldalakhoz és webshopokhoz, ha jó képminőség mellett kisebb fájlméret a cél.",
-  },
-  {
-    format: "AVIF",
-    input: "Igen",
-    output: "Igen",
-    useCase:
-      "Modern webes felhasználáshoz, amikor hatékony tömörítésre és részletgazdag kimenetre van szükség.",
-  },
-  {
-    format: "HEIC / HEIF",
-    input: "Igen",
-    output: "Nem",
-    useCase:
-      "iPhone-ról és más Apple-eszközről származó képek beolvasásához, majd JPG, PNG, WebP vagy AVIF kimenethez.",
-  },
-];
-
-const workflowSteps = [
-  {
-    title: "Töltsd fel a képeket",
-    description: "Adj hozzá képeket és rendezd csoportba, vagy külön.",
-  },
-  {
-    title: "Állítsd be a csoportokat",
-    description:
-      "Kattints egy csoportra, válassz felhasználási célt, majd pontosítsd a formátum-, felbontás-, minőség- és fájlméret-beállításokat.",
-  },
-  {
-    title: "Konvertálj és ments",
-    description:
-      "Indítsd el a kiválasztott csoportokat, majd mentsd el az eredményeket külön fájlként, vagy ZIP-csomagban.",
-  },
-];
+const { locale = "hu" } = Astro.props;
+const copy = getImageConverterMessages(locale).guide;
 ---
 
 <section
@@ -112,20 +31,10 @@ const workflowSteps = [
         class="flex max-w-3xl flex-col gap-5 text-base leading-relaxed sm:text-lg"
       >
         <p class="text-pretty">
-          <strong class="text-foreground font-medium"
-            >A Morf egy ingyenes, böngészőben futó képkonvertáló, képtömörítő és
-            képátméretező eszköz.</strong
-          >
-          Legnagyobb előnye, hogy a képeket közvetlenül külön konfigurációs csoportokba
-          töltheted, majd csoportonként eltérő formátumot, felbontást, minőséget vagy
-          maximum fájlméretet adhatsz meg.
+          <strong class="text-foreground font-medium">{copy.intro.lead}</strong>
         </p>
         <p class="text-muted-foreground text-pretty">
-          Ez különösen akkor hasznos, ha ugyanabból a képkészletből weboldalhoz,
-          webshophoz, közösségi médiához és e-mailhez is más-más változatot kell
-          készítened. A JPG-PNG konvertálás, a JPG-WebP vagy PNG-WebP export, az
-          AVIF-készítés és a HEIC-JPG átalakítás ugyanabban a munkafolyamatban
-          kezelhető.
+          {copy.intro.body}
         </p>
       </div>
     </header>
@@ -140,7 +49,7 @@ const workflowSteps = [
       </div>
       <dl class="mt-10 grid gap-x-12 md:grid-cols-2">
         {
-          capabilities.map((capability) => (
+          copy.capabilities.map((capability) => (
             <div class="border-border border-t py-7">
               <dt class="font-heading text-lg font-semibold sm:text-xl">
                 {capability.title}
@@ -172,14 +81,12 @@ const workflowSteps = [
           <p
             class="text-dark-section-muted mt-5 text-base leading-relaxed sm:text-lg"
           >
-            Egy egyszerűbb képkonvertáló általában ugyanazt a beállítást
-            alkalmazza minden fájlra. A Morf csoportjaival minden képnek külön
-            beállításokat adhatsz.
+            {copy.stepsIntro}
           </p>
         </header>
         <ol class="border-dark-section-border flex flex-col border-b">
           {
-            workflowSteps.map((step, index) => (
+            copy.steps.map((step, index) => (
               <li class="border-dark-section-border grid grid-cols-[2.5rem_minmax(0,1fr)] gap-3 border-t py-6 sm:grid-cols-[3rem_minmax(0,1fr)] sm:gap-4">
                 <span
                   class="text-dark-section-accent font-heading pt-1 text-sm font-semibold tabular-nums"
@@ -216,18 +123,14 @@ const workflowSteps = [
         <p
           class="text-muted-foreground mt-5 max-w-2xl text-base leading-relaxed text-pretty sm:text-lg"
         >
-          A megfelelő kimenet a kép tartalmától és felhasználási helyétől függ.
-          A Morf a leggyakoribb webes és mobilos formátumokat egyetlen
-          konvertálóban kezeli, de a HEIC és HEIF jelenleg csak bemeneti
-          formátum.
+          {copy.formatsIntro}
         </p>
       </header>
 
       <div class="ring-border overflow-x-auto rounded-3xl ring-1">
         <table class="w-full min-w-3xl border-collapse text-left">
           <caption class="sr-only">
-            A Morf képkonvertáló által támogatott bemeneti és kimeneti
-            képformátumok
+            {copy.formatsTitle}
           </caption>
           <thead class="bg-muted/60">
             <tr>
@@ -241,7 +144,7 @@ const workflowSteps = [
           </thead>
           <tbody class="divide-border divide-y">
             {
-              formatRows.map((row) => (
+              copy.formatRows.map((row) => (
                 <tr>
                   <th class="px-4 py-4 font-medium whitespace-nowrap sm:px-5">
                     {row.format}
@@ -272,38 +175,16 @@ const workflowSteps = [
         </h3>
       </header>
       <div class="grid gap-x-8 sm:grid-cols-2">
-        <article class="border-border border-t py-5">
-          <h4 class="font-medium">Weboldal és webshop képei</h4>
-          <p class="text-muted-foreground mt-2 leading-relaxed">
-            Alakíts át egy teljes galériát WebP vagy AVIF formátumba, korlátozd
-            a felbontást, és csökkentsd vagy limitáld a képek fájlméretét
-            gyorsabb webes betöltéshez.
-          </p>
-        </article>
-        <article class="border-border border-t py-5">
-          <h4 class="font-medium">iPhone HEIC képek megosztása</h4>
-          <p class="text-muted-foreground mt-2 leading-relaxed">
-            Konvertálj több HEIC vagy HEIF fotót egyszerre JPG-be, PNG-be,
-            WebP-be vagy AVIF-ba, hogy más eszközökön és szolgáltatásokban is
-            könnyen használhatók legyenek.
-          </p>
-        </article>
-        <article class="border-border border-t py-5">
-          <h4 class="font-medium">E-mail és dokumentum mellékletek</h4>
-          <p class="text-muted-foreground mt-2 leading-relaxed">
-            Állíts be maximum fájlméretet, és készíts kisebb, továbbítható
-            képfájlokat anélkül, hogy minden képnél külön próbálgatnád a
-            minőségértéket.
-          </p>
-        </article>
-        <article class="border-border border-t py-5">
-          <h4 class="font-medium">Több célra készülő exportcsomag</h4>
-          <p class="text-muted-foreground mt-2 leading-relaxed">
-            Duplikálj egy képet, majd húzd a másolatot más beállítású vagy új
-            csoportba. Így ugyanabban a munkamenetben készíthetsz webes,
-            közösségi és veszteségmentes változatot.
-          </p>
-        </article>
+        {
+          copy.useCases.map((useCase) => (
+            <article class="border-border border-t py-5">
+              <h4 class="font-medium">{useCase.title}</h4>
+              <p class="text-muted-foreground mt-2 leading-relaxed">
+                {useCase.description}
+              </p>
+            </article>
+          ))
+        }
       </div>
     </section>
   </div>

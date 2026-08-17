@@ -8,6 +8,8 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 
 import { cn } from "@/lib/utils";
+import { useWorkspaceI18n } from "@/components/workspace/WorkspaceI18nProvider";
+import type { SharePreviewMessages } from "@/i18n/share-preview";
 import type { AuditItem, OpenGraphData } from "./open-graph";
 import {
   PlatformPreviewCard,
@@ -33,11 +35,11 @@ function SocialCard({
   platform: Platform;
   data: OpenGraphData;
 }) {
-  const title = data.ogTitle || data.pageTitle || "Az oldal címe";
+  const { messages } = useWorkspaceI18n<SharePreviewMessages>();
+  const copy = messages.platformPreview;
+  const title = data.ogTitle || data.pageTitle || copy.defaultTitle;
   const description =
-    data.ogDescription ||
-    data.metaDescription ||
-    "Az oldal leírása itt jelenik meg.";
+    data.ogDescription || data.metaDescription || copy.defaultDescription;
   const image =
     platform === "x" ? data.twitterImage || data.ogImage : data.ogImage;
   const cardTitle = platform === "x" ? data.twitterTitle || title : title;
@@ -57,7 +59,7 @@ function SocialCard({
       title={cardTitle}
       description={cardDescription}
       image={image}
-      imageAlt={data.ogImageAlt || `${platform} előnézet`}
+      imageAlt={data.ogImageAlt || copy.previewAltTemplate.replace("{platform}", platform)}
       siteName={data.ogSiteName}
       pageUrl={data.ogUrl || data.pageUrl}
     />
@@ -65,6 +67,7 @@ function SocialCard({
 }
 
 export function SocialPreviews({ data }: { data: OpenGraphData }) {
+  const { messages } = useWorkspaceI18n<SharePreviewMessages>();
   const [platform, setPlatform] = useState<Platform>("facebook");
 
   return (
@@ -76,7 +79,7 @@ export function SocialPreviews({ data }: { data: OpenGraphData }) {
         <div
           className="flex overflow-x-auto px-2 sm:px-4"
           role="tablist"
-          aria-label="Előnézeti platform"
+          aria-label={messages.socialPreviewSection.platformTabsAriaLabel}
         >
           {platforms.map((item) => (
             <button
@@ -126,14 +129,16 @@ function AuditCounts({
 }: {
   counts: Record<AuditItem["severity"], number>;
 }) {
+  const { messages } = useWorkspaceI18n<SharePreviewMessages>();
+  const section = messages.socialPreviewSection;
   const summary = [
-    { severity: "error", count: counts.error, label: "hiba" },
-    { severity: "warning", count: counts.warning, label: "figyelmeztetés" },
-    { severity: "success", count: counts.success, label: "sikeres" },
+    { severity: "error", count: counts.error, label: section.errorLabel },
+    { severity: "warning", count: counts.warning, label: section.warningLabel },
+    { severity: "success", count: counts.success, label: section.successLabel },
   ] as const;
 
   return (
-    <div className="flex flex-wrap gap-2" aria-label="Ellenőrzési összesítés">
+    <div className="flex flex-wrap gap-2" aria-label={section.auditSummaryAriaLabel}>
       {summary.map((item) => (
         <span
           key={item.severity}
@@ -163,6 +168,7 @@ function AuditCounts({
 }
 
 export function AuditResults({ items }: { items: AuditItem[] }) {
+  const { messages } = useWorkspaceI18n<SharePreviewMessages>();
   const counts = {
     error: items.filter((item) => item.severity === "error").length,
     warning: items.filter((item) => item.severity === "warning").length,
@@ -179,7 +185,7 @@ export function AuditResults({ items }: { items: AuditItem[] }) {
           id="audit-results-title"
           className="font-heading text-lg font-semibold tracking-[-0.02em]"
         >
-          Metaadatok
+          {messages.socialPreviewSection.metadataHeading}
         </h2>
         <AuditCounts counts={counts} />
       </div>
@@ -228,6 +234,8 @@ export function AuditAndPreview({
   data: OpenGraphData;
   items: AuditItem[];
 }) {
+  const { messages } = useWorkspaceI18n<SharePreviewMessages>();
+  const section = messages.socialPreviewSection;
   return (
     <section aria-labelledby="audit-preview-title">
       <header className="mb-8 max-w-3xl">
@@ -235,10 +243,10 @@ export function AuditAndPreview({
           id="audit-preview-title"
           className="font-heading text-3xl font-semibold tracking-[-0.035em] sm:text-4xl"
         >
-          Ellenőrzés és előnézet
+          {section.heading}
         </h2>
         <p className="text-muted-foreground mt-2 leading-relaxed">
-          Nézd meg, hogyan jelenik meg a linked különböző platformokon, és ellenőrizd a hibákat.
+          {section.description}
         </p>
       </header>
 

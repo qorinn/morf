@@ -1,5 +1,5 @@
 ---
-import VideoConverterWorkspace from "@/components/video-converter/VideoConverterWorkspace";
+import VideoSpeedWorkspace from "@/components/video-speed/VideoSpeedWorkspace";
 import SiteFooter from "@/components/layout/SiteFooter.astro";
 import SiteHeader from "@/components/layout/SiteHeader.astro";
 import FaqSection from "@/components/sections/FaqSection.astro";
@@ -7,35 +7,42 @@ import PrivacySection from "@/components/sections/PrivacySection.astro";
 import RelatedTools from "@/components/sections/RelatedTools.astro";
 import ToolHero from "@/components/sections/ToolHero.astro";
 import MainLayout from "@/layouts/main.astro";
-import { getVideoConverterMessages } from "@/i18n/video-converter";
+import { getVideoSpeedMessages } from "@/i18n/video-speed";
 import { getLocalizedRoute, getRouteAlternates } from "@/lib/localized-routes";
 
-const locale = "hu" as const;
-const copy = getVideoConverterMessages(locale);
-const canonicalPath = getLocalizedRoute("videoConverter", locale);
+const locale = "en" as const;
+const copy = getVideoSpeedMessages(locale);
+const canonicalPath = getLocalizedRoute("videoSpeed", locale);
 
-const seoDescription = "Konvertálj MP4, MOV, WebM, MKV vagy TS videót másik formátumba, és csökkentsd a fájlméretet e-mailhez, weboldalhoz vagy megosztáshoz. Ingyenes, reklámmentes, regisztráció nélkül.";
+const seoTitle = "Free Video Speed Changer: Slow Motion & Fast Forward | Morf";
+const seoDescription = "Slow down, speed up, or change the pace of an MP4, MOV, or WebM video — for a sports highlight, a social video, or a time-lapse. Free, ad-free, no sign-up.";
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
     {
       "@type": "WebApplication",
-      "@id": `${canonicalPath}#alkalmazas`,
-      name: "Morf videó konvertáló és optimalizáló",
+      "@id": `${canonicalPath}#application`,
+      name: "Morf video speed editor",
       description: seoDescription,
       applicationCategory: "MultimediaApplication",
-      applicationSubCategory: "Videókonvertáló",
+      applicationSubCategory: "Video speed editor",
       operatingSystem: "Web",
-      browserRequirements: "JavaScriptet, Web Workert és WebCodecsot támogató modern böngésző",
+      browserRequirements: "A browser with support for JavaScript, Web Workers, WebCodecs, and modern audio processing",
       isAccessibleForFree: true,
-      offers: { "@type": "Offer", price: "0", priceCurrency: "HUF" },
-      featureList: ["MP4, WebM és MOV kimenet", "Százalékos felbontáscsökkentés", "Várható fájlméret becslése", "Helyi böngészős feldolgozás"],
-      fileFormat: ["video/mp4", "video/quicktime", "video/webm", "video/x-matroska", "video/mp2t"],
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+      featureList: [
+        "A speed curve editable with points",
+        "Five built-in speed curve presets",
+        "Playable preview and output length estimate",
+        "Optional pitch preservation",
+        "Local H.264/AAC MP4 export",
+      ],
+      fileFormat: ["video/mp4", "video/quicktime", "video/webm"],
       creator: { "@type": "Person", name: "Paládi Bálint" },
     },
     {
       "@type": "FAQPage",
-      "@id": `${canonicalPath}#gyakori-kerdesek`,
+      "@id": `${canonicalPath}#faq`,
       mainEntity: copy.page.faq.items.map((item) => ({
         "@type": "Question",
         name: item.question,
@@ -47,27 +54,27 @@ const structuredData = {
 ---
 
 <MainLayout
-  title="Ingyenes videó konvertáló és optimalizáló | Morf"
+  title={seoTitle}
   description={seoDescription}
   locale={locale}
   canonicalPath={canonicalPath}
-  alternateLocales={getRouteAlternates("videoConverter")}
+  alternateLocales={getRouteAlternates("videoSpeed")}
   structuredData={structuredData}
 >
-  <SiteHeader active="videoConverter" category="video" locale={locale} route="videoConverter" />
+  <SiteHeader active="videoSpeed" category="video" locale={locale} route="videoSpeed" />
 
   <main>
     <ToolHero
       locale={locale}
       title={copy.page.hero.title}
       description={copy.page.hero.description}
-      primaryAction={{ href: "#video-converter-workspace", label: copy.page.hero.primaryAction }}
+      primaryAction={{ href: "#video-speed-workspace", label: copy.page.hero.primaryAction }}
       secondaryAction={{ href: "#hogyan-mukodik", label: copy.page.hero.secondaryAction }}
     />
 
-    <VideoConverterWorkspace client:load locale={locale} />
+    <VideoSpeedWorkspace client:load locale={locale} />
 
-    <RelatedTools routeIds={["videoSpeed", "videoFrames"]} locale={locale} />
+    <RelatedTools routeIds={["videoConverter", "videoFrames"]} locale={locale} />
 
     <section id="hogyan-mukodik" class="morf-section-normal scroll-mt-6">
       <div class="mx-auto flex w-full max-w-7xl flex-col gap-14 px-4 py-14 sm:px-6 sm:py-18 lg:px-8">
@@ -87,9 +94,9 @@ const structuredData = {
           </ol>
         </div>
 
-        <section aria-labelledby="video-converter-use-cases-title" class="border-border grid gap-10 border-t pt-12 sm:pt-16 lg:grid-cols-[minmax(18rem,0.72fr)_minmax(0,1fr)] lg:gap-20">
+        <section aria-labelledby="video-speed-use-cases-title" class="border-border grid gap-10 border-t pt-12 sm:pt-16 lg:grid-cols-[minmax(18rem,0.72fr)_minmax(0,1fr)] lg:gap-20">
           <header class="max-w-xl">
-            <h3 id="video-converter-use-cases-title" class="font-heading text-2xl font-semibold tracking-tight text-balance sm:text-3xl">{copy.guide.useCasesTitle}</h3>
+            <h3 id="video-speed-use-cases-title" class="font-heading text-2xl font-semibold tracking-tight text-balance sm:text-3xl">{copy.guide.useCasesTitle}</h3>
           </header>
           <div class="grid gap-x-8 sm:grid-cols-2">
             {copy.guide.useCases.map((useCase) => (
@@ -107,12 +114,14 @@ const structuredData = {
       title={copy.page.privacy.title}
       description={copy.page.privacy.description}
       items={copy.page.privacy.items}
+      eyebrow="Privacy"
     />
 
     <FaqSection
       title={copy.page.faq.title}
       description={copy.page.faq.description}
       items={[...copy.page.faq.items]}
+      id="faq"
     />
   </main>
 

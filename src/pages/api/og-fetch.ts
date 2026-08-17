@@ -1,6 +1,8 @@
 import type { APIRoute } from "astro";
 
 import { SafeFetchError, safeFetch } from "@/lib/safe-fetch";
+import { getSharePreviewMessages } from "@/i18n/share-preview";
+import { isLocale } from "@/lib/locale";
 
 export const prerender = false;
 
@@ -14,7 +16,7 @@ function jsonError(message: string, status: number) {
   });
 }
 
-async function readBodyWithLimit(response: Response) {
+async function readBodyWithLimit(response: Response, tooLargeMessage: string) {
   const reader = response.body?.getReader();
   if (!reader) return "";
 
@@ -29,7 +31,7 @@ async function readBodyWithLimit(response: Response) {
     received += value.byteLength;
     if (received > MAX_RESPONSE_BYTES) {
       await reader.cancel();
-      throw new Error("Az oldal válasza túl nagy méretű.");
+      throw new Error(tooLargeMessage);
     }
 
     result += decoder.decode(value, { stream: true });
@@ -40,8 +42,12 @@ async function readBodyWithLimit(response: Response) {
 }
 
 export const GET: APIRoute = async ({ url }) => {
+  const localeParam = url.searchParams.get("locale");
+  const locale = isLocale(localeParam ?? "") ? (localeParam as "hu" | "en") : "hu";
+  const copy = getSharePreviewMessages(locale).server;
+
   const targetParam = url.searchParams.get("url");
-  if (!targetParam) return jsonError("Hiányzó url paraméter.", 400);
+  if (!targetParam) return jsonError(copy.missingUrlParam, 400);
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -51,14 +57,15 @@ export const GET: APIRoute = async ({ url }) => {
       signal: controller.signal,
       timeoutMs: REQUEST_TIMEOUT_MS,
       accept: "text/html",
+      locale,
     });
 
     let html: string;
     try {
-      html = await readBodyWithLimit(response);
+      html = await readBodyWithLimit(response, copy.responseTooLarge);
     } catch (error) {
       return jsonError(
-        error instanceof Error ? error.message : "A válasz feldolgozása sikertelen.",
+        error instanceof Error ? error.message : copy.responseProcessingFailed,
         502,
       );
     }
@@ -72,7 +79,7 @@ export const GET: APIRoute = async ({ url }) => {
     });
   } catch (error) {
     if (error instanceof SafeFetchError) return jsonError(error.message, error.status);
-    return jsonError("Az oldal ellenőrzése nem sikerült.", 502);
+    return jsonError(copy.siteCheckFailed, 502);
   } finally {
     clearTimeout(timeout);
   }

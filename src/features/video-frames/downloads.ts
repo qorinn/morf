@@ -7,7 +7,13 @@ import {
   iterateSelectedFrameRecords,
   readFrameFile,
 } from "@/features/video-frames/storage";
-import type { FrameSetManifestV1 } from "@/features/video-frames/types";
+import type {
+  FrameSetManifestV1,
+  VideoFramesTextCopy,
+} from "@/features/video-frames/types";
+import { getVideoFramesMessages } from "@/i18n/video-frames";
+
+const defaultCopy = getVideoFramesMessages("hu").workerErrors;
 
 type WritableFileStream = {
   write(data: Blob): Promise<void>;
@@ -46,14 +52,15 @@ export async function saveFrameSetToDirectory(
   manifest: FrameSetManifestV1,
   selectedCount: number,
   onProgress: (progress: FrameSaveProgress) => void,
+  copy: VideoFramesTextCopy = defaultCopy,
 ): Promise<void> {
   const picker = (window as DirectoryPickerWindow).showDirectoryPicker;
-  if (!picker) throw new Error("A mappába mentés nem támogatott.");
+  if (!picker) throw new Error(copy.directorySaveUnsupported);
   const directory = await picker.call(window);
   let completed = 0;
 
-  for await (const frame of iterateSelectedFrameRecords(manifest)) {
-    const source = await readFrameFile(manifest.id, frame.fileName);
+  for await (const frame of iterateSelectedFrameRecords(manifest, copy)) {
+    const source = await readFrameFile(manifest.id, frame.fileName, copy);
     const handle = await directory.getFileHandle(frame.fileName, {
       create: true,
     });
@@ -69,16 +76,17 @@ export async function downloadFrameSetFiles(
   manifest: FrameSetManifestV1,
   selectedCount: number,
   onProgress: (progress: FrameSaveProgress) => void,
+  copy: VideoFramesTextCopy = defaultCopy,
 ): Promise<void> {
   let completed = 0;
 
-  for await (const frame of iterateSelectedFrameRecords(manifest)) {
-    const file = await readFrameFile(manifest.id, frame.fileName);
+  for await (const frame of iterateSelectedFrameRecords(manifest, copy)) {
+    const file = await readFrameFile(manifest.id, frame.fileName, copy);
     downloadFile({
       blob: file,
       fileName: frame.fileName,
       mimeType: "image/png",
-      description: "PNG-kép",
+      description: copy.pngImageDescription,
     });
     completed += 1;
     onProgress({ completed, total: selectedCount });
@@ -107,6 +115,7 @@ export async function downloadFrameSetAsZipParts(
   manifest: FrameSetManifestV1,
   selectedCount: number,
   onProgress: (progress: FrameSaveProgress) => void,
+  copy: VideoFramesTextCopy = defaultCopy,
 ): Promise<number> {
   const targetBytes = zipPartTargetBytes();
   const baseName = archiveBaseName(manifest.sourceName);
@@ -121,25 +130,25 @@ export async function downloadFrameSetAsZipParts(
     const archive = await createZipArchive(files);
     downloadFile({
       blob: archive,
-      fileName: `${baseName}-kepek-${String(partNumber).padStart(3, "0")}.zip`,
+      fileName: `${baseName}-frames-${String(partNumber).padStart(3, "0")}.zip`,
       mimeType: "application/zip",
-      description: "PNG-képek",
+      description: copy.pngImagesDescription,
     });
     files = [];
     partBytes = 0;
     await new Promise<void>((resolve) => window.setTimeout(resolve, 50));
   };
 
-  for await (const frame of iterateSelectedFrameRecords(manifest)) {
+  for await (const frame of iterateSelectedFrameRecords(manifest, copy)) {
     if (files.length > 0 && partBytes + frame.byteSize > targetBytes) {
       await flushPart();
     }
-    const file = await readFrameFile(manifest.id, frame.fileName);
+    const file = await readFrameFile(manifest.id, frame.fileName, copy);
     files.push({
       blob: file,
       fileName: frame.fileName,
       mimeType: "image/png",
-      description: "PNG-kép",
+      description: copy.pngImageDescription,
     });
     partBytes += frame.byteSize;
     completed += 1;

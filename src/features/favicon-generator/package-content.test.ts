@@ -7,6 +7,9 @@ import {
   normalizeBasePath,
   slugifyProjectName,
 } from "./package-content.ts";
+import { getFaviconMessages } from "../../i18n/favicon.ts";
+
+const engineCopy = getFaviconMessages("hu").engine;
 
 test("a base path root-relative, relative és egyedi alakot is kezel", () => {
   assert.equal(normalizeBasePath("/"), "/");
@@ -27,7 +30,7 @@ test("a PWA manifest helyes ikonokat és purpose értékeket tartalmaz", () => {
       display: "standalone",
       basePath: "/assets",
       projectName: "Morf",
-    }),
+    }, engineCopy),
   );
 
   assert.equal(manifest.icons.length, 4);
@@ -55,7 +58,7 @@ test("a manifest elutasítja a scope-on kívüli start URL-t", () => {
         display: "standalone",
         basePath: "/assets",
         projectName: "Morf",
-      }),
+      }, engineCopy),
     /hatókörön belül/,
   );
 });

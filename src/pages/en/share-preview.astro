@@ -9,11 +9,11 @@ import MainLayout from "@/layouts/main.astro";
 import { getSharePreviewMessages } from "@/i18n/share-preview";
 import { getLocalizedRoute, getRouteAlternates } from "@/lib/localized-routes";
 
-const locale = "hu" as const;
+const locale = "en" as const;
 const copy = getSharePreviewMessages(locale);
 const canonicalPath = getLocalizedRoute("sharePreview", locale);
 
-const seoDescription = "Ellenőrizd, hogyan jelenik meg a linked Facebookon, LinkedInen, X-en vagy WhatsAppon, és tervezz egyedi megosztási képet blogbejegyzéshez, termékhez vagy kampányhoz. Ingyenes, reklámmentes, regisztráció nélkül.";
+const seoDescription = "Check how your link looks on Facebook, LinkedIn, X, or WhatsApp, and design a custom share image for a blog post, product, or campaign. Free, ad-free, no sign-up.";
 ---
 
 <MainLayout
@@ -50,12 +50,14 @@ const seoDescription = "Ellenőrizd, hogyan jelenik meg a linked Facebookon, Lin
       title={copy.page.privacy.title}
       description={copy.page.privacy.description}
       items={copy.page.privacy.items}
+      eyebrow="Privacy"
     />
 
     <FaqSection
       title={copy.page.faq.title}
       description={copy.page.faq.description}
       items={[...copy.page.faq.items]}
+      id="faq"
     />
   </main>
 

@@ -35,6 +35,7 @@ import {
   type InspectVideoResult,
   type VideoFrameMetadata,
   type VideoFrameWorkerApi,
+  type VideoFramesTextCopy,
 } from "@/features/video-frames/types";
 
 const supportedFormats = [MP4, QTFF, WEBM];
@@ -53,32 +54,23 @@ function createInput(file: File) {
   });
 }
 
-async function inspectVideo(file: File): Promise<InspectVideoResult> {
+async function inspectVideo(
+  file: File,
+  copy: VideoFramesTextCopy,
+): Promise<InspectVideoResult> {
   if (!/\.(mp4|m4v|mov|webm)$/i.test(file.name)) {
-    return {
-      valid: false,
-      message: "Ez a fájltípus nem támogatott.",
-      suggestion: "Válassz MP4, MOV vagy WebM videót.",
-    };
+    return { valid: false, ...copy.unsupportedFileType };
   }
 
   const input = createInput(file);
   try {
     if (!(await input.canRead())) {
-      return {
-        valid: false,
-        message: "A videó konténere nem olvasható.",
-        suggestion: "Próbálj szabványos MP4, MOV vagy WebM fájlt.",
-      };
+      return { valid: false, ...copy.unreadableContainer };
     }
 
     const videoTrack = await input.getPrimaryVideoTrack();
     if (!videoTrack) {
-      return {
-        valid: false,
-        message: "A fájl nem tartalmaz videósávot.",
-        suggestion: "Válassz képet is tartalmazó videófájlt.",
-      };
+      return { valid: false, ...copy.noVideoTrack };
     }
 
     const canDecode = await videoTrack.canDecode();
@@ -86,9 +78,11 @@ async function inspectVideo(file: File): Promise<InspectVideoResult> {
       const codec = await videoTrack.getCodec();
       return {
         valid: false,
-        message: `A böngésződ nem tudja dekódolni ezt a videokodeket${codec ? ` (${codec})` : ""}.`,
-        suggestion:
-          "Próbáld meg egy másik modern böngészőben, vagy használj H.264-es MP4 vagy VP9-es WebM videót.",
+        message: copy.undecodableCodecTemplate.replace(
+          "{codec}",
+          codec ? ` (${codec})` : "",
+        ),
+        suggestion: copy.undecodableCodecSuggestion,
       };
     }
 
@@ -128,11 +122,11 @@ async function inspectVideo(file: File): Promise<InspectVideoResult> {
   } catch (error) {
     return {
       valid: false,
-      message: "A videó metaadatait nem sikerült beolvasni.",
+      message: copy.metadataReadFailed.message,
       suggestion:
         error instanceof Error
           ? error.message
-          : "Próbáld újra egy sértetlen MP4, MOV vagy WebM fájllal.",
+          : copy.metadataReadFailed.suggestion,
     };
   } finally {
     input.dispose();
@@ -182,7 +176,7 @@ async function extractFrames(
   cancelRequested = false;
 
   let manifest = request.resume
-    ? await readFrameSetManifest(request.frameSetId)
+    ? await readFrameSetManifest(request.frameSetId, request.copy)
     : createManifest(request);
   manifest = {
     ...manifest,
@@ -190,7 +184,7 @@ async function extractFrames(
     updatedAt: new Date().toISOString(),
     errorMessage: undefined,
   };
-  await writeFrameSetManifest(manifest);
+  await writeFrameSetManifest(manifest, request.copy);
 
   const input = createInput(request.file);
   let currentDecodedTimestamp =
@@ -229,14 +223,14 @@ async function extractFrames(
         endTimestamp: currentDecodedTimestamp,
         frames: currentChunkFrames,
       };
-      await writeFrameChunk(chunk);
+      await writeFrameChunk(chunk, request.copy);
       manifest.chunkCount = chunkNumber;
       currentChunkFrames = [];
     }
 
     manifest.lastTimestamp = currentDecodedTimestamp;
     manifest.updatedAt = new Date().toISOString();
-    await writeFrameSetManifest(manifest);
+    await writeFrameSetManifest(manifest, request.copy);
     currentChunkStart = currentDecodedTimestamp;
   };
 
@@ -252,7 +246,7 @@ async function extractFrames(
       context = canvas.getContext("2d", { alpha: true });
     }
     if (!canvas || !context) {
-      throw new Error("A böngésző nem tud rajzvásznat létrehozni.");
+      throw new Error(request.copy.canvasUnavailable);
     }
 
     context.clearRect(0, 0, canvas.width, canvas.height);
@@ -262,7 +256,7 @@ async function extractFrames(
     const fileName = frameFileName(request.file.name, nextIndex);
 
     report("writing");
-    await writeFrameBlob(manifest.id, fileName, blob);
+    await writeFrameBlob(manifest.id, fileName, blob, request.copy);
     currentChunkFrames.push({
       index: nextIndex,
       timestamp: sample.timestamp,
@@ -280,14 +274,14 @@ async function extractFrames(
     report("preparing");
     const videoTrack = await input.getPrimaryVideoTrack();
     if (!videoTrack || !(await videoTrack.canDecode())) {
-      throw new Error("A videósáv ebben a böngészőben nem dekódolható.");
+      throw new Error(request.copy.trackNotDecodable);
     }
 
     const initialStorageRemaining = await getStorageRemaining();
     if (isStorageNearLimit(initialStorageRemaining, 0)) {
       manifest.status = "paused";
       manifest.updatedAt = new Date().toISOString();
-      await writeFrameSetManifest(manifest);
+      await writeFrameSetManifest(manifest, request.copy);
       report("paused", initialStorageRemaining, "storage");
       return { manifest, reason: "storage" };
     }
@@ -318,20 +312,20 @@ async function extractFrames(
           if (cancelRequested) {
             manifest.status = "cancelled";
             manifest.updatedAt = new Date().toISOString();
-            await writeFrameSetManifest(manifest);
+            await writeFrameSetManifest(manifest, request.copy);
             return { manifest, reason: "cancelled" };
           }
           if (isStorageNearLimit(storageRemaining, lastWrittenFrameSize)) {
             manifest.status = "paused";
             manifest.updatedAt = new Date().toISOString();
-            await writeFrameSetManifest(manifest);
+            await writeFrameSetManifest(manifest, request.copy);
             report("paused", storageRemaining, "storage");
             return { manifest, reason: "storage" };
           }
           if (pauseRequested) {
             manifest.status = "paused";
             manifest.updatedAt = new Date().toISOString();
-            await writeFrameSetManifest(manifest);
+            await writeFrameSetManifest(manifest, request.copy);
             report("paused", storageRemaining, "user");
             return { manifest, reason: "paused" };
           }
@@ -361,7 +355,7 @@ async function extractFrames(
       await flushCheckpoint();
       manifest.status = "ready";
       manifest.updatedAt = new Date().toISOString();
-      await writeFrameSetManifest(manifest);
+      await writeFrameSetManifest(manifest, request.copy);
       report("completed", await getStorageRemaining());
       return { manifest, reason: "completed" };
     }
@@ -402,14 +396,14 @@ async function extractFrames(
           if (cancelRequested) {
             manifest.status = "cancelled";
             manifest.updatedAt = new Date().toISOString();
-            await writeFrameSetManifest(manifest);
+            await writeFrameSetManifest(manifest, request.copy);
             return { manifest, reason: "cancelled" };
           }
 
           if (isStorageNearLimit(storageRemaining, lastWrittenFrameSize)) {
             manifest.status = "paused";
             manifest.updatedAt = new Date().toISOString();
-            await writeFrameSetManifest(manifest);
+            await writeFrameSetManifest(manifest, request.copy);
             report("paused", storageRemaining, "storage");
             return { manifest, reason: "storage" };
           }
@@ -417,7 +411,7 @@ async function extractFrames(
           if (pauseRequested) {
             manifest.status = "paused";
             manifest.updatedAt = new Date().toISOString();
-            await writeFrameSetManifest(manifest);
+            await writeFrameSetManifest(manifest, request.copy);
             report("paused", storageRemaining, "user");
             return { manifest, reason: "paused" };
           }
@@ -432,7 +426,7 @@ async function extractFrames(
     await flushCheckpoint();
     manifest.status = "ready";
     manifest.updatedAt = new Date().toISOString();
-    await writeFrameSetManifest(manifest);
+    await writeFrameSetManifest(manifest, request.copy);
     report("completed", await getStorageRemaining());
     return { manifest, reason: "completed" };
   } catch (error) {
@@ -440,7 +434,7 @@ async function extractFrames(
     manifest.errorMessage =
       error instanceof Error ? error.message : String(error);
     manifest.updatedAt = new Date().toISOString();
-    await writeFrameSetManifest(manifest);
+    await writeFrameSetManifest(manifest, request.copy);
     throw error;
   } finally {
     input.dispose();

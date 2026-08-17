@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   CircleQuestionMarkIcon,
   ComputerIcon,
@@ -61,6 +61,9 @@ import type {
   FaviconGenerateResult,
   ManifestSettings,
 } from "@/features/favicon-generator/types";
+import { useWorkspaceI18n } from "@/components/workspace/WorkspaceI18nProvider";
+import type { FaviconMessages } from "@/i18n/favicon";
+import { interpolateText } from "@/lib/utils";
 
 interface FaviconExportPanelProps {
   exportOptions: FaviconExportOptions;
@@ -77,37 +80,6 @@ interface FaviconExportPanelProps {
   onDownload: () => void;
   onSaveAs: () => void;
 }
-
-const displayItems: Array<{
-  value: DisplayMode;
-  label: string;
-  description: string;
-}> = [
-  {
-    value: "standalone",
-    label: "Önálló alkalmazás - ajánlott",
-    description:
-      "Saját alkalmazásablakban nyílik meg, böngésző címsor és navigáció nélkül.",
-  },
-  {
-    value: "minimal-ui",
-    label: "Minimális böngészőkeret",
-    description:
-      "Alkalmazásablakban nyílik meg, de néhány alap böngészővezérlő megmaradhat.",
-  },
-  {
-    value: "fullscreen",
-    label: "Teljes képernyő",
-    description:
-      "A teljes kijelzőt használja, böngésző- és alkalmazáskeret nélkül.",
-  },
-  {
-    value: "browser",
-    label: "Böngésző",
-    description:
-      "Normál böngészőlapon nyílik meg, ezért kevésbé viselkedik önálló appként.",
-  },
-];
 
 function colorInputValue(value: string): string {
   return /^#[0-9a-f]{6}$/i.test(value) ? value : "#ffffff";
@@ -128,13 +100,20 @@ export function FaviconExportPanel({
   onDownload,
   onSaveAs,
 }: FaviconExportPanelProps) {
+  const { messages } = useWorkspaceI18n<FaviconMessages>();
+  const copy = messages.exportPanel;
+  const displayItems = copy.displayMode.items as ReadonlyArray<{
+    value: DisplayMode;
+    label: string;
+    description: string;
+  }>;
   const [copied, setCopied] = useState(false);
   const hasWebsite = exportOptions.targets.includes("website");
   const hasWebApp = exportOptions.targets.includes("web-app");
   const hasExportTarget = exportOptions.targets.length > 0;
   const manifestNavigationErrors =
     hasWebApp && exportOptions.includeWebManifest
-      ? validateManifestNavigation(manifest)
+      ? validateManifestNavigation(manifest, messages.engine.manifestErrors)
       : {};
   const hasManifestNavigationErrors = Object.values(
     manifestNavigationErrors,
@@ -168,10 +147,8 @@ export function FaviconExportPanel({
       <CardHeader>
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-1.5">
-            <CardTitle>Exportcsomag</CardTitle>
-            <CardDescription>
-              A kiválasztott ikonok, telepítési kód és README egy ZIP-ben.
-            </CardDescription>
+            <CardTitle>{copy.cardTitle}</CardTitle>
+            <CardDescription>{copy.cardDescription}</CardDescription>
           </div>
           <HugeiconsIcon
             icon={PackageProcessIcon}
@@ -183,11 +160,8 @@ export function FaviconExportPanel({
       <CardContent className="flex flex-col gap-7">
         <FieldGroup>
           <FieldSet>
-            <FieldLegend>Mit tartalmazzon a csomag?</FieldLegend>
-            <FieldDescription>
-              Jelöld be a felhasználási célokat. Csak a kiválasztott célokhoz
-              szükséges fájlok kerülnek a ZIP-be.
-            </FieldDescription>
+            <FieldLegend>{copy.targetsLegend}</FieldLegend>
+            <FieldDescription>{copy.targetsDescription}</FieldDescription>
             <FieldGroup data-slot="checkbox-group" className="gap-3">
               <FieldLabel className="border-border bg-card has-data-checked:border-primary/40 has-data-checked:bg-primary/5 cursor-pointer rounded-3xl border transition-colors">
                 <Field orientation="horizontal">
@@ -204,11 +178,8 @@ export function FaviconExportPanel({
                     aria-hidden="true"
                   />
                   <FieldContent>
-                    <span className="font-heading text-base">Weboldal</span>
-                    <FieldDescription>
-                      Böngészőfülhöz, könyvjelzőhöz és Apple kezdőképernyőhöz
-                      szükséges faviconok.
-                    </FieldDescription>
+                    <span className="font-heading text-base">{copy.website.label}</span>
+                    <FieldDescription>{copy.website.description}</FieldDescription>
                   </FieldContent>
                 </Field>
               </FieldLabel>
@@ -228,12 +199,8 @@ export function FaviconExportPanel({
                     aria-hidden="true"
                   />
                   <FieldContent>
-                    <span className="font-heading text-base">
-                      Telepíthető webalkalmazás
-                    </span>
-                    <FieldDescription>
-                      Normál és maskable ikonok a telepített webapphoz.
-                    </FieldDescription>
+                    <span className="font-heading text-base">{copy.webApp.label}</span>
+                    <FieldDescription>{copy.webApp.description}</FieldDescription>
                   </FieldContent>
                 </Field>
               </FieldLabel>
@@ -254,23 +221,21 @@ export function FaviconExportPanel({
                     }
                   />
                   <FieldContent>
-                    <span className="font-heading text-base">
-                      + site.webmanifest
-                    </span>
+                    <span className="font-heading text-base">{copy.manifestCheckbox.label}</span>
                     <FieldDescription>
                       {hasWebApp
-                        ? "Elkészíti a telepítéshez szükséges manifestet és a hozzá tartozó HTML-hivatkozást."
-                        : "Előbb válaszd ki a Telepíthető webalkalmazás opciót."}
+                        ? copy.manifestCheckbox.descriptionEnabled
+                        : copy.manifestCheckbox.descriptionDisabled}
                     </FieldDescription>
                   </FieldContent>
                 </Field>
               </FieldLabel>
             </FieldGroup>
             {!hasExportTarget && (
-              <FieldError>Válassz legalább egy felhasználási célt.</FieldError>
+              <FieldError>{copy.noTargetError}</FieldError>
             )}
             <a
-              href="#favicon-package-guide"
+              href={`#${messages.guide.sectionId}`}
               className={buttonVariants({ variant: "ghost", size: "sm" })}
             >
               <HugeiconsIcon
@@ -279,14 +244,14 @@ export function FaviconExportPanel({
                 strokeWidth={2}
                 aria-hidden="true"
               />
-              Melyikre van szükségem?
+              {copy.whichDoINeed}
             </a>
           </FieldSet>
 
           <FieldGroup className="grid gap-4 md:grid-cols-2">
             <Field>
               <FieldLabel htmlFor="favicon-project-name">
-                Projekt neve
+                {copy.projectName.label}
               </FieldLabel>
               <Input
                 id="favicon-project-name"
@@ -296,25 +261,24 @@ export function FaviconExportPanel({
                   onManifestChange({ projectName: event.target.value })
                 }
               />
-              <FieldDescription>Ez kerül a ZIP fájlnevébe is.</FieldDescription>
+              <FieldDescription>{copy.projectName.description}</FieldDescription>
             </Field>
             <Field>
               <FieldLabel htmlFor="favicon-base-path">
-                Fájlok base path-ja
+                {copy.basePath.label}
               </FieldLabel>
               <Input
                 id="favicon-base-path"
                 value={manifest.basePath}
-                placeholder="/ vagy ./ vagy /assets/icons"
+                placeholder={copy.basePath.placeholder}
                 onChange={(event) =>
                   onManifestChange({ basePath: event.target.value })
                 }
               />
               <FieldDescription>
-                Ez a HTML kódot rendezi. Annak a mappának vagy URL-útnak az
-                előtagja, ahová az ikonokat másolod. Például{" "}
-                <code>/assets/icons/</code> esetén a kód erre a helyre
-                hivatkozik.
+                {copy.basePath.descriptionPrefix}{" "}
+                <code>{copy.basePath.example}</code>{" "}
+                {copy.basePath.descriptionSuffix}
               </FieldDescription>
             </Field>
           </FieldGroup>
@@ -323,7 +287,7 @@ export function FaviconExportPanel({
             <FieldGroup className="grid gap-4 md:grid-cols-2">
               <Field>
                 <FieldLabel htmlFor="favicon-app-name">
-                  Alkalmazás neve
+                  {copy.appName.label}
                 </FieldLabel>
                 <Input
                   id="favicon-app-name"
@@ -332,12 +296,10 @@ export function FaviconExportPanel({
                     onManifestChange({ name: event.target.value })
                   }
                 />
-                <FieldDescription>
-                  A telepítésnél és az alkalmazáslistában megjelenő teljes név.
-                </FieldDescription>
+                <FieldDescription>{copy.appName.description}</FieldDescription>
               </Field>
               <Field>
-                <FieldLabel htmlFor="favicon-short-name">Rövid név</FieldLabel>
+                <FieldLabel htmlFor="favicon-short-name">{copy.shortName.label}</FieldLabel>
                 <Input
                   id="favicon-short-name"
                   value={manifest.shortName}
@@ -346,18 +308,16 @@ export function FaviconExportPanel({
                     onManifestChange({ shortName: event.target.value })
                   }
                 />
-                <FieldDescription>
-                  Helyszűkében, például az ikon alatt használt rövid változat.
-                </FieldDescription>
+                <FieldDescription>{copy.shortName.description}</FieldDescription>
               </Field>
               <Field data-invalid={Boolean(manifestNavigationErrors.id)}>
                 <FieldLabel htmlFor="favicon-app-id">
-                  Alkalmazásazonosító (id)
+                  {copy.appId.label}
                 </FieldLabel>
                 <Input
                   id="favicon-app-id"
                   value={manifest.id}
-                  placeholder="/ vagy /app/"
+                  placeholder={copy.appId.placeholder}
                   required
                   aria-invalid={Boolean(manifestNavigationErrors.id)}
                   onChange={(event) =>
@@ -365,9 +325,10 @@ export function FaviconExportPanel({
                   }
                 />
                 <FieldDescription>
-                  Stabil, gyökérrel kezdődő URL-azonosító. Telepítés után ne
-                  változtasd meg; általában <code>/</code> vagy az alkalmazás
-                  útvonala, például <code>/app/</code>.
+                  {interpolateText(
+                    `${copy.appId.descriptionPrefix} {root} ${copy.appId.descriptionMiddle} {appPath}${copy.appId.descriptionSuffix}`,
+                    { root: <code>/</code>, appPath: <code>/app/</code> },
+                  ) as ReactNode[]}
                 </FieldDescription>
                 {manifestNavigationErrors.id && (
                   <FieldError>{manifestNavigationErrors.id}</FieldError>
@@ -375,21 +336,19 @@ export function FaviconExportPanel({
               </Field>
               <Field data-invalid={Boolean(manifestNavigationErrors.startUrl)}>
                 <FieldLabel htmlFor="favicon-start-url">
-                  Indulási URL (start_url)
+                  {copy.startUrl.label}
                 </FieldLabel>
                 <Input
                   id="favicon-start-url"
                   value={manifest.startUrl}
-                  placeholder="/ vagy /app/"
+                  placeholder={copy.startUrl.placeholder}
                   required
                   aria-invalid={Boolean(manifestNavigationErrors.startUrl)}
                   onChange={(event) =>
                     onManifestChange({ startUrl: event.target.value })
                   }
                 />
-                <FieldDescription>
-                  Ezt az oldalt nyitja meg a telepített alkalmazás ikonja.
-                </FieldDescription>
+                <FieldDescription>{copy.startUrl.description}</FieldDescription>
                 {manifestNavigationErrors.startUrl && (
                   <FieldError>{manifestNavigationErrors.startUrl}</FieldError>
                 )}
@@ -399,37 +358,33 @@ export function FaviconExportPanel({
                 data-invalid={Boolean(manifestNavigationErrors.scope)}
               >
                 <FieldLabel htmlFor="favicon-scope">
-                  Navigációs hatókör (scope)
+                  {copy.scope.label}
                 </FieldLabel>
                 <Input
                   id="favicon-scope"
                   value={manifest.scope}
-                  placeholder="/ vagy /app/"
+                  placeholder={copy.scope.placeholder}
                   required
                   aria-invalid={Boolean(manifestNavigationErrors.scope)}
                   onChange={(event) =>
                     onManifestChange({ scope: event.target.value })
                   }
                 />
-                <FieldDescription>
-                  Az ide tartozó URL-ek maradnak az alkalmazás felületén belül.
-                  Tartalmaznia kell az indulási URL-t; általában ugyanaz vagy
-                  egy tágabb útvonal.
-                </FieldDescription>
+                <FieldDescription>{copy.scope.description}</FieldDescription>
                 {manifestNavigationErrors.scope && (
                   <FieldError>{manifestNavigationErrors.scope}</FieldError>
                 )}
               </Field>
               <Field>
                 <FieldLabel htmlFor="favicon-theme-color">
-                  Theme color
+                  {copy.themeColor.label}
                 </FieldLabel>
                 <div className="flex items-center gap-3">
                   <Input
                     className="size-10 shrink-0 p-1"
                     type="color"
                     value={colorInputValue(manifest.themeColor)}
-                    aria-label="Theme color választása"
+                    aria-label={copy.themeColor.ariaLabel}
                     onChange={(event) =>
                       onManifestChange({ themeColor: event.target.value })
                     }
@@ -442,19 +397,17 @@ export function FaviconExportPanel({
                     }
                   />
                 </div>
-                <FieldDescription>
-                  A webapp körüli böngésző- vagy rendszerfelület ajánlott színe.
-                </FieldDescription>
+                <FieldDescription>{copy.themeColor.description}</FieldDescription>
               </Field>
               <Field className="md:col-span-2">
                 <div className="flex items-center gap-2">
                   <FieldLabel htmlFor="favicon-display">
-                    Megjelenítési mód
+                    {copy.displayMode.label}
                   </FieldLabel>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger
-                        aria-label="A megjelenítési módok magyarázata"
+                        aria-label={copy.displayMode.tooltipAriaLabel}
                         className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 inline-flex size-6 items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none"
                       >
                         <HugeiconsIcon
@@ -510,7 +463,7 @@ export function FaviconExportPanel({
         {generating && (
           <Progress
             value={progress}
-            aria-label={statusLabel || "Favicon csomag készítése"}
+            aria-label={statusLabel || copy.progressAriaFallback}
           >
             <ProgressLabel>{statusLabel}</ProgressLabel>
             <ProgressValue>{() => `${Math.round(progress)}%`}</ProgressValue>
@@ -519,7 +472,7 @@ export function FaviconExportPanel({
 
         {error && (
           <Alert variant="destructive">
-            <AlertTitle>A csomagot nem sikerült elkészíteni</AlertTitle>
+            <AlertTitle>{copy.packageErrorTitle}</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
@@ -528,16 +481,15 @@ export function FaviconExportPanel({
           <div className="flex flex-col gap-4">
             <Alert>
               <HugeiconsIcon icon={Tick02Icon} strokeWidth={2} />
-              <AlertTitle>A favicon csomag elkészült</AlertTitle>
+              <AlertTitle>{copy.packageReadyTitle}</AlertTitle>
               <AlertDescription>
-                {result.assetNames.length} fájl került a ZIP-be. Új beállítás
-                után bármikor újragenerálhatod.
+                {copy.packageReadyDescription(result.assetNames.length)}
               </AlertDescription>
             </Alert>
             {result.htmlCode && (
               <div className="morf-inset-panel flex flex-col gap-3 rounded-3xl p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-medium">HTML-kód</p>
+                  <p className="text-sm font-medium">{copy.htmlCodeLabel}</p>
                   <Button
                     type="button"
                     variant="ghost"
@@ -549,7 +501,7 @@ export function FaviconExportPanel({
                       data-icon="inline-start"
                       strokeWidth={2}
                     />
-                    {copied ? "Másolva" : "Másolás"}
+                    {copied ? copy.copied : copy.copy}
                   </Button>
                 </div>
                 <pre className="text-muted-foreground max-h-44 overflow-auto text-xs leading-relaxed whitespace-pre-wrap">
@@ -576,10 +528,10 @@ export function FaviconExportPanel({
             strokeWidth={2}
           />
           {generating
-            ? "Csomag készítése"
+            ? copy.generateButton.generating
             : result
-              ? "Csomag újragenerálása"
-              : "Favicon csomag letöltése"}
+              ? copy.generateButton.regenerate
+              : copy.generateButton.initial}
         </Button>
         {canSaveAs && (
           <Button
@@ -593,7 +545,7 @@ export function FaviconExportPanel({
               data-icon="inline-start"
               strokeWidth={2}
             />
-            Mentés másként
+            {copy.saveAs}
           </Button>
         )}
         {result && (
@@ -603,7 +555,7 @@ export function FaviconExportPanel({
               data-icon="inline-start"
               strokeWidth={2}
             />
-            ZIP letöltése újra
+            {copy.downloadAgain}
           </Button>
         )}
       </CardFooter>

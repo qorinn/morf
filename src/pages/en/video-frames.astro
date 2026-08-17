@@ -11,42 +11,43 @@ import MainLayout from "@/layouts/main.astro";
 import { getVideoFramesMessages } from "@/i18n/video-frames";
 import { getLocalizedRoute, getRouteAlternates } from "@/lib/localized-routes";
 
-const locale = "hu" as const;
+const locale = "en" as const;
 const copy = getVideoFramesMessages(locale);
 const canonicalPath = getLocalizedRoute("videoFrames", locale);
 
-const seoDescription = "Ments ki teljes felbontású PNG képkockákat MP4, MOV vagy WebM videóból: thumbnailhez, meméhez, jelenetkivágáshoz vagy hibajegyhez készült képsorozathoz. Ingyenes, reklámmentes, regisztráció nélkül.";
+const seoTitle = "Extract Video Frames Online, Free PNG Export | Morf";
+const seoDescription = "Extract full-resolution PNG frames from an MP4, MOV, or WebM video — for a thumbnail, a meme, a paused scene, or a frame sequence for a bug report. Free, ad-free, no sign-up.";
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
     {
       "@type": "WebApplication",
-      "@id": `${canonicalPath}#alkalmazas`,
-      name: "Morf videó képekre bontó",
+      "@id": `${canonicalPath}#application`,
+      name: "Morf video frame extractor",
       description: seoDescription,
       applicationCategory: "MultimediaApplication",
-      applicationSubCategory: "Videóképkocka-exportáló",
+      applicationSubCategory: "Video frame exporter",
       operatingSystem: "Web",
       browserRequirements:
-        "JavaScriptet, Web Workert, WebCodecsot, OffscreenCanvast és OPFS-t támogató modern böngésző",
+        "A modern browser with support for JavaScript, Web Workers, WebCodecs, OffscreenCanvas, and OPFS",
       isAccessibleForFree: true,
       dateModified: "2026-08-05",
-      offers: { "@type": "Offer", price: "0", priceCurrency: "HUF" },
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
       featureList: [
-        "MP4, MOV és WebM videók helyi feldolgozása",
-        "Minden eredeti képkocka, választható FPS vagy csak az első és utolsó képkocka",
-        "Választható kezdő- és végpont",
-        "Teljes felbontású veszteségmentes PNG-k",
-        "Checkpointos, memóriahatáros feldolgozás",
-        "Képek közvetlen átadása a Morf képkonvertálóba",
-        "Mappás és ZIP-részes mentés",
+        "Local processing of MP4, MOV, and WebM videos",
+        "Every original frame, a selectable FPS, or only the first and last frame",
+        "Selectable start and end point",
+        "Full-resolution lossless PNGs",
+        "Checkpointed, memory-bounded processing",
+        "Direct handoff of frames to Morf's image converter",
+        "Save to a folder or as ZIP parts",
       ],
       fileFormat: ["video/mp4", "video/quicktime", "video/webm", "image/png"],
       creator: { "@type": "Person", name: "Paládi Bálint" },
     },
     {
       "@type": "FAQPage",
-      "@id": `${canonicalPath}#gyakori-kerdesek`,
+      "@id": `${canonicalPath}#faq`,
       mainEntity: copy.page.faq.items.map((item) => ({
         "@type": "Question",
         name: item.question,
@@ -58,7 +59,7 @@ const structuredData = {
 ---
 
 <MainLayout
-  title="Videó képekre bontása online, ingyen PNG-be | Morf"
+  title={seoTitle}
   description={seoDescription}
   locale={locale}
   canonicalPath={canonicalPath}
@@ -92,12 +93,14 @@ const structuredData = {
       title={copy.page.privacy.title}
       description={copy.page.privacy.description}
       items={copy.page.privacy.items}
+      eyebrow="Privacy"
     />
 
     <FaqSection
       title={copy.page.faq.title}
       description={copy.page.faq.description}
       items={[...copy.page.faq.items]}
+      id="faq"
     />
   </main>
 

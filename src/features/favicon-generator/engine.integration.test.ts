@@ -9,6 +9,9 @@ import { unzipSync } from "fflate";
 
 import { generateFaviconPackage } from "./engine.ts";
 import type { RasterPayload } from "./types.ts";
+import { getFaviconMessages } from "../../i18n/favicon.ts";
+
+const engineCopy = getFaviconMessages("hu").engine;
 
 function solidMaster(size: number, alpha = 255): RasterPayload {
   const pixels = new Uint8ClampedArray(size * size * 4);
@@ -62,7 +65,7 @@ test("a PWA ZIP minden előírt, dekódolható képméretet és többméretes IC
         basePath: "/",
         projectName: "Morf",
       },
-      language: "hu",
+      copy: engineCopy,
     },
     () => undefined,
   );
@@ -118,7 +121,7 @@ test("a PWA ZIP minden előírt, dekódolható képméretet és többméretes IC
         basePath: "/",
         projectName: "Morf",
       },
-      language: "hu",
+      copy: engineCopy,
     },
     () => undefined,
   );
@@ -157,7 +160,7 @@ test("a PWA ZIP minden előírt, dekódolható képméretet és többméretes IC
         basePath: "/",
         projectName: "Morf",
       },
-      language: "hu",
+      copy: engineCopy,
     },
     () => undefined,
   );

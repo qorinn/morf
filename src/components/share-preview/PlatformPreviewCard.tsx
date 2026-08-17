@@ -8,6 +8,8 @@ import {
 } from "@hugeicons/core-free-icons";
 
 import { cn } from "@/lib/utils";
+import { useWorkspaceI18n } from "@/components/workspace/WorkspaceI18nProvider";
+import type { SharePreviewMessages } from "@/i18n/share-preview";
 
 export type PreviewPlatform =
   "facebook" | "x" | "linkedin" | "whatsapp" | "discord";
@@ -24,15 +26,16 @@ export const previewPlatformItems = [
   icon: typeof Facebook01Icon;
 }>;
 
-function hostname(value: string) {
+function hostname(value: string, fallback: string) {
   try {
     return new URL(value).hostname.replace(/^www\./, "");
   } catch {
-    return value || "webhely.hu";
+    return value || fallback;
   }
 }
 
 function MissingImage({ compact = false }: { compact?: boolean }) {
+  const { messages } = useWorkspaceI18n<SharePreviewMessages>();
   return (
     <div
       className={cn(
@@ -40,7 +43,7 @@ function MissingImage({ compact = false }: { compact?: boolean }) {
         compact ? "h-full min-h-32" : "aspect-[1.91/1]",
       )}
     >
-      Nincs OG:image
+      {messages.platformPreview.missingImage}
     </div>
   );
 }
@@ -101,26 +104,29 @@ export function PlatformPreviewCard({
   title,
   description,
   image,
-  imageAlt = "Megosztási kép előnézete",
+  imageAlt,
   media,
   siteName,
   pageUrl,
 }: PlatformPreviewCardProps) {
-  const host = hostname(pageUrl);
-  const safeTitle = title || "Az oldal címe";
-  const safeDescription = description || "Az oldal leírása itt jelenik meg.";
+  const { messages } = useWorkspaceI18n<SharePreviewMessages>();
+  const copy = messages.platformPreview;
+  const host = hostname(pageUrl, copy.fallbackHostname);
+  const safeTitle = title || copy.defaultTitle;
+  const safeDescription = description || copy.defaultDescription;
+  const resolvedImageAlt = imageAlt ?? copy.defaultImageAlt;
 
   if (platform === "x") {
     return (
       <div className="morf-platform-x-card w-full max-w-5xl">
         <div className="relative overflow-hidden rounded-[1.75rem] border bg-inherit">
-          <PreviewMedia image={image} imageAlt={imageAlt} media={media} />
+          <PreviewMedia image={image} imageAlt={resolvedImageAlt} media={media} />
           <p className="morf-platform-x-overlay absolute right-5 bottom-4 left-5 w-fit max-w-[calc(100%-2.5rem)] rounded-lg px-4 py-2 text-base font-medium sm:text-xl">
             <span className="line-clamp-1">{safeTitle}</span>
           </p>
         </div>
         <p className="morf-platform-muted mt-3 text-sm sm:text-base">
-          From {host}
+          {copy.fromHost} {host}
         </p>
       </div>
     );
@@ -130,7 +136,7 @@ export function PlatformPreviewCard({
     return (
       <div className="morf-platform-linkedin-card flex w-full max-w-5xl items-center gap-4 rounded-2xl border p-4 sm:gap-6 sm:p-5">
         <div className="aspect-[1.91/1] w-36 shrink-0 overflow-hidden rounded-xl sm:w-56">
-          <PreviewMedia image={image} imageAlt={imageAlt} media={media} />
+          <PreviewMedia image={image} imageAlt={resolvedImageAlt} media={media} />
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="line-clamp-2 text-base leading-tight font-semibold sm:text-xl">
@@ -148,7 +154,7 @@ export function PlatformPreviewCard({
     return (
       <div className="morf-platform-whatsapp-card w-full max-w-xl rounded-2xl p-2">
         <div className="morf-platform-whatsapp-content overflow-hidden rounded-xl">
-          <PreviewMedia image={image} imageAlt={imageAlt} media={media} />
+          <PreviewMedia image={image} imageAlt={resolvedImageAlt} media={media} />
           <div className="px-4 py-3">
             <h3 className="line-clamp-2 text-base leading-snug font-semibold sm:text-lg">
               {safeTitle}
@@ -176,7 +182,7 @@ export function PlatformPreviewCard({
           {safeDescription}
         </p>
         <div className="mt-4 overflow-hidden rounded-lg border">
-          <PreviewMedia image={image} imageAlt={imageAlt} media={media} />
+          <PreviewMedia image={image} imageAlt={resolvedImageAlt} media={media} />
         </div>
       </div>
     );
@@ -184,7 +190,7 @@ export function PlatformPreviewCard({
 
   return (
     <div className="morf-platform-facebook-card w-full max-w-5xl overflow-hidden border">
-      <PreviewMedia image={image} imageAlt={imageAlt} media={media} />
+      <PreviewMedia image={image} imageAlt={resolvedImageAlt} media={media} />
       <div className="morf-platform-facebook-footer border-t px-3 py-2">
         <p className="morf-platform-muted text-xs font-medium tracking-wide uppercase">
           {host}

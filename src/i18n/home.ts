@@ -18,6 +18,20 @@ type HomeCopy = {
   openTool: string;
   categories: Record<"images" | "video" | "web", string>;
   tools: Record<HomeToolId, { title: string; description: string }>;
+  hero: {
+    imageConverter: string;
+    frames: string;
+    speed: string;
+    videoConverter: string;
+    favicon: string;
+    title: [string, string];
+    description: string;
+    cta: string;
+  };
+  whyChoose: {
+    heading: string;
+    lead: string;
+  };
 };
 
 export const homeCopy: Record<Extract<Locale, "hu" | "en">, HomeCopy> = {
@@ -38,6 +52,20 @@ export const homeCopy: Record<Extract<Locale, "hu" | "en">, HomeCopy> = {
       openGraph: { title: "Open Graph ellenőrző", description: "Ellenőrizd ingyen a meglévő Open Graph adatokat, nézd meg az előnézetet, és másold ki a javított meta tag kódot." },
       favicon: { title: "Favicon generátor", description: "Ingyenes favicon- és webappikon-csomag készítése egyetlen képből." },
     },
+    hero: {
+      imageConverter: "Képkonvertáló",
+      frames: "Videó képekre bontása",
+      speed: "Videó gyorsítás",
+      videoConverter: "Videó konvertáló",
+      favicon: "Favicon generátor",
+      title: ["Eszközök a digitális", "mindennapokhoz."],
+      description: "A Morf célja, hogy a gyakori digitális feladatokhoz egyszerű, ingyenes és privát böngészős eszközöket kínáljon.",
+      cta: "Eszközök megnyitása",
+    },
+    whyChoose: {
+      heading: "Miért válaszd a Morfot?",
+      lead: "Az egyszerű használaton kívül.",
+    },
   },
   en: {
     title: "Morf - Free online tools in one place",
@@ -55,6 +83,20 @@ export const homeCopy: Record<Extract<Locale, "hu" | "en">, HomeCopy> = {
       videoConverter: { title: "Video converter and optimizer", description: "Convert MP4, MOV, WebM, MKV, and TS videos to MP4, WebM, or MOV with a smaller resolution." },
       openGraph: { title: "Open Graph checker", description: "Check existing Open Graph data, preview the result, and copy improved meta tag code." },
       favicon: { title: "Favicon generator", description: "Create a favicon and web app icon bundle from a single image for free." },
+    },
+    hero: {
+      imageConverter: "Image converter",
+      frames: "Video to frames",
+      speed: "Video speed",
+      videoConverter: "Video converter",
+      favicon: "Favicon generator",
+      title: ["Tools for everyday", "digital tasks."],
+      description: "Morf makes common digital tasks simple, free, and private in your browser.",
+      cta: "Explore tools",
+    },
+    whyChoose: {
+      heading: "Why choose Morf?",
+      lead: "Beyond being easy to use.",
     },
   },
 };

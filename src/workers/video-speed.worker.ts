@@ -27,6 +27,7 @@ import type {
   VideoSpeedExportResult,
   VideoSpeedExportProgress,
   VideoSpeedMetadata,
+  VideoSpeedTextCopy,
   VideoSpeedWorkerApi,
 } from "@/features/video-speed/types";
 
@@ -45,35 +46,26 @@ function createInput(file: File) {
   });
 }
 
-function assertNotCancelled() {
-  if (cancelRequested) throw new DOMException("Az export megszakítva.", "AbortError");
+function assertNotCancelled(copy: VideoSpeedTextCopy) {
+  if (cancelRequested) throw new DOMException(copy.exportCancelled, "AbortError");
 }
 
-async function inspectVideo(file: File): Promise<InspectSpeedVideoResult> {
+async function inspectVideo(
+  file: File,
+  copy: VideoSpeedTextCopy,
+): Promise<InspectSpeedVideoResult> {
   if (!/\.(mp4|m4v|mov|webm)$/i.test(file.name)) {
-    return {
-      valid: false,
-      message: "Ez a fájltípus nem támogatott.",
-      suggestion: "Válassz MP4, MOV vagy WebM videót.",
-    };
+    return { valid: false, ...copy.unsupportedFileType };
   }
 
   const input = createInput(file);
   try {
     if (!(await input.canRead())) {
-      return {
-        valid: false,
-        message: "A videó konténere nem olvasható.",
-        suggestion: "Próbálj szabványos MP4, MOV vagy WebM fájlt.",
-      };
+      return { valid: false, ...copy.unreadableContainer };
     }
     const videoTrack = await input.getPrimaryVideoTrack();
     if (!videoTrack || !(await videoTrack.canDecode())) {
-      return {
-        valid: false,
-        message: "A videósáv ebben a böngészőben nem dekódolható.",
-        suggestion: "Próbáld H.264-es MP4 vagy VP9-es WebM videóval egy modern böngészőben.",
-      };
+      return { valid: false, ...copy.trackNotDecodable };
     }
 
     const audioTrack = await input.getPrimaryAudioTrack();
@@ -107,8 +99,8 @@ async function inspectVideo(file: File): Promise<InspectSpeedVideoResult> {
   } catch (error) {
     return {
       valid: false,
-      message: error instanceof Error ? error.message : "A videót nem sikerült megnyitni.",
-      suggestion: "Próbálj másik videófájlt, vagy nyisd meg az eszközt egy friss Chromium-alapú böngészőben.",
+      message: error instanceof Error ? error.message : copy.inspectFailed.message,
+      suggestion: copy.inspectFailed.suggestion,
     };
   } finally {
     input.dispose();
@@ -129,14 +121,14 @@ async function exportVideo(
     onProgress({ phase: "preparing", sourceTimestamp: 0, sourceDuration: request.metadata.duration });
     const videoTrack = await input.getPrimaryVideoTrack();
     if (!videoTrack || !(await videoTrack.canDecode())) {
-      throw new Error("A videósáv nem dekódolható.");
+      throw new Error(request.copy.exportTrackNotDecodable);
     }
     if (!(await canEncodeVideo("avc", {
       width: request.metadata.width,
       height: request.metadata.height,
       quality: highQuality,
     }))) {
-      throw new Error("A böngésződ nem támogatja a H.264 MP4-kódolást.");
+      throw new Error(request.copy.h264Unsupported);
     }
 
     const videoSource = new VideoSampleSource({
@@ -154,14 +146,14 @@ async function exportVideo(
         quality: highQuality,
       });
       if (!canEncodeAac) {
-        throw new Error("A böngésződ nem támogatja az AAC-kódolást MP4 kimenethez.");
+        throw new Error(request.copy.aacUnsupported);
       }
       const audioSource = new AudioSampleSource({ codec: "aac", quality: highQuality });
       output.addAudioTrack(audioSource);
       await output.start();
       outputStarted = true;
       for (let startFrame = 0; startFrame < audio.numberOfFrames; startFrame += audioChunkFrames) {
-        assertNotCancelled();
+        assertNotCancelled(request.copy);
         const frameCount = Math.min(audioChunkFrames, audio.numberOfFrames - startFrame);
         const data = new Float32Array(frameCount * audio.channels.length);
         audio.channels.forEach((buffer, channel) => {
@@ -187,7 +179,7 @@ async function exportVideo(
 
     const sink = new VideoSampleSink(videoTrack);
     for await (const sample of sink.samples()) {
-      assertNotCancelled();
+      assertNotCancelled(request.copy);
       const sourceTimestamp = Math.max(0, sample.timestamp);
       const outputTimestamp = outputTimeAtSourceTime(
         request.curve,
@@ -224,7 +216,7 @@ async function exportVideo(
     });
     await output.finalize();
     const buffer = target.buffer;
-    if (!buffer) throw new Error("Az MP4-kimenet nem készült el.");
+    if (!buffer) throw new Error(request.copy.outputNotCreated);
     onProgress({
       phase: "completed",
       sourceTimestamp: request.metadata.duration,

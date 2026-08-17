@@ -25,6 +25,7 @@ import {
 
 import {
   outputFormatDetails,
+  sourceVideoBitrateCeiling,
   supportedVideoFileName,
   targetAudioBitrate,
   targetVideoBitrate,
@@ -35,9 +36,16 @@ import type {
   VideoConverterRequest,
   VideoConverterResult,
   VideoConverterProgress,
+  VideoConverterTextCopy,
   VideoConverterWorkerApi,
   VideoOutputFormat,
 } from "@/features/video-converter/types";
+
+function format(template: string, tokens: Record<string, string>): string {
+  return template.replace(/\{(\w+)\}/g, (match, key) =>
+    key in tokens ? tokens[key] : match,
+  );
+}
 
 const supportedFormats = [MP4, QTFF, WEBM, new MatroskaInputFormat(), MPEG_TS];
 let cancelRequested = false;
@@ -52,8 +60,8 @@ function createInput(file: File) {
   });
 }
 
-function assertNotCancelled() {
-  if (cancelRequested) throw new DOMException("A konvertálás megszakítva.", "AbortError");
+function assertNotCancelled(copy: VideoConverterTextCopy) {
+  if (cancelRequested) throw new DOMException(copy.exportCancelled, "AbortError");
 }
 
 function createOutputFormat(outputFormat: VideoOutputFormat) {
@@ -66,36 +74,34 @@ function createOutputFormat(outputFormat: VideoOutputFormat) {
 
 function videoQuality(request: VideoConverterRequest, width: number, height: number) {
   return new Quality({
-    bitrate: targetVideoBitrate(width, height, request.metadata.frameRate, request.outputFormat, request.quality),
+    bitrate: targetVideoBitrate(
+      width,
+      height,
+      request.metadata.frameRate,
+      request.outputFormat,
+      request.quality,
+      sourceVideoBitrateCeiling(request.metadata, request.outputFormat),
+    ),
     bitrateMode: "variable",
   });
 }
 
-async function inspectVideo(file: File): Promise<VideoConverterInspectResult> {
+async function inspectVideo(
+  file: File,
+  copy: VideoConverterTextCopy,
+): Promise<VideoConverterInspectResult> {
   if (!supportedVideoFileName(file.name)) {
-    return {
-      valid: false,
-      message: "Ez a fájltípus nem támogatott.",
-      suggestion: "Válassz MP4, MOV, WebM, MKV vagy MPEG-TS videót. Az AVI-t ez a böngészős eszköz nem tudja megnyitni.",
-    };
+    return { valid: false, ...copy.unsupportedFileType };
   }
 
   const input = createInput(file);
   try {
     if (!(await input.canRead())) {
-      return {
-        valid: false,
-        message: "A videó konténere nem olvasható.",
-        suggestion: "Próbálj szabványos MP4, MOV, WebM, MKV vagy MPEG-TS fájlt.",
-      };
+      return { valid: false, ...copy.unreadableContainer };
     }
     const videoTrack = await input.getPrimaryVideoTrack();
     if (!videoTrack || !(await videoTrack.canDecode())) {
-      return {
-        valid: false,
-        message: "A videósáv ebben a böngészőben nem dekódolható.",
-        suggestion: "Próbáld H.264-es MP4 vagy VP9-es WebM videóval friss Chrome-ban vagy Edge-ben.",
-      };
+      return { valid: false, ...copy.trackNotDecodable };
     }
     const audioTrack = await input.getPrimaryAudioTrack();
     const hasAudio = Boolean(audioTrack && (await audioTrack.canDecode()));
@@ -124,7 +130,14 @@ async function inspectVideo(file: File): Promise<VideoConverterInspectResult> {
     const encoders = Object.fromEntries(await Promise.all((["mp4", "webm", "mov"] as VideoOutputFormat[]).map(async (outputFormat) => {
       const details = outputFormatDetails(outputFormat);
       const quality = new Quality({
-        bitrate: targetVideoBitrate(width, height, frameRate, outputFormat, "balanced"),
+        bitrate: targetVideoBitrate(
+          width,
+          height,
+          frameRate,
+          outputFormat,
+          "balanced",
+          sourceVideoBitrateCeiling(metadata, outputFormat),
+        ),
         bitrateMode: "variable",
       });
       const video = await canEncodeVideo(details.videoCodec, { width, height, quality });
@@ -141,8 +154,8 @@ async function inspectVideo(file: File): Promise<VideoConverterInspectResult> {
   } catch (error) {
     return {
       valid: false,
-      message: error instanceof Error ? error.message : "A videót nem sikerült megnyitni.",
-      suggestion: "Próbáld másik videófájllal vagy friss Chrome-mal, illetve Edge-dzsel.",
+      message: error instanceof Error ? error.message : copy.inspectFailed.message,
+      suggestion: copy.inspectFailed.suggestion,
     };
   } finally {
     input.dispose();
@@ -169,9 +182,9 @@ async function convertVideo(
     onProgress({ phase: "preparing", sourceTimestamp: 0, sourceDuration: request.metadata.duration });
 
     const videoTrack = await input.getPrimaryVideoTrack();
-    if (!videoTrack || !(await videoTrack.canDecode())) throw new Error("A videósáv nem dekódolható.");
+    if (!videoTrack || !(await videoTrack.canDecode())) throw new Error(request.copy.exportTrackNotDecodable);
     if (!(await canEncodeVideo(details.videoCodec, { width: dimensions.width, height: dimensions.height, quality }))) {
-      throw new Error(`${details.label} kimenethez ebben a böngészőben nem elérhető a videókódoló.`);
+      throw new Error(format(request.copy.videoEncoderUnavailableTemplate, { format: details.label }));
     }
 
     const videoSource = new VideoSampleSource({
@@ -191,7 +204,7 @@ async function convertVideo(
       ]);
       const audioQuality = new Quality({ bitrate: targetAudioBitrate(request.outputFormat), bitrateMode: "variable" });
       if (!(await canEncodeAudio(details.audioCodec, { numberOfChannels, sampleRate, quality: audioQuality }))) {
-        throw new Error(`${details.label} kimenethez ebben a böngészőben nem elérhető a hangkódoló.`);
+        throw new Error(format(request.copy.audioEncoderUnavailableTemplate, { format: details.label }));
       }
       audioSource = new AudioSampleSource({ codec: details.audioCodec, quality: audioQuality });
       output.addAudioTrack(audioSource);
@@ -201,7 +214,7 @@ async function convertVideo(
     outputStarted = true;
     const videoSink = new VideoSampleSink(videoTrack);
     for await (const sample of videoSink.samples()) {
-      assertNotCancelled();
+      assertNotCancelled(request.copy);
       const sourceTimestamp = Math.max(0, sample.timestamp);
       try {
         await videoSource.add(sample);
@@ -218,7 +231,7 @@ async function convertVideo(
     if (audioTrack && audioSource) {
       const audioSink = new AudioSampleSink(audioTrack);
       for await (const sample of audioSink.samples()) {
-        assertNotCancelled();
+        assertNotCancelled(request.copy);
         try {
           await audioSource.add(sample);
         } finally {
@@ -230,7 +243,7 @@ async function convertVideo(
     onProgress({ phase: "finalizing", sourceTimestamp: request.metadata.duration, sourceDuration: request.metadata.duration });
     await output.finalize();
     const buffer = target.buffer;
-    if (!buffer) throw new Error("A videókimenet nem készült el.");
+    if (!buffer) throw new Error(request.copy.outputNotCreated);
     onProgress({ phase: "completed", sourceTimestamp: request.metadata.duration, sourceDuration: request.metadata.duration });
     return transfer({ buffer, mimeType: details.mimeType }, [buffer]);
   } catch (error) {

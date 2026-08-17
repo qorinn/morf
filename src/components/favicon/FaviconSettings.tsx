@@ -12,6 +12,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useWorkspaceI18n } from "@/components/workspace/WorkspaceI18nProvider";
+import type { FaviconMessages } from "@/i18n/favicon";
 import type {
   BackgroundMode,
   FaviconEditorSettings,
@@ -21,14 +23,6 @@ interface FaviconSettingsProps {
   settings: FaviconEditorSettings;
   onChange: (patch: Partial<FaviconEditorSettings>) => void;
 }
-
-const backgroundModes: Array<{ value: BackgroundMode; label: string }> = [
-  { value: "transparent", label: "Átlátszó" },
-  { value: "custom", label: "Egyedi" },
-  { value: "dominant", label: "Domináns" },
-  { value: "white", label: "Fehér" },
-  { value: "black", label: "Fekete" },
-];
 
 function sliderValue(value: number | readonly number[]): number {
   return typeof value === "number" ? value : value[0];
@@ -78,15 +72,22 @@ function PercentField({
 }
 
 export function FaviconSettings({ settings, onChange }: FaviconSettingsProps) {
+  const { messages } = useWorkspaceI18n<FaviconMessages>();
+  const copy = messages.settings;
+  const backgroundModes = copy.backgroundModes as ReadonlyArray<{
+    value: BackgroundMode;
+    label: string;
+  }>;
+
   return (
     <FieldGroup>
       <FieldSet>
         <FieldLegend className="flex items-center gap-2">
           <HugeiconsIcon icon={ColorsIcon} className="size-4" strokeWidth={2} />
-          Háttér és térköz
+          {copy.legend}
         </FieldLegend>
         <Field>
-          <FieldLabel id="favicon-background-mode">Háttér</FieldLabel>
+          <FieldLabel id="favicon-background-mode">{copy.backgroundLabel}</FieldLabel>
           <ToggleGroup
             aria-labelledby="favicon-background-mode"
             className="w-full flex-wrap"
@@ -109,7 +110,7 @@ export function FaviconSettings({ settings, onChange }: FaviconSettingsProps) {
         {settings.backgroundMode === "custom" && (
           <Field>
             <FieldLabel htmlFor="favicon-background-color">
-              Egyedi háttérszín
+              {copy.customColorLabel}
             </FieldLabel>
             <div className="flex items-center gap-3">
               <Input
@@ -117,7 +118,7 @@ export function FaviconSettings({ settings, onChange }: FaviconSettingsProps) {
                 className="size-10 shrink-0 p-1"
                 type="color"
                 value={colorInputValue(settings.backgroundColor)}
-                aria-label="Háttérszín választása"
+                aria-label={copy.customColorAriaLabel}
                 onChange={(event) =>
                   onChange({ backgroundColor: event.target.value })
                 }
@@ -136,7 +137,7 @@ export function FaviconSettings({ settings, onChange }: FaviconSettingsProps) {
 
         <PercentField
           id="favicon-standard-padding"
-          label="Normál ikon belső margója"
+          label={copy.standardPadding.label}
           min={0}
           max={0.4}
           value={settings.standardPadding}
@@ -144,16 +145,16 @@ export function FaviconSettings({ settings, onChange }: FaviconSettingsProps) {
         />
         <PercentField
           id="favicon-maskable-padding"
-          label="Maskable safe-zone"
+          label={copy.maskablePadding.label}
           min={0}
           max={0.4}
           value={settings.maskablePadding}
-          description="A legalább 20%-os margó segít, hogy Androidon se vágódjon le a grafika."
+          description={copy.maskablePadding.description}
           onChange={(maskablePadding) => onChange({ maskablePadding })}
         />
         <PercentField
           id="favicon-radius"
-          label="Sarokkerekítés"
+          label={copy.borderRadius.label}
           min={0}
           max={1}
           value={settings.borderRadius}

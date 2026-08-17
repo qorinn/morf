@@ -1,6 +1,8 @@
 import type { APIRoute } from "astro";
 
 import { SafeFetchError, safeFetch } from "@/lib/safe-fetch";
+import { getSharePreviewMessages } from "@/i18n/share-preview";
+import { isLocale } from "@/lib/locale";
 
 export const prerender = false;
 
@@ -14,7 +16,7 @@ function jsonError(message: string, status: number) {
   });
 }
 
-async function readBodyWithLimit(response: Response) {
+async function readBodyWithLimit(response: Response, tooLargeMessage: string) {
   const reader = response.body?.getReader();
   if (!reader) return new Uint8Array();
 
@@ -28,7 +30,7 @@ async function readBodyWithLimit(response: Response) {
     received += value.byteLength;
     if (received > MAX_IMAGE_BYTES) {
       await reader.cancel();
-      throw new Error("A kép mérete túl nagy.");
+      throw new Error(tooLargeMessage);
     }
     chunks.push(value);
   }
@@ -46,8 +48,12 @@ async function readBodyWithLimit(response: Response) {
 // originről kiszolgálni, különben a rárajzolt <canvas> "tainted" lesz, és a
 // böngésző megtagadja a képadatok kiolvasását (toBlob null-t ad vissza).
 export const GET: APIRoute = async ({ url }) => {
+  const localeParam = url.searchParams.get("locale");
+  const locale = isLocale(localeParam ?? "") ? (localeParam as "hu" | "en") : "hu";
+  const copy = getSharePreviewMessages(locale).server;
+
   const targetParam = url.searchParams.get("url");
-  if (!targetParam) return jsonError("Hiányzó url paraméter.", 400);
+  if (!targetParam) return jsonError(copy.missingUrlParam, 400);
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -57,18 +63,19 @@ export const GET: APIRoute = async ({ url }) => {
       signal: controller.signal,
       timeoutMs: REQUEST_TIMEOUT_MS,
       accept: "image/*",
+      locale,
     });
 
     const contentType = response.headers.get("content-type")?.split(";")[0]?.trim() ?? "";
     if (!contentType.startsWith("image/")) {
-      return jsonError("A megadott URL nem képet ad vissza.", 400);
+      return jsonError(copy.urlNotImage, 400);
     }
 
     let bytes: Uint8Array;
     try {
-      bytes = await readBodyWithLimit(response);
+      bytes = await readBodyWithLimit(response, copy.imageTooLarge);
     } catch (error) {
-      return jsonError(error instanceof Error ? error.message : "A kép nem tölthető le.", 502);
+      return jsonError(error instanceof Error ? error.message : copy.imageDownloadFailed, 502);
     }
 
     const arrayBuffer = bytes.buffer.slice(
@@ -85,7 +92,7 @@ export const GET: APIRoute = async ({ url }) => {
     });
   } catch (error) {
     if (error instanceof SafeFetchError) return jsonError(error.message, error.status);
-    return jsonError("A kép letöltése nem sikerült.", 502);
+    return jsonError(copy.imageDownloadFailed, 502);
   } finally {
     clearTimeout(timeout);
   }

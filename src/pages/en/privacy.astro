@@ -7,14 +7,14 @@ import { privacyMessages } from "@/i18n/privacy";
 import { getLocalizedRoute, getRouteAlternates } from "@/lib/localized-routes";
 import { interpolateText } from "@/lib/utils";
 
-const locale = "hu" as const;
+const locale = "en" as const;
 const copy = getMessages(privacyMessages, locale);
 const canonicalPath = getLocalizedRoute("privacy", locale);
 ---
 
 <MainLayout
-  title="Adatvédelmi tájékoztató - Morf"
-  description="A Morf adatvédelmi tájékoztatója a helyi fájlfeldolgozásról, a technikai adatokról és a jogaidról."
+  title="Privacy notice - Morf"
+  description="Morf's privacy notice covering local file processing, technical data, and your rights."
   locale={locale}
   canonicalPath={canonicalPath}
   alternateLocales={getRouteAlternates("privacy")}

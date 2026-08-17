@@ -3,10 +3,14 @@ import { lookup as dnsLookup } from "node:dns/promises";
 import { Agent, fetch as undiciFetch } from "undici";
 
 import { isPrivateNetworkAddress } from "./private-network";
+import { getSharePreviewMessages } from "@/i18n/share-preview";
+import type { Locale } from "./locale";
 
 const USER_AGENT = "MorfFetchBot/1.0 (+https://morfkit.com)";
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_MAX_REDIRECTS = 5;
+
+type SafeFetchCopy = ReturnType<typeof getSharePreviewMessages>["server"];
 
 export class SafeFetchError extends Error {
   status: number;
@@ -22,16 +26,16 @@ export class SafeFetchError extends Error {
  * (lásd `dispatcherFor`), hogy egy időközben megváltozó DNS-válasz (DNS
  * rebinding) ne kerülhesse meg ezt az ellenőrzést a fetch hívás során.
  */
-async function resolvePublicAddresses(hostname: string) {
+async function resolvePublicAddresses(hostname: string, copy: SafeFetchCopy) {
   let addresses: { address: string; family: number }[];
   try {
     addresses = await dnsLookup(hostname, { all: true });
   } catch {
-    throw new SafeFetchError("A megadott domain nem oldható fel.", 400);
+    throw new SafeFetchError(copy.domainUnresolvable, 400);
   }
 
   if (addresses.length === 0 || addresses.some((a) => isPrivateNetworkAddress(a.address))) {
-    throw new SafeFetchError("A megadott cím nem érhető el.", 400);
+    throw new SafeFetchError(copy.addressUnreachable, 400);
   }
 
   return addresses;
@@ -60,23 +64,25 @@ export async function safeFetch(
     timeoutMs?: number;
     maxRedirects?: number;
     accept?: string;
+    locale?: Locale;
   },
 ): Promise<{ response: Response; finalUrl: URL }> {
+  const copy = getSharePreviewMessages(options.locale ?? "hu").server;
   let target: URL;
   try {
     target = new URL(targetUrl);
   } catch {
-    throw new SafeFetchError("Érvénytelen URL.", 400);
+    throw new SafeFetchError(copy.invalidUrl, 400);
   }
 
   const maxRedirects = options.maxRedirects ?? DEFAULT_MAX_REDIRECTS;
 
   for (let redirectCount = 0; ; redirectCount++) {
     if (target.protocol !== "http:" && target.protocol !== "https:") {
-      throw new SafeFetchError("Csak http/https URL engedélyezett.", 400);
+      throw new SafeFetchError(copy.httpOnly, 400);
     }
 
-    const pinnedAddresses = await resolvePublicAddresses(target.hostname);
+    const pinnedAddresses = await resolvePublicAddresses(target.hostname, copy);
 
     let response: Response;
     try {
@@ -89,28 +95,31 @@ export async function safeFetch(
     } catch (error) {
       throw new SafeFetchError(
         error instanceof Error && error.name === "AbortError"
-          ? "A lekérés túllépte az időkorlátot."
-          : "A cím nem érhető el.",
+          ? copy.requestTimeout
+          : copy.addressNotReachable,
         502,
       );
     }
 
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get("location");
-      if (!location) throw new SafeFetchError("Érvénytelen átirányítás.", 502);
+      if (!location) throw new SafeFetchError(copy.invalidRedirect, 502);
       if (redirectCount >= maxRedirects) {
-        throw new SafeFetchError("Túl sok átirányítás.", 502);
+        throw new SafeFetchError(copy.tooManyRedirects, 502);
       }
       try {
         target = new URL(location, target);
       } catch {
-        throw new SafeFetchError("Érvénytelen átirányítási cél.", 502);
+        throw new SafeFetchError(copy.invalidRedirectTarget, 502);
       }
       continue;
     }
 
     if (!response.ok) {
-      throw new SafeFetchError(`A szerver ${response.status} választ adott.`, 502);
+      throw new SafeFetchError(
+        copy.serverStatusTemplate.replace("{status}", String(response.status)),
+        502,
+      );
     }
 
     return { response, finalUrl: target };

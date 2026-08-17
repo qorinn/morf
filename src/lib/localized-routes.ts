@@ -7,13 +7,13 @@ import { availableLocales, defaultLocale, type Locale } from "./locale.ts";
 export const localizedRoutes = {
   home: { hu: "/", en: "/en/" },
   imageConverter: { hu: "/kep-konvertalo", en: "/en/image-converter" },
-  faviconGenerator: { hu: "/favicon-generator" },
-  videoFrames: { hu: "/video-kepekre-bontasa" },
-  videoSpeed: { hu: "/video-gyorsitas-lassitas" },
-  videoConverter: { hu: "/video-konvertalo" },
-  sharePreview: { hu: "/megosztasi-elozet-tervezo" },
-  browserSupport: { hu: "/bongeszo-tamogatas" },
-  privacy: { hu: "/adatvedelmi-tajekoztato" },
+  faviconGenerator: { hu: "/favicon-generator", en: "/en/favicon-generator" },
+  videoFrames: { hu: "/video-kepekre-bontasa", en: "/en/video-frames" },
+  videoSpeed: { hu: "/video-gyorsitas-lassitas", en: "/en/video-speed" },
+  videoConverter: { hu: "/video-konvertalo", en: "/en/video-converter" },
+  sharePreview: { hu: "/megosztasi-elozet-tervezo", en: "/en/share-preview" },
+  browserSupport: { hu: "/bongeszo-tamogatas", en: "/en/browser-support" },
+  privacy: { hu: "/adatvedelmi-tajekoztato", en: "/en/privacy" },
 } as const;
 
 export type LocalizedRouteId = keyof typeof localizedRoutes;

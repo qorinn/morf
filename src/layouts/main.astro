@@ -37,7 +37,11 @@ const structuredDataJson = localizedStructuredData
 const ogImageUrl = Astro.site
   ? new URL("/og-image.webp", Astro.site).href
   : "/og-image.webp";
-const ogImageAlt = "Morf — ingyenes eszköztár. Nem mentjük el a fájlodat. Soha.";
+const ogImageAltByLocale: Partial<Record<Locale, string>> = {
+  hu: "Morf — ingyenes eszköztár. Nem mentjük el a fájlodat. Soha.",
+  en: "Morf — free online tools. We never save your file.",
+};
+const ogImageAlt = ogImageAltByLocale[locale] ?? ogImageAltByLocale[defaultLocale]!;
 ---
 
 <html lang={localeMeta.htmlLang}>

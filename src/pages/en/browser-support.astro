@@ -8,7 +8,7 @@ import { getLocalizedRoute, getRouteAlternates } from "@/lib/localized-routes";
 import { Cancel01Icon, CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
-const locale = "hu" as const;
+const locale = "en" as const;
 const copy = getMessages(browserSupportMessages, locale);
 const canonicalPath = getLocalizedRoute("browserSupport", locale);
 
@@ -21,8 +21,8 @@ const browserColumns = [
 ---
 
 <MainLayout
-  title="Böngészőtámogatás | Morf"
-  description="Nézd meg, melyik Morf eszköz használható Chrome-ban, Edge-ben, Firefoxban és Safariban."
+  title="Browser support | Morf"
+  description="Check which Morf tool works in Chrome, Edge, Firefox, and Safari."
   locale={locale}
   canonicalPath={canonicalPath}
   alternateLocales={getRouteAlternates("browserSupport")}
@@ -38,14 +38,14 @@ const browserColumns = [
           <p class="text-muted-foreground text-base leading-relaxed sm:text-lg">{copy.lead}</p>
         </header>
 
-        <section class="border-border bg-muted/45 max-w-3xl rounded-3xl border p-5 sm:p-6" aria-labelledby="ajanlott-bongeszo">
-          <h2 id="ajanlott-bongeszo" class="font-heading text-xl font-semibold">{copy.recommendedTitle}</h2>
+        <section class="border-border bg-muted/45 max-w-3xl rounded-3xl border p-5 sm:p-6" aria-labelledby="recommended-browser">
+          <h2 id="recommended-browser" class="font-heading text-xl font-semibold">{copy.recommendedTitle}</h2>
           <p class="text-muted-foreground mt-2 leading-relaxed">{copy.recommendedText}</p>
         </section>
 
-        <section aria-labelledby="tamogatasi-tabla" class="overflow-hidden rounded-3xl border border-border">
+        <section aria-labelledby="support-table" class="overflow-hidden rounded-3xl border border-border">
           <div class="border-border border-b px-5 py-5 sm:px-6">
-            <h2 id="tamogatasi-tabla" class="font-heading text-2xl font-semibold">{copy.tableTitle}</h2>
+            <h2 id="support-table" class="font-heading text-2xl font-semibold">{copy.tableTitle}</h2>
             <p class="text-muted-foreground mt-1 text-sm leading-relaxed">{copy.tableDescription}</p>
           </div>
           <div class="overflow-x-auto">

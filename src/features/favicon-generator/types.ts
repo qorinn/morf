@@ -1,3 +1,39 @@
+export interface FaviconTextCopy {
+  noExportTargetError: string;
+  missingIcoFrameTemplate: string;
+  manifestErrors: {
+    appIdLabel: string;
+    startUrlLabel: string;
+    scopeLabel: string;
+    needsPathTemplate: string;
+    needsRootPathTemplate: string;
+    sameDomainOnlyTemplate: string;
+    invalidPathTemplate: string;
+    idNoHash: string;
+    scopeNoQueryOrHash: string;
+    startUrlOutsideScope: string;
+  };
+  readme: {
+    title: string;
+    intro: string;
+    filesHeading: string;
+    readmeFileDescription: string;
+    installationHeading: string;
+    installationIntro: string;
+    manifestNote: string;
+    cacheNote: string;
+    files: {
+      faviconIco: string;
+      faviconPngSet: string;
+      appleTouchIcon: string;
+      faviconSvg: string;
+      webAppManifestSet: string;
+      siteWebmanifest: string;
+      faviconCode: string;
+    };
+  };
+}
+
 export const faviconExportTargetIds = ["website", "web-app"] as const;
 
 export type FaviconExportTarget = (typeof faviconExportTargetIds)[number];
@@ -62,7 +98,7 @@ export interface FaviconGenerateRequest {
   exportOptions: FaviconExportOptions;
   manifest: ManifestSettings;
   sanitizedSvg?: string;
-  language: "hu";
+  copy: FaviconTextCopy;
 }
 
 export type FaviconProgressStatus =

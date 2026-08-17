@@ -157,11 +157,61 @@ export const imageConverterMessages = defineMessages({
   },
   guide: {
     title: "Több mint formátumváltás: teljes képexport egy munkafelületen",
+    intro: {
+      lead: "A Morf egy ingyenes, böngészőben futó képkonvertáló, képtömörítő és képátméretező eszköz.",
+      body: "Legnagyobb előnye, hogy a képeket közvetlenül külön konfigurációs csoportokba töltheted, majd csoportonként eltérő formátumot, felbontást, minőséget vagy maximum fájlméretet adhatsz meg. Ez különösen akkor hasznos, ha ugyanabból a képkészletből weboldalhoz, webshophoz, közösségi médiához és e-mailhez is más-más változatot kell készítened. A JPG-PNG konvertálás, a JPG-WebP vagy PNG-WebP export, az AVIF-készítés és a HEIC-JPG átalakítás ugyanabban a munkafolyamatban kezelhető.",
+    },
     capabilitiesTitle: "Mit tud a Morf képkonvertáló eszköze?",
+    capabilities: [
+      {
+        title: "Képek csoportba rendezése",
+        description: "Minden csoportkártyával feltölthetsz képeket: húzz rá egy fájlt, vagy tallózz a gomb megnyomásával. Támogatott böngészőben a Mappa importálása művelettel egy teljes képmappát is hozzáadhatsz egyetlen csoportként, amelyet ugyanazokkal a beállításokkal konvertálhatsz.",
+      },
+      {
+        title: "Csoportos beállítások",
+        description: "Kattints egy csoportra kiválasztásához, majd válassz felhasználási célt, formátumot, felbontást, minőséget, maximum fájlméretet vagy veszteségmentes módot az oldalsávban. Ez az összes képre alkalmazódik a csoportban.",
+      },
+      {
+        title: "Drag-and-drop rendezés és bulk műveletek",
+        description: "A képeket a fogantyúval rendezheted vagy másik csoportba húzhatod. Egy gombnyomással pedig duplikálhatod is, nem kell újra feltöltened. Több kijelölt képet együtt is áthelyezhetsz, külön csoportokra bonthatsz vagy törölhetsz.",
+      },
+      {
+        title: "Automatikus igazodás a maximum fájlmérethez",
+        description: "Adj meg egy KB-ban mért felső határt, és a Morf megkeresi a lehető legjobb, még a célméret alatti minőséget.",
+      },
+      {
+        title: "Veszteségmentes mód az eredeti részletekhez",
+        description: "A veszteségmentes mód megtartja az eredeti felbontást, és a választott formátum lehetőségeihez mérten optimalizálás nélkül kódol.",
+      },
+      {
+        title: "Mentsd egyenként vagy ZIP-be",
+        description: "A kész fájlokat külön-külön, vagy egyetlen ZIP-csomagban is mentheted.",
+      },
+    ],
     stepsTitle: "Lépésről lépésre",
+    stepsIntro: "Egy egyszerűbb képkonvertáló általában ugyanazt a beállítást alkalmazza minden fájlra. A Morf csoportjaival minden képnek külön beállításokat adhatsz.",
+    steps: [
+      { title: "Töltsd fel a képeket", description: "Adj hozzá képeket és rendezd csoportba, vagy külön." },
+      { title: "Állítsd be a csoportokat", description: "Kattints egy csoportra, válassz felhasználási célt, majd pontosítsd a formátum-, felbontás-, minőség- és fájlméret-beállításokat." },
+      { title: "Konvertálj és ments", description: "Indítsd el a kiválasztott csoportokat, majd mentsd el az eredményeket külön fájlként, vagy ZIP-csomagban." },
+    ],
     formatsTitle: "Melyik képformátumot mikor érdemes választani?",
-    useCasesTitle: "Mikor lehet hasznos egy csoportos online képkonvertáló?",
+    formatsIntro: "A megfelelő kimenet a kép tartalmától és felhasználási helyétől függ. A Morf a leggyakoribb webes és mobilos formátumokat egyetlen konvertálóban kezeli, de a HEIC és HEIF jelenleg csak bemeneti formátum.",
     formatTable: { format: "Formátum", input: "Bemenet", output: "Kimenet", useCase: "Ajánlott felhasználás" },
+    formatRows: [
+      { format: "JPG / JPEG", input: "Igen", output: "Igen", useCase: "Fotókhoz, e-mailhez és olyan felületekhez, ahol a széles kompatibilitás fontos." },
+      { format: "PNG", input: "Igen", output: "Igen", useCase: "Átlátszó hátterű grafikákhoz, képernyőképekhez és veszteségmentes kimenethez." },
+      { format: "WebP", input: "Igen", output: "Igen", useCase: "Weboldalakhoz és webshopokhoz, ha jó képminőség mellett kisebb fájlméret a cél." },
+      { format: "AVIF", input: "Igen", output: "Igen", useCase: "Modern webes felhasználáshoz, amikor hatékony tömörítésre és részletgazdag kimenetre van szükség." },
+      { format: "HEIC / HEIF", input: "Igen", output: "Nem", useCase: "iPhone-ról és más Apple-eszközről származó képek beolvasásához, majd JPG, PNG, WebP vagy AVIF kimenethez." },
+    ],
+    useCasesTitle: "Mikor lehet hasznos egy csoportos online képkonvertáló?",
+    useCases: [
+      { title: "Weboldal és webshop képei", description: "Alakíts át egy teljes galériát WebP vagy AVIF formátumba, korlátozd a felbontást, és csökkentsd vagy limitáld a képek fájlméretét gyorsabb webes betöltéshez." },
+      { title: "iPhone HEIC képek megosztása", description: "Konvertálj több HEIC vagy HEIF fotót egyszerre JPG-be, PNG-be, WebP-be vagy AVIF-ba, hogy más eszközökön és szolgáltatásokban is könnyen használhatók legyenek." },
+      { title: "E-mail és dokumentum mellékletek", description: "Állíts be maximum fájlméretet, és készíts kisebb, továbbítható képfájlokat anélkül, hogy minden képnél külön próbálgatnád a minőségértéket." },
+      { title: "Több célra készülő exportcsomag", description: "Duplikálj egy képet, majd húzd a másolatot más beállítású vagy új csoportba. Így ugyanabban a munkamenetben készíthetsz webes, közösségi és veszteségmentes változatot." },
+    ],
   },
   },
   en: {
@@ -319,11 +369,61 @@ export const imageConverterMessages = defineMessages({
     },
     guide: {
       title: "More than a format converter: a complete image export workspace",
+      intro: {
+        lead: "Morf is a free, browser-based image converter, compressor, and resizer.",
+        body: "Its biggest advantage is that you can load images directly into separate configuration groups, then set a different format, resolution, quality, or maximum file size for each group. This is especially useful when the same set of images needs different versions for a website, an online store, social media, and email. JPG-to-PNG conversion, JPG-to-WebP or PNG-to-WebP export, AVIF creation, and HEIC-to-JPG conversion can all be handled in the same workflow.",
+      },
       capabilitiesTitle: "What can Morf's image converter do?",
+      capabilities: [
+        {
+          title: "Organize images into groups",
+          description: "Every group card accepts images: drop a file onto it, or browse using the button. In supported browsers, the Import folder action lets you add a whole image folder as a single group, which you can then convert with the same settings.",
+        },
+        {
+          title: "Group-level settings",
+          description: "Click a group to select it, then choose the usage purpose, format, resolution, quality, maximum file size, or lossless mode in the sidebar. This applies to every image in the group.",
+        },
+        {
+          title: "Drag-and-drop ordering and bulk actions",
+          description: "Reorder images with the handle, or drag them into another group. Duplicate an image with one click instead of uploading it again. Select several images to move, split into separate groups, or delete them together.",
+        },
+        {
+          title: "Automatic fit to a maximum file size",
+          description: "Set an upper limit in KB, and Morf finds the best quality that still stays under the target size.",
+        },
+        {
+          title: "Lossless mode for original detail",
+          description: "Lossless mode keeps the original resolution and encodes without optimization, within the limits of the chosen format.",
+        },
+        {
+          title: "Save individually or as a ZIP",
+          description: "Save the finished files one by one, or as a single ZIP package.",
+        },
+      ],
       stepsTitle: "Step by step",
+      stepsIntro: "A simpler image converter usually applies the same setting to every file. With Morf's groups, you can give each image its own settings.",
+      steps: [
+        { title: "Upload your images", description: "Add images and organize them into groups, or keep them separate." },
+        { title: "Configure the groups", description: "Click a group, choose a usage purpose, then refine the format, resolution, quality, and file size settings." },
+        { title: "Convert and save", description: "Start the selected groups, then save the results as separate files or as a ZIP package." },
+      ],
       formatsTitle: "Which image format should you choose?",
-      useCasesTitle: "When is a batch image converter useful?",
+      formatsIntro: "The right output depends on the image's content and where it will be used. Morf handles the most common web and mobile formats in a single converter, but HEIC and HEIF are currently input-only formats.",
       formatTable: { format: "Format", input: "Input", output: "Output", useCase: "Recommended use" },
+      formatRows: [
+        { format: "JPG / JPEG", input: "Yes", output: "Yes", useCase: "Photos, email, and surfaces where broad compatibility matters." },
+        { format: "PNG", input: "Yes", output: "Yes", useCase: "Graphics with transparent backgrounds, screenshots, and lossless output." },
+        { format: "WebP", input: "Yes", output: "Yes", useCase: "Websites and online stores that need good quality at a smaller file size." },
+        { format: "AVIF", input: "Yes", output: "Yes", useCase: "Modern web use when you need efficient compression and detailed output." },
+        { format: "HEIC / HEIF", input: "Yes", output: "No", useCase: "Reading photos from an iPhone or other Apple device, then converting to JPG, PNG, WebP, or AVIF output." },
+      ],
+      useCasesTitle: "When is a batch image converter useful?",
+      useCases: [
+        { title: "Website and online store images", description: "Convert a whole gallery to WebP or AVIF, cap the resolution, and reduce or limit the file size for faster page loads." },
+        { title: "Sharing iPhone HEIC photos", description: "Convert several HEIC or HEIF photos at once to JPG, PNG, WebP, or AVIF so they work easily on other devices and services." },
+        { title: "Email and document attachments", description: "Set a maximum file size and produce smaller, easy-to-send images without testing a quality value for every image individually." },
+        { title: "Export packages for multiple purposes", description: "Duplicate an image, then drag the copy into a differently configured or new group. That way you can produce a web, social, and lossless version in the same session." },
+      ],
     },
   },
 });
